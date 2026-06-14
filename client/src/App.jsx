@@ -1,0 +1,64 @@
+import Navbar from './components/Navbar'
+import Footer from './components/Footer'
+import Home from './pages/Home'
+import Movies from './pages/Movies'
+import MovieDetail from './pages/MovieDetails'
+import SeatLayout from './pages/SeatLayout'
+import MyBookings from './pages/MyBookings'
+import Favorite from './pages/Favorite'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
+import { Routes, Route, useLocation } from 'react-router-dom'
+import ProtectedRoute from './components/ProtectedRoute'
+
+const App = () => {
+  const { pathname } = useLocation()
+  const isAdminRoute = pathname.startsWith('/admin')
+
+  return (
+    <>
+      {!isAdminRoute && <Navbar />}
+
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/movies" element={<Movies />} />
+        <Route path="/movies/:id" element={<MovieDetail />} />
+
+        <Route
+          path="/movies/:id/date"
+          element={
+            <ProtectedRoute>
+              <SeatLayout />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/my-bookings"
+          element={
+            <ProtectedRoute>
+              <MyBookings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/favorite"
+          element={
+            <ProtectedRoute>
+              <Favorite />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+      </Routes>
+
+      {!isAdminRoute && <Footer />}
+    </>
+  )
+}
+
+export default App
