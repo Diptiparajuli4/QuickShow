@@ -20,3 +20,7 @@ body{
 .no-scrollbar{
   scrollbar-width: none;
 }
+.react-player {
+  border-radius: 12px;
+  overflow: hidden;
+}

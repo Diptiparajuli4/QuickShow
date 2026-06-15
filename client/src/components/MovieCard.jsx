@@ -20,7 +20,7 @@ const MovieCard = ({ movie }) => {
                         : "/fallback.jpg"
                 }
                 alt={movie.title}
-                className="w-full h-80 object-cover"
+                className="w-full h-64 object-fill"
             />
 
             <div className='p-4 flex flex-col flex-grow'>
