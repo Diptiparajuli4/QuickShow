@@ -1,10 +1,10 @@
 const timeFormat = (minutes) => {
-    if (!minutes) return "N/A";
+  if (!minutes) return "N/A";
 
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
 
-    return `${hours}h ${mins}m`;
+  return `${hrs}h ${mins}m`;
 };
 
 export default timeFormat;
