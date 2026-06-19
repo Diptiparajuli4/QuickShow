@@ -10,6 +10,11 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute'
+import Dashboard from './pages/admin/Dashboard'
+import AddShows from './pages/admin/AddShows'
+import ListBookings from './pages/admin/ListBookings'
+import ListShows from './pages/admin/ListShows'
+import Layout from './pages/admin/Layout'
 
 const App = () => {
   const { pathname } = useLocation()
@@ -28,6 +33,12 @@ const App = () => {
         <Route path="/favorite" element={<ProtectedRoute><Favorite /></ProtectedRoute>} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/admin/*" element={<Layout />}>
+  <Route index element={<Dashboard />} />
+  <Route path="add-shows" element={<AddShows />} />
+  <Route path="list-shows" element={<ListShows />} />
+  <Route path="list-bookings" element={<ListBookings />} />
+</Route>
       </Routes>
       {!isAdminRoute && <Footer />}
     </>
