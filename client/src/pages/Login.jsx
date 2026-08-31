@@ -13,24 +13,61 @@ const Login = () => {
     const navigate = useNavigate()
 
     const handleSubmit = async (e) => {
-        e.preventDefault()
-        setError('')
 
-        if (!email || !password) {
-            setError('Please fill in all fields.')
-            return
-        }
+    e.preventDefault()
 
-        setLoading(true)
-        try {
-            await login(email, password)
-            navigate('/')
-        } catch (err) {
-            setError(err.message || 'Invalid email or password.')
-        } finally {
-            setLoading(false)
-        }
+    setError('')
+
+
+    if (!email || !password) {
+
+        setError('Please fill in all fields.')
+
+        return
+
     }
+
+
+    setLoading(true)
+
+
+    try {
+
+        const loggedInUser = await login(
+            email,
+            password
+        )
+
+
+        // Admin → Admin Dashboard
+        if (loggedInUser?.role === 'admin') {
+
+            navigate('/admin')
+
+        }
+
+        // Normal user → Home page
+        else {
+
+            navigate('/')
+
+        }
+
+
+    } catch (err) {
+
+        setError(
+            err.message ||
+            'Invalid email or password.'
+        )
+
+    } finally {
+
+        setLoading(false)
+
+    }
+
+}
 
     return (
         <div className='min-h-screen flex items-center justify-center bg-black px-4'>
