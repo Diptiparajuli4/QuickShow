@@ -14,7 +14,7 @@ dotenv.config();
 const app = express();
 
 // ========================================
-// CONNECT DATABASE
+// DATABASE
 // ========================================
 
 connectDB();
@@ -26,8 +26,19 @@ connectDB();
 app.use(
     cors({
         origin: "http://localhost:5173",
-        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-        allowedHeaders: ["Content-Type", "Authorization"],
+        credentials: true,
+        methods: [
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "PATCH",
+            "OPTIONS",
+        ],
+        allowedHeaders: [
+            "Content-Type",
+            "Authorization",
+        ],
     })
 );
 
@@ -47,15 +58,20 @@ app.use("/user", userRouter);
 // ========================================
 
 app.get("/", (req, res) => {
-    res.send("Backend server running with connection to MongoDB");
+    res.json({
+        success: true,
+        message: "QuickShow backend is running",
+    });
 });
 
 // ========================================
 // SERVER
 // ========================================
 
-const PORT = process.env.PORT || 5000;
+const PORT = 5000;
 
 app.listen(PORT, () => {
-    console.log(`Server started on port ${PORT}`);
+    console.log(
+        `Server running on http://localhost:${PORT}`
+    );
 });

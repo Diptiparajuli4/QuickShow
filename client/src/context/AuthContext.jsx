@@ -1,86 +1,126 @@
-
 import React, {
     createContext,
     useContext,
-    useState
+    useEffect,
+    useState,
 } from "react";
 
-import axios from "axios";
-
-const AuthContext = createContext(null);
-
-// ==========================================
-// BACKEND URL
-// ==========================================
-
-axios.defaults.baseURL =
-    import.meta.env.VITE_BASE_URL || "http://localhost:5000";
-
-axios.defaults.withCredentials = true;
-
-
-// ==========================================
-// AUTH PROVIDER
-// ==========================================
+const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
 
-    // ==========================================
-    // CURRENT USER
-    // ==========================================
+    // =========================================
+    // USER SESSION
+    // =========================================
 
-    const [user, setUser] = useState(() => {
+    const [user, setUser] = useState(null);
+
+    // =========================================
+    // ADMIN SESSION
+    // =========================================
+
+    const [admin, setAdmin] = useState(null);
+
+    // =========================================
+    // LOADING
+    // =========================================
+
+    const [loading, setLoading] = useState(true);
+
+
+    // =========================================
+    // LOAD BOTH SESSIONS
+    // =========================================
+
+    useEffect(() => {
 
         try {
 
-            const storedUser =
-                localStorage.getItem("auth_user");
+            const savedUser =
+                localStorage.getItem("userUser");
 
-            return storedUser
-                ? JSON.parse(storedUser)
-                : null;
+            const savedAdmin =
+                localStorage.getItem("adminUser");
+
+
+            if (savedUser) {
+
+                setUser(
+                    JSON.parse(savedUser)
+                );
+
+            }
+
+
+            if (savedAdmin) {
+
+                setAdmin(
+                    JSON.parse(savedAdmin)
+                );
+
+            }
 
         } catch (error) {
 
             console.error(
-                "Error loading stored user:",
+                "Error loading authentication:",
                 error
             );
 
-            return null;
+        } finally {
+
+            setLoading(false);
 
         }
 
-    });
+    }, []);
 
 
-    // ==========================================
+    // =========================================
     // LOGIN
-    // ==========================================
+    // =========================================
 
-    const login = async (email, password) => {
+    const login = async (
+        email,
+        password
+    ) => {
 
         try {
 
-            console.log("Sending login request...");
-            console.log("Backend:", axios.defaults.baseURL);
+            const response =
+                await fetch(
+                    "http://localhost:5000/user/login",
+                    {
+                        method: "POST",
 
-            const { data } = await axios.post(
-                "/user/login",
-                {
-                    email,
-                    password
-                }
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+                        },
+
+                        body: JSON.stringify({
+                            email,
+                            password,
+                        }),
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            console.log(
+                "Login response:",
+                data
             );
 
 
-            console.log("Login response:", data);
-
-
-            if (!data.success) {
+            if (!response.ok || !data.success) {
 
                 throw new Error(
-                    data.message || "Login failed"
+                    data.message ||
+                    "Invalid email or password"
                 );
 
             }
@@ -90,175 +130,175 @@ export const AuthProvider = ({ children }) => {
                 data.user;
 
 
-            // Save user in React state
-            setUser(loggedInUser);
+            const token =
+                data.token;
 
 
-            // Save user in localStorage
-            localStorage.setItem(
-                "auth_user",
-                JSON.stringify(loggedInUser)
-            );
+            if (!loggedInUser || !token) {
 
-
-            // Save token if backend sends one
-            if (data.token) {
-
-                localStorage.setItem(
-                    "token",
-                    data.token
+                throw new Error(
+                    "Invalid login response from server."
                 );
 
             }
 
 
-            return loggedInUser;
+            // =================================
+            // ADMIN LOGIN
+            // =================================
 
+            if (
+                loggedInUser.role === "admin" ||
+                loggedInUser.isAdmin === true
+            ) {
+
+                localStorage.setItem(
+                    "adminToken",
+                    token
+                );
+
+                localStorage.setItem(
+                    "adminUser",
+                    JSON.stringify(
+                        loggedInUser
+                    )
+                );
+
+                setAdmin(
+                    loggedInUser
+                );
+
+                return {
+                    ...loggedInUser,
+                    token,
+                };
+
+            }
+
+
+            // =================================
+            // NORMAL USER LOGIN
+            // =================================
+
+            localStorage.setItem(
+                "userToken",
+                token
+            );
+
+            localStorage.setItem(
+                "userUser",
+                JSON.stringify(
+                    loggedInUser
+                )
+            );
+
+            setUser(
+                loggedInUser
+            );
+
+
+            return {
+                ...loggedInUser,
+                token,
+            };
 
         } catch (error) {
 
             console.error(
                 "Login error:",
-                error.response?.data ||
-                error.message
+                error
             );
 
-
-            throw new Error(
-                error.response?.data?.message ||
-                error.message ||
-                "Login failed"
-            );
+            throw error;
 
         }
 
     };
 
 
-    // ==========================================
-    // SIGNUP
-    // ==========================================
+    // =========================================
+    // USER LOGOUT
+    // =========================================
 
-    const signup = async (
-        name,
-        email,
-        password
-    ) => {
+    const logoutUser = () => {
 
-        try {
+        localStorage.removeItem(
+            "userToken"
+        );
 
-            console.log("Sending signup request...");
-            console.log("Backend:", axios.defaults.baseURL);
-
-
-            const { data } = await axios.post(
-                "/user/signup",
-                {
-                    name,
-                    email,
-                    password
-                }
-            );
-
-
-            console.log(
-                "Signup response:",
-                data
-            );
-
-
-            if (!data.success) {
-
-                throw new Error(
-                    data.message ||
-                    "Signup failed"
-                );
-
-            }
-
-
-            const newUser =
-                data.user;
-
-
-            // Save new user
-            setUser(newUser);
-
-
-            // Save user locally
-            localStorage.setItem(
-                "auth_user",
-                JSON.stringify(newUser)
-            );
-
-
-            // Save token if backend sends one
-            if (data.token) {
-
-                localStorage.setItem(
-                    "token",
-                    data.token
-                );
-
-            }
-
-
-            return newUser;
-
-
-        } catch (error) {
-
-            console.error(
-                "Signup error:",
-                error.response?.data ||
-                error.message
-            );
-
-
-            throw new Error(
-                error.response?.data?.message ||
-                error.message ||
-                "Signup failed"
-            );
-
-        }
-
-    };
-
-
-    // ==========================================
-    // LOGOUT
-    // ==========================================
-
-    const logout = () => {
+        localStorage.removeItem(
+            "userUser"
+        );
 
         setUser(null);
 
+    };
+
+
+    // =========================================
+    // ADMIN LOGOUT
+    // =========================================
+
+    const logoutAdmin = () => {
+
         localStorage.removeItem(
-            "auth_user"
+            "adminToken"
         );
 
         localStorage.removeItem(
-            "token"
+            "adminUser"
         );
+
+        setAdmin(null);
 
     };
 
 
-    // ==========================================
-    // AUTH CONTEXT
-    // ==========================================
+    // =========================================
+    // GENERAL LOGOUT
+    // =========================================
+
+    const logout = () => {
+
+        logoutUser();
+        logoutAdmin();
+
+    };
+
+
+    // =========================================
+    // CONTEXT
+    // =========================================
+
+    const value = {
+
+        user,
+
+        admin,
+
+        loading,
+
+        login,
+
+        logout,
+
+        logoutUser,
+
+        logoutAdmin,
+
+        isUserLoggedIn:
+            !!user,
+
+        isAdminLoggedIn:
+            !!admin,
+
+    };
+
 
     return (
 
         <AuthContext.Provider
-            value={{
-                user,
-                setUser,
-                login,
-                signup,
-                logout
-            }}
+            value={value}
         >
 
             {children}
@@ -270,9 +310,9 @@ export const AuthProvider = ({ children }) => {
 };
 
 
-// ==========================================
+// =========================================
 // USE AUTH
-// ==========================================
+// =========================================
 
 export const useAuth = () => {
 
@@ -292,3 +332,6 @@ export const useAuth = () => {
     return context;
 
 };
+
+
+export default AuthContext;

@@ -8,6 +8,7 @@ import Movie from "../models/Movie.js";
 
 export const getMovies = async (req, res) => {
     try {
+
         const movies = await Movie.find()
             .sort({ createdAt: -1 });
 
@@ -17,7 +18,11 @@ export const getMovies = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Get Movies Error:", error);
+
+        console.error(
+            "Get Movies Error:",
+            error
+        );
 
         return res.status(500).json({
             success: false,
@@ -42,7 +47,9 @@ export const addMovie = async (req, res) => {
             ""
         );
 
+
         if (!movieId) {
+
             return res.status(400).json({
                 success: false,
                 message: "Movie ID is required",
@@ -57,6 +64,7 @@ export const addMovie = async (req, res) => {
 
 
         if (!title) {
+
             return res.status(400).json({
                 success: false,
                 message: "Movie title is required",
@@ -64,7 +72,9 @@ export const addMovie = async (req, res) => {
         }
 
 
-        // Check if movie already exists
+        // =================================================
+        // CHECK EXISTING MOVIE
+        // =================================================
 
         const existingMovie =
             await Movie.findById(movieId);
@@ -80,7 +90,9 @@ export const addMovie = async (req, res) => {
         }
 
 
-        // Create movie
+        // =================================================
+        // CREATE MOVIE
+        // =================================================
 
         const movie =
             await Movie.create({
@@ -127,25 +139,39 @@ export const addMovie = async (req, res) => {
                     [],
 
                 vote_average:
-                    Number(movieData.vote_average) || 0,
+                    Number(
+                        movieData.vote_average
+                    ) || 0,
 
                 runtime:
-                    Number(movieData.runtime) || 0,
+                    Number(
+                        movieData.runtime
+                    ) || 0,
             });
 
 
         return res.status(201).json({
+
             success: true,
-            message: "Movie added successfully",
+
+            message:
+                "Movie added successfully",
+
             movie,
         });
 
+
     } catch (error) {
 
-        console.error("Add Movie Error:", error);
+        console.error(
+            "Add Movie Error:",
+            error
+        );
 
         return res.status(500).json({
+
             success: false,
+
             message: error.message,
         });
     }
@@ -154,18 +180,6 @@ export const addMovie = async (req, res) => {
 
 // =====================================================
 // ADD SHOW
-//
-// Frontend sends:
-//
-// {
-//     movie: selectedMovie,
-//     price: 500,
-//     dateTimes: {
-//         "2026-09-05": ["10:00", "14:00"],
-//         "2026-09-06": ["18:00"]
-//     }
-// }
-//
 // =====================================================
 
 export const addShow = async (req, res) => {
@@ -208,20 +222,26 @@ export const addShow = async (req, res) => {
 
 
         // =================================================
-        // 1. CHECK MOVIE DATA
+        // CHECK MOVIE
         // =================================================
 
-        if (!movie || typeof movie !== "object") {
+        if (
+            !movie ||
+            typeof movie !== "object"
+        ) {
 
             return res.status(400).json({
+
                 success: false,
-                message: "Movie data is required",
+
+                message:
+                    "Movie data is required",
             });
         }
 
 
         // =================================================
-        // 2. GET MOVIE ID
+        // GET MOVIE ID
         // =================================================
 
         const movieId = String(
@@ -234,8 +254,11 @@ export const addShow = async (req, res) => {
         if (!movieId) {
 
             return res.status(400).json({
+
                 success: false,
-                message: "Selected movie does not contain an ID",
+
+                message:
+                    "Selected movie does not contain an ID",
             });
         }
 
@@ -247,7 +270,7 @@ export const addShow = async (req, res) => {
 
 
         // =================================================
-        // 3. GET MOVIE TITLE
+        // GET MOVIE TITLE
         // =================================================
 
         const movieTitle =
@@ -259,17 +282,21 @@ export const addShow = async (req, res) => {
         if (!movieTitle) {
 
             return res.status(400).json({
+
                 success: false,
-                message: "Movie title is required",
+
+                message:
+                    "Movie title is required",
             });
         }
 
 
         // =================================================
-        // 4. CHECK PRICE
+        // CHECK PRICE
         // =================================================
 
-        const showPrice = Number(price);
+        const showPrice =
+            Number(price);
 
 
         if (
@@ -278,14 +305,17 @@ export const addShow = async (req, res) => {
         ) {
 
             return res.status(400).json({
+
                 success: false,
-                message: "Please enter a valid show price",
+
+                message:
+                    "Please enter a valid show price",
             });
         }
 
 
         // =================================================
-        // 5. CHECK DATE/TIME
+        // CHECK DATE/TIME
         // =================================================
 
         if (
@@ -296,7 +326,9 @@ export const addShow = async (req, res) => {
         ) {
 
             return res.status(400).json({
+
                 success: false,
+
                 message:
                     "Please add at least one show date and time",
             });
@@ -304,7 +336,7 @@ export const addShow = async (req, res) => {
 
 
         // =================================================
-        // 6. FIND MOVIE IN DATABASE
+        // FIND MOVIE
         // =================================================
 
         let movieDocument =
@@ -312,18 +344,17 @@ export const addShow = async (req, res) => {
 
 
         // =================================================
-        // 7. IF MOVIE DOES NOT EXIST,
-        //    INSERT IT INTO MOVIE COLLECTION
+        // CREATE MOVIE IF NOT EXISTS
         // =================================================
 
         if (!movieDocument) {
 
             console.log(
-                "Movie not found in database."
+                "Movie not found."
             );
 
             console.log(
-                "Inserting selected movie into database..."
+                "Creating movie in MongoDB..."
             );
 
 
@@ -332,8 +363,7 @@ export const addShow = async (req, res) => {
 
                     _id: movieId,
 
-                    title:
-                        movieTitle,
+                    title: movieTitle,
 
                     overview:
                         movie.overview ||
@@ -386,27 +416,21 @@ export const addShow = async (req, res) => {
 
 
             console.log(
-                "Movie inserted successfully:"
-            );
-
-            console.log(
+                "Movie created:",
                 movieDocument
             );
 
         } else {
 
             console.log(
-                "Movie already exists in database:"
-            );
-
-            console.log(
+                "Movie already exists:",
                 movieDocument._id
             );
         }
 
 
         // =================================================
-        // 8. GET ID FROM DATABASE MOVIE
+        // MOVIE ID SAVED IN DATABASE
         // =================================================
 
         const savedMovieId =
@@ -414,7 +438,7 @@ export const addShow = async (req, res) => {
 
 
         // =================================================
-        // 9. PREPARE SHOWS
+        // PREPARE SHOWS
         // =================================================
 
         const showsToCreate = [];
@@ -433,7 +457,7 @@ export const addShow = async (req, res) => {
             for (const time of times) {
 
                 // =========================================
-                // CREATE DATE
+                // CREATE DATETIME
                 // =========================================
 
                 const showDateTime =
@@ -443,7 +467,7 @@ export const addShow = async (req, res) => {
 
 
                 // =========================================
-                // CHECK DATE
+                // VALID DATE
                 // =========================================
 
                 if (
@@ -463,7 +487,7 @@ export const addShow = async (req, res) => {
 
 
                 // =========================================
-                // CHECK DUPLICATE SHOW
+                // CHECK DUPLICATE
                 // =========================================
 
                 const existingShow =
@@ -512,7 +536,7 @@ export const addShow = async (req, res) => {
 
 
         // =================================================
-        // 10. CHECK SHOWS
+        // CHECK SHOWS
         // =================================================
 
         if (
@@ -530,7 +554,7 @@ export const addShow = async (req, res) => {
 
 
         // =================================================
-        // 11. INSERT SHOWS
+        // INSERT SHOWS
         // =================================================
 
         const createdShows =
@@ -557,7 +581,7 @@ export const addShow = async (req, res) => {
 
 
         // =================================================
-        // 12. RESPONSE
+        // RESPONSE
         // =================================================
 
         return res.status(201).json({
@@ -677,7 +701,9 @@ export const getShow = async (
             })
                 .populate("movie")
                 .sort({
+
                     showDateTime: 1,
+
                 });
 
 
@@ -747,6 +773,219 @@ export const getUniqueShows = async (
 
         console.error(
             "Get Unique Shows Error:",
+            error
+        );
+
+
+        return res.status(500).json({
+
+            success: false,
+
+            message:
+                error.message,
+        });
+    }
+};
+
+
+// =====================================================
+// GET NOW SHOWING MOVIES
+// =====================================================
+// This is the important function for FeaturedSection.
+//
+// It gets movie IDs from the Show collection,
+// then gets the actual movie documents from Movie.
+// =====================================================
+
+export const getNowShowingMovies = async (
+    req,
+    res
+) => {
+
+    try {
+
+        console.log(
+            "======================================"
+        );
+
+        console.log(
+            "GET NOW SHOWING MOVIES"
+        );
+
+
+        // =================================================
+        // GET ALL SHOWS
+        // =================================================
+
+        const shows =
+            await Show.find()
+                .sort({
+                    showDateTime: -1,
+                })
+                .lean();
+
+
+        console.log(
+            "Total shows:",
+            shows.length
+        );
+
+
+        // =================================================
+        // NO SHOWS
+        // =================================================
+
+        if (
+            shows.length === 0
+        ) {
+
+            return res.status(200).json({
+
+                success: true,
+
+                movies: [],
+            });
+        }
+
+
+        // =================================================
+        // GET MOVIE IDS FROM SHOWS
+        // =================================================
+
+        const movieIds = [
+            ...new Set(
+                shows.map(
+                    (show) =>
+                        String(
+                            show.movie
+                        )
+                )
+            ),
+        ];
+
+
+        console.log(
+            "Movie IDs from Show collection:",
+            movieIds
+        );
+
+
+        // =================================================
+        // FETCH MOVIES
+        // =================================================
+
+        const movies =
+            await Movie.find({
+
+                _id: {
+                    $in: movieIds,
+                },
+
+            }).lean();
+
+
+        console.log(
+            "Movies found in Movie collection:",
+            movies.length
+        );
+
+
+        // =================================================
+        // CREATE MOVIE MAP
+        // =================================================
+
+        const movieMap =
+            new Map();
+
+
+        movies.forEach(
+            (movie) => {
+
+                movieMap.set(
+                    String(
+                        movie._id
+                    ),
+                    movie
+                );
+
+            }
+        );
+
+
+        // =================================================
+        // KEEP SHOW ORDER
+        // =================================================
+
+        const orderedMovies = [];
+
+        const alreadyAdded =
+            new Set();
+
+
+        for (
+            const show
+            of shows
+        ) {
+
+            const movieId =
+                String(
+                    show.movie
+                );
+
+
+            const movie =
+                movieMap.get(
+                    movieId
+                );
+
+
+            if (
+                movie &&
+                !alreadyAdded.has(
+                    movieId
+                )
+            ) {
+
+                alreadyAdded.add(
+                    movieId
+                );
+
+
+                orderedMovies.push(
+                    movie
+                );
+            }
+        }
+
+
+        console.log(
+            "Movies returned:",
+            orderedMovies.length
+        );
+
+
+        console.log(
+            "======================================"
+        );
+
+
+        // =================================================
+        // SEND RESPONSE
+        // =================================================
+
+        return res.status(200).json({
+
+            success: true,
+
+            movies:
+                orderedMovies,
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Get Now Showing Movies Error:",
             error
         );
 

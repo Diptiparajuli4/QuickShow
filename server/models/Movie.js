@@ -1,70 +1,82 @@
 import mongoose from "mongoose";
 
-const movieSchema = new mongoose.Schema(
-    {
-        _id: {
-            type: String,
-            required: true
-        },
 
-        title: {
-            type: String,
-            required: true
-        },
+const movieSchema =
+    new mongoose.Schema(
+        {
 
-        overview: {
-            type: String,
-            required: true
-        },
+            _id: {
+                type: String,
+                required: true,
+            },
 
-        poster_path: {
-            type: String,
-            required: true
-        },
+            title: {
+                type: String,
+                required: true,
+            },
 
-        backdrop_path: {
-            type: String,
-            required: true
-        },
+            overview: {
+                type: String,
+                default: "",
+            },
 
-        release_date: {
-            type: String,
-            required: true
-        },
+            poster_path: {
+                type: String,
+                default: "",
+            },
 
-        original_language: {
-            type: String
-        },
+            backdrop_path: {
+                type: String,
+                default: "",
+            },
 
-        tagline: {
-            type: String
-        },
+            release_date: {
+                type: String,
+                default: "",
+            },
 
-        genres: {
-            type: Array,
-            required: true
-        },
+            original_language: {
+                type: String,
+                default: "",
+            },
 
-        casts: {
-            type: Array,
-            required: true
-        },
+            tagline: {
+                type: String,
+                default: "",
+            },
 
-        vote_average: {
-            type: Number,
-            required: true
-        },
+            genres: {
+                type: Array,
+                default: [],
+            },
 
-        runtime: {
-            type: Number,
-            required: true
+            casts: {
+                type: Array,
+                default: [],
+            },
+
+            vote_average: {
+                type: Number,
+                default: 0,
+            },
+
+            runtime: {
+                type: Number,
+                default: 0,
+            },
+
+        },
+        {
+            timestamps: true,
         }
-    },
-    {
-        timestamps: true
-    }
-);
+    );
 
-const Movie = mongoose.model("Movie", movieSchema);
+
+const Movie =
+    mongoose.model(
+        "Movie",
+        movieSchema
+    );
+
 
 export default Movie;

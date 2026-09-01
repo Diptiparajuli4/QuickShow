@@ -1,502 +1,1298 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
-import {
-  dummyDateTimeData,
-  dummyShowsData,
-  dummyTrailers,
-} from "../assets/assets";
-
 import BlurCircle from "../components/BlurCircle";
+
 import {
-  PlayCircleIcon,
-  StarIcon,
-  Heart,
+    PlayCircleIcon,
+    StarIcon,
+    Heart,
 } from "lucide-react";
 
 import DateSelect from "../components/DateSelect";
 import timeFormat from "../lib/timeFormat";
 import MovieCard from "../components/MovieCard";
 
+
 const MovieDetail = () => {
-  const navigate = useNavigate();
-  const { id } = useParams();
 
-  const [show, setShow] = useState(null);
-  const [showTrailer, setShowTrailer] = useState(false);
+    const navigate = useNavigate();
 
-  // ============================================
-  // FAVORITE STATE
-  // ============================================
+    const { id } = useParams();
 
-  const [isFavorite, setIsFavorite] = useState(false);
 
-  // ============================================
-  // GET SHOW
-  // ============================================
+    // =====================================================
+    // STATE
+    // =====================================================
 
-  const getShow = () => {
-    try {
-      // Get shows added by admin
-      const savedShows = JSON.parse(
-        localStorage.getItem("quickshow_shows") || "[]"
-      );
+    const [show, setShow] = useState(null);
 
-      console.log("Admin Added Shows:", savedShows);
+    const [allMovies, setAllMovies] = useState([]);
 
-      // ============================================
-      // FIND ADMIN SHOW USING URL ID
-      // ============================================
+    const [loading, setLoading] = useState(true);
 
-      const adminShow = savedShows.find(
-        (savedShow) =>
-          String(savedShow.movieId) === String(id)
-      );
+    const [showTrailer, setShowTrailer] = useState(false);
 
-      if (!adminShow) {
-        console.log(
-          "Admin show not found for movie ID:",
-          id
+    const [isFavorite, setIsFavorite] = useState(false);
+
+
+    // =====================================================
+    // GET MOVIE DETAILS FROM MONGODB
+    // =====================================================
+
+    const getShow = async () => {
+
+        try {
+
+            setLoading(true);
+
+            console.log(
+                "Fetching movie details from MongoDB..."
+            );
+
+            console.log(
+                "Movie ID from URL:",
+                id
+            );
+
+
+            // =================================================
+            // GET ALL SHOWS
+            // =================================================
+
+            const response = await fetch(
+                "http://localhost:5000/show/all"
+            );
+
+
+            // =================================================
+            // CHECK RESPONSE
+            // =================================================
+
+            if (!response.ok) {
+
+                throw new Error(
+                    `Server error: ${response.status}`
+                );
+
+            }
+
+
+            // =================================================
+            // READ JSON
+            // =================================================
+
+            const data = await response.json();
+
+
+            console.log(
+                "Shows received:",
+                data
+            );
+
+
+            // =================================================
+            // CHECK DATA
+            // =================================================
+
+            if (
+                !data.success ||
+                !Array.isArray(data.shows)
+            ) {
+
+                throw new Error(
+                    "Invalid show data received from server."
+                );
+
+            }
+
+
+            // =================================================
+            // GET ALL POPULATED MOVIES
+            // =================================================
+
+            const movies = data.shows
+
+                .map((showItem) => {
+
+                    if (!showItem.movie) {
+                        return null;
+                    }
+
+                    return showItem.movie;
+
+                })
+
+                .filter(Boolean);
+
+
+            console.log(
+                "Movies received from MongoDB:",
+                movies
+            );
+
+
+            // =================================================
+            // REMOVE DUPLICATE MOVIES
+            // =================================================
+
+            const uniqueMovies = [];
+
+            const movieIds = new Set();
+
+
+            movies.forEach((movie) => {
+
+                const movieId =
+                    movie._id ||
+                    movie.id;
+
+
+                if (!movieId) {
+                    return;
+                }
+
+
+                const stringId =
+                    String(movieId);
+
+
+                if (!movieIds.has(stringId)) {
+
+                    movieIds.add(stringId);
+
+                    uniqueMovies.push(movie);
+
+                }
+
+            });
+
+
+            setAllMovies(uniqueMovies);
+
+
+            console.log(
+                "Unique movies:",
+                uniqueMovies
+            );
+
+
+            // =================================================
+            // FIND THE MOVIE REQUESTED IN URL
+            // =================================================
+
+            const movieShows = data.shows.filter(
+                (showItem) => {
+
+                    if (!showItem.movie) {
+                        return false;
+                    }
+
+
+                    const movieId =
+                        showItem.movie._id ||
+                        showItem.movie.id;
+
+
+                    return (
+                        String(movieId) ===
+                        String(id)
+                    );
+
+                }
+            );
+
+
+            console.log(
+                "Shows for this movie:",
+                movieShows
+            );
+
+
+            // =================================================
+            // MOVIE NOT FOUND
+            // =================================================
+
+            if (movieShows.length === 0) {
+
+                console.log(
+                    "Movie not found in MongoDB:",
+                    id
+                );
+
+                setShow(null);
+
+                return;
+            }
+
+
+            // =================================================
+            // GET MOVIE
+            // =================================================
+
+            const movie =
+                movieShows[0].movie;
+
+
+            console.log(
+                "Movie found:",
+                movie
+            );
+
+
+            // =================================================
+            // COMBINE ALL DATE/TIME DATA
+            // =================================================
+
+            const combinedDateTimes = {};
+
+
+            movieShows.forEach(
+                (showItem) => {
+
+                    // -----------------------------------------
+                    // CASE 1:
+                    // Backend returns dateTimes
+                    // -----------------------------------------
+
+                    if (
+                        showItem.dateTimes &&
+                        typeof showItem.dateTimes === "object"
+                    ) {
+
+                        Object.entries(
+                            showItem.dateTimes
+                        ).forEach(
+                            ([date, times]) => {
+
+                                if (
+                                    !combinedDateTimes[
+                                        date
+                                    ]
+                                ) {
+
+                                    combinedDateTimes[
+                                        date
+                                    ] = [];
+
+                                }
+
+
+                                if (
+                                    Array.isArray(
+                                        times
+                                    )
+                                ) {
+
+                                    combinedDateTimes[
+                                        date
+                                    ].push(
+                                        ...times
+                                    );
+
+                                }
+
+                            }
+                        );
+
+                    }
+
+
+                    // -----------------------------------------
+                    // CASE 2:
+                    // Backend returns showDateTime
+                    // -----------------------------------------
+
+                    if (
+                        showItem.showDateTime
+                    ) {
+
+                        const dateObject =
+                            new Date(
+                                showItem.showDateTime
+                            );
+
+
+                        if (
+                            !isNaN(
+                                dateObject.getTime()
+                            )
+                        ) {
+
+                            const date =
+                                dateObject
+                                    .toISOString()
+                                    .split("T")[0];
+
+
+                            const time =
+                                dateObject
+                                    .toTimeString()
+                                    .slice(0, 5);
+
+
+                            if (
+                                !combinedDateTimes[
+                                    date
+                                ]
+                            ) {
+
+                                combinedDateTimes[
+                                    date
+                                ] = [];
+
+                            }
+
+
+                            if (
+                                !combinedDateTimes[
+                                    date
+                                ].includes(time)
+                            ) {
+
+                                combinedDateTimes[
+                                    date
+                                ].push(time);
+
+                            }
+
+                        }
+
+                    }
+
+                }
+            );
+
+
+            // =================================================
+            // REMOVE DUPLICATE TIMES
+            // =================================================
+
+            Object.keys(
+                combinedDateTimes
+            ).forEach(
+                (date) => {
+
+                    combinedDateTimes[
+                        date
+                    ] = [
+                        ...new Set(
+                            combinedDateTimes[
+                                date
+                            ]
+                        )
+                    ].sort();
+
+                }
+            );
+
+
+            console.log(
+                "Combined Date/Time:",
+                combinedDateTimes
+            );
+
+
+            // =================================================
+            // GET TRAILER
+            // =================================================
+            //
+            // If your Movie document contains a trailer field,
+            // this will use it.
+            //
+            // Otherwise trailer will simply not be displayed.
+            //
+            // =================================================
+
+            let trailer = null;
+
+
+            if (movie.trailer) {
+
+                trailer = {
+
+                    videoUrl:
+                        movie.trailer,
+
+                };
+
+            }
+
+            else if (
+                movie.trailer_url
+            ) {
+
+                trailer = {
+
+                    videoUrl:
+                        movie.trailer_url,
+
+                };
+
+            }
+
+            else if (
+                movie.videoUrl
+            ) {
+
+                trailer = {
+
+                    videoUrl:
+                        movie.videoUrl,
+
+                };
+
+            }
+
+
+            // =================================================
+            // SET SHOW
+            // =================================================
+
+            setShow({
+
+                movie: movie,
+
+                showData:
+                    movieShows[0],
+
+                allShows:
+                    movieShows,
+
+                dateTime:
+                    combinedDateTimes,
+
+                trailer:
+                    trailer,
+
+            });
+
+
+            // =================================================
+            // FAVORITES
+            // =================================================
+
+            const favorites =
+                JSON.parse(
+                    localStorage.getItem(
+                        "quickshow_favorites"
+                    ) || "[]"
+                );
+
+
+            const movieId =
+                String(
+                    movie._id ||
+                    movie.id
+                );
+
+
+            setIsFavorite(
+                favorites.some(
+                    (favoriteId) =>
+                        String(
+                            favoriteId
+                        ) === movieId
+                )
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Error loading movie from MongoDB:",
+                error
+            );
+
+            setShow(null);
+
+        } finally {
+
+            setLoading(false);
+
+        }
+
+    };
+
+
+    // =====================================================
+    // LOAD MOVIE
+    // =====================================================
+
+    useEffect(() => {
+
+        getShow();
+
+    }, [id]);
+
+
+    // =====================================================
+    // TOGGLE FAVORITE
+    // =====================================================
+
+    const toggleFavorite = () => {
+
+        if (!show?.movie) {
+            return;
+        }
+
+
+        const movieId =
+            String(
+                show.movie._id ||
+                show.movie.id
+            );
+
+
+        const favorites =
+            JSON.parse(
+                localStorage.getItem(
+                    "quickshow_favorites"
+                ) || "[]"
+            );
+
+
+        const alreadyFavorite =
+            favorites.some(
+                (favoriteId) =>
+                    String(
+                        favoriteId
+                    ) === movieId
+            );
+
+
+        let updatedFavorites;
+
+
+        if (alreadyFavorite) {
+
+            updatedFavorites =
+                favorites.filter(
+                    (favoriteId) =>
+                        String(
+                            favoriteId
+                        ) !== movieId
+                );
+
+
+            setIsFavorite(false);
+
+        }
+
+        else {
+
+            updatedFavorites = [
+                ...favorites,
+                movieId,
+            ];
+
+
+            setIsFavorite(true);
+
+        }
+
+
+        localStorage.setItem(
+            "quickshow_favorites",
+            JSON.stringify(
+                updatedFavorites
+            )
         );
 
-        setShow(null);
-        return;
-      }
 
-      // ============================================
-      // FIND MOVIE FROM DUMMY DATA
-      // ============================================
+        // Tell Navbar favorites changed
 
-      const movie = dummyShowsData.find(
-        (movie) =>
-          String(movie.id) === String(adminShow.movieId) ||
-          String(movie._id) === String(adminShow.movieId)
-      );
-
-      if (!movie) {
-        console.log(
-          "Movie not found:",
-          adminShow.movieId
+        window.dispatchEvent(
+            new Event(
+                "favoritesUpdated"
+            )
         );
 
-        setShow(null);
-        return;
-      }
+    };
 
-      // ============================================
-      // FIND TRAILER
-      // ============================================
 
-      const trailer = dummyTrailers.find(
-        (trailer) =>
-          String(trailer.movieId) ===
-          String(movie._id)
-      );
+    // =====================================================
+    // LOADING
+    // =====================================================
 
-      // ============================================
-      // SET SHOW
-      // ============================================
+    if (loading) {
 
-      setShow({
-        movie: movie,
-        showData: adminShow,
-        dateTime: adminShow.dateTimes || dummyDateTimeData,
-        trailer: trailer,
-      });
+        return (
 
-      // ============================================
-      // CHECK FAVORITE
-      // ============================================
+            <div className="flex items-center justify-center h-screen">
 
-      const favorites = JSON.parse(
-        localStorage.getItem(
-          "quickshow_favorites"
-        ) || "[]"
-      );
+                <h1 className="text-xl text-gray-300">
 
-      const movieId = String(
-        movie._id || movie.id
-      );
+                    Loading movie...
 
-      setIsFavorite(
-        favorites.some(
-          (favoriteId) =>
-            String(favoriteId) === movieId
-        )
-      );
-
-    } catch (error) {
-      console.error(
-        "Error loading movie:",
-        error
-      );
-
-      setShow(null);
-    }
-  };
-
-  // ============================================
-  // LOAD SHOW
-  // ============================================
-
-  useEffect(() => {
-    getShow();
-  }, [id]);
-
-  // ============================================
-  // TOGGLE FAVORITE
-  // ============================================
-
-  const toggleFavorite = () => {
-    if (!show?.movie) return;
-
-    const movieId = String(
-      show.movie._id || show.movie.id
-    );
-
-    const favorites = JSON.parse(
-      localStorage.getItem(
-        "quickshow_favorites"
-      ) || "[]"
-    );
-
-    const alreadyFavorite = favorites.some(
-      (favoriteId) =>
-        String(favoriteId) === movieId
-    );
-
-    let updatedFavorites;
-
-    if (alreadyFavorite) {
-      // Remove favorite
-      updatedFavorites = favorites.filter(
-        (favoriteId) =>
-          String(favoriteId) !== movieId
-      );
-
-      setIsFavorite(false);
-    } else {
-      // Add favorite
-      updatedFavorites = [
-        ...favorites,
-        movieId,
-      ];
-
-      setIsFavorite(true);
-    }
-
-    localStorage.setItem(
-      "quickshow_favorites",
-      JSON.stringify(updatedFavorites)
-    );
-
-    // Tell Navbar that favorites changed
-    window.dispatchEvent(
-      new Event("favoritesUpdated")
-    );
-  };
-
-  // ============================================
-  // LOADING
-  // ============================================
-
-  if (!show) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <h1 className="text-xl">
-          Movie not available
-        </h1>
-      </div>
-    );
-  }
-
-  // ============================================
-  // TRAILER URL
-  // ============================================
-
-  const videoUrl = show.trailer?.videoUrl;
-
-  const embedUrl = videoUrl
-    ? videoUrl.includes("watch?v=")
-      ? videoUrl.replace(
-          "watch?v=",
-          "embed/"
-        )
-      : videoUrl.includes("youtu.be/")
-      ? videoUrl.replace(
-          "youtu.be/",
-          "youtube.com/embed/"
-        )
-      : videoUrl
-    : null;
-
-  return (
-    <div className="px-6 md:px-16 lg:px-40 pt-30 md:pt-50">
-
-      {/* ========================================= */}
-      {/* TOP SECTION */}
-      {/* ========================================= */}
-
-      <div className="flex flex-col md:flex-row gap-8 max-w-6xl mx-auto">
-
-        {/* MOVIE POSTER */}
-
-        <img
-          src={show.movie.poster_path}
-          alt={show.movie.title}
-          className="max-md:mx-auto rounded-xl h-104 max-w-70 object-cover"
-        />
-
-        {/* MOVIE INFORMATION */}
-
-        <div className="relative flex flex-col gap-3">
-
-          <BlurCircle
-            top="-100px"
-            left="-100px"
-          />
-
-          <p className="text-primary">
-            English
-          </p>
-
-          <h1 className="text-4xl font-semibold max-w-96 text-balance">
-            {show.movie.title}
-          </h1>
-
-          {/* RATING */}
-
-          <div className="flex items-center gap-2 text-gray-300">
-
-            <StarIcon className="w-5 h-5 text-primary fill-primary" />
-
-            {show.movie.vote_average
-              ? show.movie.vote_average.toFixed(1)
-              : "N/A"}
-
-            {" "}User Rating
-          </div>
-
-          {/* OVERVIEW */}
-
-          <p className="text-gray-400 mt-2 text-sm leading-tight max-w-xl">
-            {show.movie.overview}
-          </p>
-
-          {/* MOVIE DETAILS */}
-
-          <p>
-            {timeFormat(show.movie.runtime)} •{" "}
-            {show.movie.genres
-              ?.map((g) => g.name)
-              .join(", ")}{" "}
-            •{" "}
-            {show.movie.release_date
-              ?.split("-")[0]}
-          </p>
-
-          {/* ================================= */}
-          {/* BUTTONS */}
-          {/* ================================= */}
-
-          <div className="flex items-center flex-wrap gap-4 mt-4">
-
-            {/* WATCH TRAILER */}
-
-            {show.trailer?.videoUrl && (
-              <button
-                onClick={() =>
-                  setShowTrailer(true)
-                }
-                className="flex items-center gap-2 px-7 py-3 text-sm bg-gray-800 hover:bg-gray-900 transition rounded-md font-medium cursor-pointer active:scale-95"
-              >
-                <PlayCircleIcon className="w-5 h-5" />
-
-                Watch Trailer
-              </button>
-            )}
-
-            {/* BUY TICKETS */}
-
-            <a
-              href="#dateSelect"
-              className="px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-md font-medium cursor-pointer active:scale-95"
-            >
-              Buy Tickets
-            </a>
-
-            {/* FAVORITE */}
-
-            <button
-              onClick={toggleFavorite}
-              className={`p-2.5 rounded-full transition cursor-pointer active:scale-95 ${
-                isFavorite
-                  ? "bg-primary text-white"
-                  : "bg-gray-700 text-white"
-              }`}
-            >
-              <Heart
-                className="w-5 h-5"
-                fill={
-                  isFavorite
-                    ? "currentColor"
-                    : "none"
-                }
-              />
-            </button>
-
-          </div>
-        </div>
-      </div>
-
-      {/* ========================================= */}
-      {/* CAST */}
-      {/* ========================================= */}
-
-      <p className="text-lg font-medium mt-20">
-        Your Favorite Cast
-      </p>
-
-      <div className="overflow-x-auto no-scrollbar mt-8 pb-4">
-
-        <div className="flex items-center gap-4 w-max px-4">
-
-          {show.movie.casts
-            ?.slice(0, 12)
-            .map((cast, index) => (
-
-              <div
-                key={index}
-                className="flex flex-col items-center text-center"
-              >
-
-                <img
-                  src={cast.profile_path}
-                  alt={cast.name}
-                  className="rounded-full h-20 w-20 object-cover"
-                />
-
-                <p className="font-medium text-xs mt-3">
-                  {cast.name}
-                </p>
-
-              </div>
-
-            ))}
-
-        </div>
-      </div>
-
-      {/* ========================================= */}
-      {/* DATE SELECT */}
-      {/* ========================================= */}
-
-      <div id="dateSelect">
-
-        <DateSelect
-          dateTime={show.dateTime}
-          id={id}
-        />
-
-      </div>
-
-      {/* ========================================= */}
-      {/* RECOMMENDATIONS */}
-      {/* ========================================= */}
-
-      <p className="text-lg font-medium mt-20 mb-8">
-        You May Also Like
-      </p>
-
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 place-items-center">
-
-        {dummyShowsData
-          .filter(
-            (movie) =>
-              String(movie._id) !==
-              String(show.movie._id)
-          )
-          .slice(0, 4)
-          .map((movie) => (
-
-            <div
-              key={movie._id}
-              className="w-full max-w-[220px]"
-            >
-
-              <MovieCard
-                movie={movie}
-              />
+                </h1>
 
             </div>
 
-          ))}
+        );
 
-      </div>
+    }
 
-      {/* ========================================= */}
-      {/* SHOW MORE */}
-      {/* ========================================= */}
 
-      <div className="flex justify-center mt-20">
+    // =====================================================
+    // MOVIE NOT FOUND
+    // =====================================================
 
-        <button
-          onClick={() => {
-            navigate("/movies");
-            window.scrollTo(0, 0);
-          }}
-          className="px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-md font-medium cursor-pointer"
-        >
-          Show More
-        </button>
+    if (!show) {
 
-      </div>
+        return (
 
-      {/* ========================================= */}
-      {/* TRAILER MODAL */}
-      {/* ========================================= */}
+            <div className="flex flex-col items-center justify-center h-screen">
 
-      {showTrailer && embedUrl && (
+                <h1 className="text-xl text-white">
 
-        <div
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
-          onClick={() =>
-            setShowTrailer(false)
-          }
-        >
+                    Movie not available
 
-          <div
-            className="relative w-[90%] md:w-[900px] aspect-video"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
-          >
+                </h1>
 
-            <button
-              onClick={() =>
-                setShowTrailer(false)
-              }
-              className="absolute -top-12 right-0 text-white text-3xl"
-            >
-              ×
-            </button>
 
-            <iframe
-              src={embedUrl}
-              title={show.movie.title}
-              className="w-full h-full rounded-lg"
-              allowFullScreen
-            />
+                <button
 
-          </div>
+                    onClick={() => {
+                        navigate("/movies");
+                        window.scrollTo(0, 0);
+                    }}
+
+                    className="mt-5 px-6 py-2 bg-primary rounded-md"
+
+                >
+
+                    Back to Movies
+
+                </button>
+
+            </div>
+
+        );
+
+    }
+
+
+    // =====================================================
+    // MOVIE
+    // =====================================================
+
+    const movie =
+        show.movie;
+
+
+    // =====================================================
+    // POSTER URL
+    // =====================================================
+
+    const posterUrl =
+        movie.poster_path
+
+            ? movie.poster_path.startsWith(
+                "http"
+            )
+
+                ? movie.poster_path
+
+                : `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+
+            : "/fallback.jpg";
+
+
+    // =====================================================
+    // TRAILER URL
+    // =====================================================
+
+    const videoUrl =
+        show.trailer?.videoUrl;
+
+
+    const embedUrl =
+        videoUrl
+
+            ? videoUrl.includes(
+                "watch?v="
+            )
+
+                ? videoUrl.replace(
+                    "watch?v=",
+                    "embed/"
+                )
+
+                : videoUrl.includes(
+                    "youtu.be/"
+                )
+
+                    ? videoUrl.replace(
+                        "youtu.be/",
+                        "youtube.com/embed/"
+                    )
+
+                    : videoUrl
+
+            : null;
+
+
+    // =====================================================
+    // RUNTIME
+    // =====================================================
+
+    const runtime =
+        movie.runtime
+            ? timeFormat(
+                movie.runtime
+            )
+            : "N/A";
+
+
+    // =====================================================
+    // GENRES
+    // =====================================================
+
+    const genres =
+        Array.isArray(
+            movie.genres
+        )
+
+            ? movie.genres
+                .map(
+                    (genre) =>
+                        typeof genre === "string"
+                            ? genre
+                            : genre.name
+                )
+                .filter(Boolean)
+                .join(", ")
+
+            : "N/A";
+
+
+    // =====================================================
+    // RELEASE YEAR
+    // =====================================================
+
+    const releaseYear =
+        movie.release_date
+            ? movie.release_date.split("-")[0]
+            : movie.releaseDate
+                ? String(
+                    movie.releaseDate
+                ).split("-")[0]
+                : "N/A";
+
+
+    // =====================================================
+    // RATING
+    // =====================================================
+
+    const rating =
+        movie.vote_average !== undefined &&
+        movie.vote_average !== null
+
+            ? Number(
+                movie.vote_average
+            ).toFixed(1)
+
+            : "N/A";
+
+
+    // =====================================================
+    // CAST
+    // =====================================================
+
+    const casts =
+        Array.isArray(
+            movie.casts
+        )
+
+            ? movie.casts
+
+            : Array.isArray(
+                movie.cast
+            )
+
+                ? movie.cast
+
+                : [];
+
+
+    // =====================================================
+    // PAGE
+    // =====================================================
+
+    return (
+
+        <div className="px-6 md:px-16 lg:px-40 pt-30 md:pt-50">
+
+
+            {/* ================================================= */}
+            {/* TOP SECTION */}
+            {/* ================================================= */}
+
+            <div className="flex flex-col md:flex-row gap-8 max-w-6xl mx-auto">
+
+
+                {/* ================================================= */}
+                {/* MOVIE POSTER */}
+                {/* ================================================= */}
+
+                <img
+
+                    src={posterUrl}
+
+                    alt={
+                        movie.title ||
+                        "Movie"
+                    }
+
+                    className="max-md:mx-auto rounded-xl h-104 max-w-70 object-cover"
+
+                />
+
+
+                {/* ================================================= */}
+                {/* MOVIE INFORMATION */}
+                {/* ================================================= */}
+
+                <div className="relative flex flex-col gap-3">
+
+
+                    <BlurCircle
+                        top="-100px"
+                        left="-100px"
+                    />
+
+
+                    {/* LANGUAGE */}
+
+                    <p className="text-primary">
+
+                        {movie.language ||
+                            "English"}
+
+                    </p>
+
+
+                    {/* TITLE */}
+
+                    <h1 className="text-4xl font-semibold max-w-96 text-balance">
+
+                        {movie.title ||
+                            "Untitled Movie"}
+
+                    </h1>
+
+
+                    {/* RATING */}
+
+                    <div className="flex items-center gap-2 text-gray-300">
+
+                        <StarIcon className="w-5 h-5 text-primary fill-primary" />
+
+                        {rating}
+
+                        {" "}
+                        User Rating
+
+                    </div>
+
+
+                    {/* OVERVIEW */}
+
+                    <p className="text-gray-400 mt-2 text-sm leading-tight max-w-xl">
+
+                        {movie.overview ||
+                            "No description available."}
+
+                    </p>
+
+
+                    {/* MOVIE DETAILS */}
+
+                    <p>
+
+                        {runtime}
+
+                        {" • "}
+
+                        {genres}
+
+                        {" • "}
+
+                        {releaseYear}
+
+                    </p>
+
+
+                    {/* ================================================= */}
+                    {/* BUTTONS */}
+                    {/* ================================================= */}
+
+                    <div className="flex items-center flex-wrap gap-4 mt-4">
+
+
+                        {/* WATCH TRAILER */}
+
+                        {embedUrl && (
+
+                            <button
+
+                                onClick={() =>
+                                    setShowTrailer(
+                                        true
+                                    )
+                                }
+
+                                className="flex items-center gap-2 px-7 py-3 text-sm bg-gray-800 hover:bg-gray-900 transition rounded-md font-medium cursor-pointer active:scale-95"
+
+                            >
+
+                                <PlayCircleIcon className="w-5 h-5" />
+
+                                Watch Trailer
+
+                            </button>
+
+                        )}
+
+
+                        {/* BUY TICKETS */}
+
+                        <a
+
+                            href="#dateSelect"
+
+                            className="px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-md font-medium cursor-pointer active:scale-95"
+
+                        >
+
+                            Buy Tickets
+
+                        </a>
+
+
+                        {/* FAVORITE */}
+
+                        <button
+
+                            onClick={
+                                toggleFavorite
+                            }
+
+                            className={`p-2.5 rounded-full transition cursor-pointer active:scale-95 ${
+                                isFavorite
+                                    ? "bg-primary text-white"
+                                    : "bg-gray-700 text-white"
+                            }`}
+
+                        >
+
+                            <Heart
+
+                                className="w-5 h-5"
+
+                                fill={
+                                    isFavorite
+                                        ? "currentColor"
+                                        : "none"
+                                }
+
+                            />
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            {/* ================================================= */}
+            {/* CAST */}
+            {/* ================================================= */}
+
+            {casts.length > 0 && (
+
+                <>
+
+                    <p className="text-lg font-medium mt-20">
+
+                        Your Favorite Cast
+
+                    </p>
+
+
+                    <div className="overflow-x-auto no-scrollbar mt-8 pb-4">
+
+                        <div className="flex items-center gap-4 w-max px-4">
+
+                            {casts
+                                .slice(0, 12)
+                                .map(
+                                    (
+                                        cast,
+                                        index
+                                    ) => {
+
+                                        const castImage =
+                                            cast.profile_path
+
+                                                ? cast.profile_path.startsWith(
+                                                    "http"
+                                                )
+
+                                                    ? cast.profile_path
+
+                                                    : `https://image.tmdb.org/t/p/w200${cast.profile_path}`
+
+                                                : "/fallback.jpg";
+
+
+                                        return (
+
+                                            <div
+
+                                                key={
+                                                    cast.id ||
+                                                    index
+                                                }
+
+                                                className="flex flex-col items-center text-center"
+
+                                            >
+
+                                                <img
+
+                                                    src={
+                                                        castImage
+                                                    }
+
+                                                    alt={
+                                                        cast.name ||
+                                                        "Cast"
+                                                    }
+
+                                                    className="rounded-full h-20 w-20 object-cover"
+
+                                                />
+
+
+                                                <p className="font-medium text-xs mt-3">
+
+                                                    {cast.name}
+
+                                                </p>
+
+                                            </div>
+
+                                        );
+
+                                    }
+                                )}
+
+                        </div>
+
+                    </div>
+
+                </>
+
+            )}
+
+
+            {/* ================================================= */}
+            {/* DATE SELECT */}
+            {/* ================================================= */}
+
+            <div id="dateSelect">
+
+                <DateSelect
+
+                    dateTime={
+                        show.dateTime
+                    }
+
+                    id={id}
+
+                />
+
+            </div>
+
+
+            {/* ================================================= */}
+            {/* RECOMMENDATIONS */}
+            {/* ================================================= */}
+
+            {allMovies.length > 1 && (
+
+                <>
+
+                    <p className="text-lg font-medium mt-20 mb-8">
+
+                        You May Also Like
+
+                    </p>
+
+
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 place-items-center">
+
+                        {allMovies
+
+                            .filter(
+                                (otherMovie) =>
+                                    String(
+                                        otherMovie._id ||
+                                        otherMovie.id
+                                    ) !==
+                                    String(
+                                        movie._id ||
+                                        movie.id
+                                    )
+                            )
+
+                            .slice(0, 4)
+
+                            .map(
+                                (
+                                    otherMovie
+                                ) => (
+
+                                    <div
+
+                                        key={
+                                            String(
+                                                otherMovie._id ||
+                                                otherMovie.id
+                                            )
+                                        }
+
+                                        className="w-full max-w-[220px]"
+
+                                    >
+
+                                        <MovieCard
+                                            movie={
+                                                otherMovie
+                                            }
+                                        />
+
+                                    </div>
+
+                                )
+                            )}
+
+                    </div>
+
+                </>
+
+            )}
+
+
+            {/* ================================================= */}
+            {/* SHOW MORE */}
+            {/* ================================================= */}
+
+            <div className="flex justify-center mt-20">
+
+                <button
+
+                    onClick={() => {
+
+                        navigate(
+                            "/movies"
+                        );
+
+                        window.scrollTo(
+                            0,
+                            0
+                        );
+
+                    }}
+
+                    className="px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-md font-medium cursor-pointer"
+
+                >
+
+                    Show More
+
+                </button>
+
+            </div>
+
+
+            {/* ================================================= */}
+            {/* TRAILER MODAL */}
+            {/* ================================================= */}
+
+            {showTrailer &&
+                embedUrl && (
+
+                    <div
+
+                        className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+
+                        onClick={() =>
+                            setShowTrailer(
+                                false
+                            )
+                        }
+
+                    >
+
+                        <div
+
+                            className="relative w-[90%] md:w-[900px] aspect-video"
+
+                            onClick={(e) =>
+                                e.stopPropagation()
+                            }
+
+                        >
+
+                            <button
+
+                                onClick={() =>
+                                    setShowTrailer(
+                                        false
+                                    )
+                                }
+
+                                className="absolute -top-12 right-0 text-white text-3xl"
+
+                            >
+
+                                ×
+
+                            </button>
+
+
+                            <iframe
+
+                                src={
+                                    embedUrl
+                                }
+
+                                title={
+                                    movie.title
+                                }
+
+                                className="w-full h-full rounded-lg"
+
+                                allowFullScreen
+
+                            />
+
+                        </div>
+
+                    </div>
+
+                )}
 
         </div>
 
-      )}
+    );
 
-    </div>
-  );
 };
+
 
 export default MovieDetail;

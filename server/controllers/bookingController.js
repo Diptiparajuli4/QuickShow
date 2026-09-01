@@ -13,24 +13,19 @@ const checkSeatsAvailability = async (
 
     try {
 
-        const showData =
-            await Show.findById(showId);
+        const showData = await Show.findById(showId);
 
         if (!showData) {
             return false;
         }
 
-
         const occupiedSeats =
             showData.occupiedSeats || {};
 
-
         const isAnySeatTaken =
             selectedSeats.some(
-                (seat) =>
-                    occupiedSeats[seat]
+                (seat) => occupiedSeats[seat]
             );
-
 
         return !isAnySeatTaken;
 
@@ -79,32 +74,20 @@ export const createBooking = async (
         let userId;
 
 
-        /*
-            If you are using Clerk authentication,
-            req.auth is normally a function.
-
-            Example:
-            const { userId } = req.auth();
-        */
-
+        // If using Clerk
         if (
             req.auth &&
             typeof req.auth === "function"
         ) {
 
-            const authData =
-                req.auth();
+            const authData = req.auth();
 
             userId =
                 authData?.userId;
-
         }
 
-        /*
-            This also supports middleware that
-            stores userId directly in req.userId.
-        */
 
+        // If using your own authentication middleware
         if (!userId) {
 
             userId =
@@ -125,7 +108,7 @@ export const createBooking = async (
                 success: false,
 
                 message:
-                    "User is not authenticated."
+                    "User is not authenticated.",
             });
         }
 
@@ -136,7 +119,7 @@ export const createBooking = async (
 
         const {
             showId,
-            selectedSeats
+            selectedSeats,
         } = req.body;
 
 
@@ -151,7 +134,7 @@ export const createBooking = async (
                 success: false,
 
                 message:
-                    "Show ID is required."
+                    "Show ID is required.",
             });
         }
 
@@ -161,9 +144,7 @@ export const createBooking = async (
         // =================================================
 
         if (
-            !Array.isArray(
-                selectedSeats
-            ) ||
+            !Array.isArray(selectedSeats) ||
             selectedSeats.length === 0
         ) {
 
@@ -172,7 +153,7 @@ export const createBooking = async (
                 success: false,
 
                 message:
-                    "Please select at least one seat."
+                    "Please select at least one seat.",
             });
         }
 
@@ -186,8 +167,51 @@ export const createBooking = async (
                 selectedSeats.map(
                     (seat) => String(seat)
                 )
-            )
+            ),
         ];
+
+
+        // =================================================
+        // LIMIT SEATS
+        // =================================================
+
+        if (uniqueSeats.length > 5) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "You can book a maximum of 5 seats.",
+            });
+        }
+
+
+        // =================================================
+        // GET SHOW FROM DATABASE
+        // =================================================
+
+        const showData =
+            await Show.findById(showId)
+                .populate("movie");
+
+
+        if (!showData) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message:
+                    "Show not found.",
+            });
+        }
+
+
+        console.log(
+            "Show from database:",
+            showData
+        );
 
 
         // =================================================
@@ -208,40 +232,17 @@ export const createBooking = async (
                 success: false,
 
                 message:
-                    "One or more selected seats are already booked."
+                    "One or more selected seats are already booked.",
             });
         }
 
 
         // =================================================
-        // GET SHOW
-        // =================================================
-
-        const showData =
-            await Show.findById(showId)
-                .populate("movie");
-
-
-        if (!showData) {
-
-            return res.status(404).json({
-
-                success: false,
-
-                message:
-                    "Show not found."
-            });
-        }
-
-
-        // =================================================
-        // CALCULATE AMOUNT
+        // GET PRICE FROM SHOW TABLE
         // =================================================
 
         const showPrice =
-            Number(
-                showData.showPrice
-            );
+            Number(showData.showPrice);
 
 
         if (
@@ -254,14 +255,17 @@ export const createBooking = async (
                 success: false,
 
                 message:
-                    "Invalid show price."
+                    "Invalid show price.",
             });
         }
 
 
+        // =================================================
+        // CALCULATE TOTAL
+        // =================================================
+
         const totalAmount =
-            showPrice *
-            uniqueSeats.length;
+            showPrice * uniqueSeats.length;
 
 
         // =================================================
@@ -284,7 +288,8 @@ export const createBooking = async (
                     uniqueSeats,
 
                 isPaid:
-                    false
+                    false,
+
             });
 
 
@@ -320,7 +325,7 @@ export const createBooking = async (
 
 
         // =================================================
-        // POPULATE BOOKING FOR RESPONSE
+        // GET COMPLETE BOOKING
         // =================================================
 
         const populatedBooking =
@@ -330,8 +335,8 @@ export const createBooking = async (
                 .populate({
                     path: "show",
                     populate: {
-                        path: "movie"
-                    }
+                        path: "movie",
+                    },
                 });
 
 
@@ -340,31 +345,33 @@ export const createBooking = async (
         // =================================================
 
         console.log(
-            "Booking created successfully:",
+            "Booking created:",
             booking._id
         );
-
 
         console.log(
             "Movie:",
             showData.movie?.title
         );
 
+        console.log(
+            "Show date/time:",
+            showData.showDateTime
+        );
+
+        console.log(
+            "Show price:",
+            showPrice
+        );
 
         console.log(
             "Seats:",
             uniqueSeats
         );
 
-
         console.log(
-            "Amount:",
+            "Total:",
             totalAmount
-        );
-
-
-        console.log(
-            "======================================"
         );
 
 
@@ -373,29 +380,19 @@ export const createBooking = async (
             success: true,
 
             message:
-                "Booked successfully.",
+                "Booking successful.",
 
             booking:
-                populatedBooking
+                populatedBooking,
+
         });
 
 
     } catch (error) {
 
         console.error(
-            "======================================"
-        );
-
-        console.error(
-            "CREATE BOOKING ERROR"
-        );
-
-        console.error(
+            "CREATE BOOKING ERROR:",
             error
-        );
-
-        console.error(
-            "======================================"
         );
 
 
@@ -405,11 +402,11 @@ export const createBooking = async (
 
             message:
                 error.message ||
-                "Failed to create booking."
+                "Failed to create booking.",
+
         });
     }
 };
-
 
 
 // =====================================================
@@ -429,10 +426,6 @@ export const getOccupiedSeats = async (
         } = req.params;
 
 
-        // =================================================
-        // CHECK SHOW ID
-        // =================================================
-
         if (!showId) {
 
             return res.status(400).json({
@@ -440,14 +433,10 @@ export const getOccupiedSeats = async (
                 success: false,
 
                 message:
-                    "Show ID is required."
+                    "Show ID is required.",
             });
         }
 
-
-        // =================================================
-        // GET SHOW
-        // =================================================
 
         const showData =
             await Show.findById(
@@ -462,14 +451,10 @@ export const getOccupiedSeats = async (
                 success: false,
 
                 message:
-                    "Show not found."
+                    "Show not found.",
             });
         }
 
-
-        // =================================================
-        // GET OCCUPIED SEATS
-        // =================================================
 
         const occupiedSeats =
             Object.keys(
@@ -481,7 +466,8 @@ export const getOccupiedSeats = async (
 
             success: true,
 
-            occupiedSeats
+            occupiedSeats,
+
         });
 
 
@@ -498,11 +484,11 @@ export const getOccupiedSeats = async (
             success: false,
 
             message:
-                error.message
+                error.message,
+
         });
     }
 };
-
 
 
 // =====================================================
@@ -517,49 +503,25 @@ export const getAllBookings = async (
 
     try {
 
-        console.log(
-            "Getting all bookings..."
-        );
-
-
-        /*
-            Booking.show contains Show._id.
-
-            Show.movie contains Movie._id.
-
-            Therefore we populate:
-
-            Booking
-                 ↓
-               show
-                 ↓
-               movie
-        */
-
         const bookings =
             await Booking.find()
                 .populate({
                     path: "show",
                     populate: {
-                        path: "movie"
-                    }
+                        path: "movie",
+                    },
                 })
                 .sort({
-                    createdAt: -1
+                    createdAt: -1,
                 });
-
-
-        console.log(
-            "Total bookings:",
-            bookings.length
-        );
 
 
         return res.status(200).json({
 
             success: true,
 
-            bookings
+            bookings,
+
         });
 
 
@@ -576,11 +538,11 @@ export const getAllBookings = async (
             success: false,
 
             message:
-                error.message
+                error.message,
+
         });
     }
 };
-
 
 
 // =====================================================
@@ -607,7 +569,7 @@ export const getBookingById = async (
                 success: false,
 
                 message:
-                    "Booking ID is required."
+                    "Booking ID is required.",
             });
         }
 
@@ -619,8 +581,8 @@ export const getBookingById = async (
                 .populate({
                     path: "show",
                     populate: {
-                        path: "movie"
-                    }
+                        path: "movie",
+                    },
                 });
 
 
@@ -631,7 +593,7 @@ export const getBookingById = async (
                 success: false,
 
                 message:
-                    "Booking not found."
+                    "Booking not found.",
             });
         }
 
@@ -640,7 +602,8 @@ export const getBookingById = async (
 
             success: true,
 
-            booking
+            booking,
+
         });
 
 
@@ -652,12 +615,13 @@ export const getBookingById = async (
         );
 
 
-        return res.status(5000).json({
+        return res.status(500).json({
 
             success: false,
 
             message:
-                error.message
+                error.message,
+
         });
     }
 };

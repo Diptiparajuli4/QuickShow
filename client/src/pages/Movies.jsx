@@ -1,164 +1,361 @@
 
 import React, { useEffect, useState } from "react";
-import { dummyShowsData } from "../assets/assets";
 import BlurCircle from "../components/BlurCircle";
 import MovieCard from "../components/MovieCard";
 
 const Movies = () => {
-  const [movies, setMovies] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  // ============================================
-  // LOAD MOVIES FROM ADMIN-ADDED SHOWS
-  // ============================================
+    const [movies, setMovies] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-  const fetchMovies = () => {
-    try {
-      // Get shows added by admin
-      const savedShows = JSON.parse(
-        localStorage.getItem("quickshow_shows") || "[]"
-      );
 
-      console.log("Saved Shows:", savedShows);
+    // =====================================================
+    // FETCH ADMIN-ADDED MOVIES FROM MONGODB
+    // =====================================================
 
-      // ============================================
-      // CREATE MOVIES LIST
-      // ============================================
+    const fetchMovies = async () => {
 
-      const adminMovies = [];
+        try {
 
-      savedShows.forEach((show) => {
-        // Find movie from dummyShowsData
-        const movie = dummyShowsData.find(
-          (movie) =>
-            String(movie.id) === String(show.movieId) ||
-            String(movie._id) === String(show.movieId)
-        );
+            setLoading(true);
 
-        // If movie is not found, don't add it
-        if (!movie) {
-          console.log(
-            "Movie not found for movieId:",
-            show.movieId
-          );
+            console.log(
+                "Fetching admin-added movies from MongoDB..."
+            );
 
-          return;
+
+            // =================================================
+            // GET ALL SHOWS
+            // =================================================
+            //
+            // The backend returns:
+            //
+            // Show.find()
+            //     .populate("movie")
+            //
+            // Therefore each show contains its movie data.
+            //
+            // =================================================
+
+            const response = await fetch(
+                "http://localhost:5000/show/all"
+            );
+
+
+            // =================================================
+            // CHECK HTTP RESPONSE
+            // =================================================
+
+            if (!response.ok) {
+
+                throw new Error(
+                    `Server error: ${response.status}`
+                );
+
+            }
+
+
+            // =================================================
+            // READ JSON
+            // =================================================
+
+            const data = await response.json();
+
+
+            console.log(
+                "Shows received from MongoDB:",
+                data
+            );
+
+
+            // =================================================
+            // CHECK BACKEND RESPONSE
+            // =================================================
+
+            if (
+                !data.success ||
+                !Array.isArray(data.shows)
+            ) {
+
+                console.error(
+                    "Invalid response from server:",
+                    data
+                );
+
+                setMovies([]);
+
+                return;
+            }
+
+
+            // =================================================
+            // GET MOVIES FROM SHOWS
+            // =================================================
+
+            const adminMovies = data.shows
+
+                .map((show) => {
+
+                    // Because backend uses:
+                    //
+                    // .populate("movie")
+                    //
+                    // show.movie should contain
+                    // the complete movie document.
+
+                    if (!show.movie) {
+
+                        console.warn(
+                            "Show does not contain movie:",
+                            show
+                        );
+
+                        return null;
+                    }
+
+
+                    return show.movie;
+
+                })
+
+                .filter(Boolean);
+
+
+            console.log(
+                "Movies from admin shows:",
+                adminMovies
+            );
+
+
+            // =================================================
+            // REMOVE DUPLICATE MOVIES
+            // =================================================
+            //
+            // Example:
+            //
+            // Batman - 10:00
+            // Batman - 14:00
+            // Batman - 18:00
+            //
+            // Batman should appear only once.
+            //
+            // =================================================
+
+            const uniqueMovies = [];
+
+            const movieIds = new Set();
+
+
+            adminMovies.forEach((movie) => {
+
+                const movieId =
+                    movie._id ||
+                    movie.id;
+
+
+                if (!movieId) {
+
+                    console.warn(
+                        "Movie does not have an ID:",
+                        movie
+                    );
+
+                    return;
+                }
+
+
+                const id =
+                    String(movieId);
+
+
+                if (!movieIds.has(id)) {
+
+                    movieIds.add(id);
+
+                    uniqueMovies.push(movie);
+
+                }
+
+            });
+
+
+            console.log(
+                "Unique movies to display:",
+                uniqueMovies
+            );
+
+
+            // =================================================
+            // SET MOVIES
+            // =================================================
+
+            setMovies(uniqueMovies);
+
+
+        } catch (error) {
+
+            console.error(
+                "Error fetching movies from MongoDB:",
+                error
+            );
+
+            setMovies([]);
+
+
+        } finally {
+
+            setLoading(false);
+
         }
 
-        adminMovies.push(movie);
-      });
+    };
 
-      // ============================================
-      // REMOVE DUPLICATE MOVIES
-      // ============================================
 
-      const uniqueMovies = adminMovies.filter(
-        (movie, index, self) =>
-          index ===
-          self.findIndex(
-            (item) =>
-              String(item.id || item._id) ===
-              String(movie.id || movie._id)
-          )
-      );
+    // =====================================================
+    // FETCH WHEN PAGE OPENS
+    // =====================================================
 
-      // ============================================
-      // LATEST ADDED MOVIE FIRST
-      // ============================================
+    useEffect(() => {
 
-      uniqueMovies.reverse();
+        fetchMovies();
 
-      console.log("Movies to Display:", uniqueMovies);
+    }, []);
 
-      setMovies(uniqueMovies);
-    } catch (error) {
-      console.error(
-        "Error loading movies:",
-        error
-      );
 
-      setMovies([]);
-    } finally {
-      setLoading(false);
+    // =====================================================
+    // LOADING
+    // =====================================================
+
+    if (loading) {
+
+        return (
+
+            <div className="flex items-center justify-center h-screen">
+
+                <h1 className="text-xl text-gray-300">
+                    Loading movies...
+                </h1>
+
+            </div>
+
+        );
+
     }
-  };
 
-  // ============================================
-  // LOAD DATA WHEN PAGE OPENS
-  // ============================================
 
-  useEffect(() => {
-    fetchMovies();
-  }, []);
+    // =====================================================
+    // NO MOVIES
+    // =====================================================
 
-  // ============================================
-  // LOADING
-  // ============================================
+    if (movies.length === 0) {
 
-  if (loading) {
+        return (
+
+            <div className="flex flex-col items-center justify-center h-screen">
+
+                <h1 className="text-3xl font-bold text-center text-white">
+                    No movies available
+                </h1>
+
+                <p className="text-gray-500 mt-2">
+                    No movies have been added to a show yet.
+                </p>
+
+            </div>
+
+        );
+
+    }
+
+
+    // =====================================================
+    // MOVIES PAGE
+    // =====================================================
+
     return (
-      <div className="flex items-center justify-center h-screen">
-        <h1 className="text-xl">
-          Loading movies...
-        </h1>
-      </div>
+
+        <div
+            className="
+                relative
+                my-40
+                mb-60
+                px-6
+                md:px-16
+                lg:px-40
+                xl:px-44
+                overflow-hidden
+                min-h-[480vh]
+            "
+        >
+
+
+            {/* ================================================= */}
+            {/* BACKGROUND BLUR CIRCLES */}
+            {/* ================================================= */}
+
+            <BlurCircle
+                top="150px"
+                left="0px"
+            />
+
+
+            <BlurCircle
+                bottom="50px"
+                right="50px"
+            />
+
+
+            {/* ================================================= */}
+            {/* TITLE */}
+            {/* ================================================= */}
+
+            <h1 className="text-lg font-medium my-4 text-white">
+
+                Now Showing
+
+            </h1>
+
+
+            {/* ================================================= */}
+            {/* MOVIE GRID */}
+            {/* ================================================= */}
+
+            <div
+                className="
+                    grid
+                    grid-cols-1
+                    sm:grid-cols-2
+                    lg:grid-cols-4
+                    gap-8
+                    mt-8
+                "
+            >
+
+                {movies.map((movie) => {
+
+                    const movieId =
+                        movie._id ||
+                        movie.id;
+
+
+                    return (
+
+                        <MovieCard
+                            key={String(movieId)}
+                            movie={movie}
+                        />
+
+                    );
+
+                })}
+
+            </div>
+
+        </div>
+
     );
-  }
 
-  // ============================================
-  // NO MOVIES
-  // ============================================
-
-  if (movies.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <h1 className="text-3xl font-bold text-center">
-          No movies available
-        </h1>
-      </div>
-    );
-  }
-
-  // ============================================
-  // MOVIES PAGE
-  // ============================================
-
-  return (
-    <div
-      className="relative my-40 mb-60 px-6 md:px-16 lg:px-40
-      xl:px-44 overflow-hidden min-h-[480vh]"
-    >
-      <BlurCircle
-        top="150px"
-        left="0px"
-      />
-
-      <BlurCircle
-        bottom="50px"
-        right="50px"
-      />
-
-      <h1 className="text-lg font-medium my-4">
-        Now Showing
-      </h1>
-
-      {/* ========================================= */}
-      {/* MOVIE GRID */}
-      {/* ========================================= */}
-
-      <div
-        className="grid grid-cols-1 sm:grid-cols-2
-        lg:grid-cols-4 gap-8 mt-8"
-      >
-        {movies.map((movie) => (
-          <MovieCard
-            movie={movie}
-            key={movie._id || movie.id}
-          />
-        ))}
-      </div>
-    </div>
-  );
 };
+
 
 export default Movies;

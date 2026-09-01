@@ -1,43 +1,73 @@
-import React, { useEffect, useState } from "react";
+import React, {
+    useEffect,
+    useState
+} from "react";
+
 import Title from "../../components/admin/Title";
 import Loading from "../../components/Loading";
+
 import { dummyShowsData } from "../../assets/assets";
+
 import {
     StarIcon,
     CheckIcon,
     Trash2
 } from "lucide-react";
+
 import { kConverter } from "../../lib/kConverter";
+
 
 const AddShows = () => {
 
     const currency =
-        import.meta.env.VITE_CURRENCY || "Rs.";
+        import.meta.env.VITE_CURRENCY ||
+        "Rs.";
 
-    const [nowPlayingMovies, setNowPlayingMovies] =
-        useState([]);
 
-    const [selectedMovie, setSelectedMovie] =
-        useState(null);
+    const [
+        nowPlayingMovies,
+        setNowPlayingMovies
+    ] = useState([]);
 
-    const [showPrice, setShowPrice] =
-        useState("");
 
-    const [dateTimeInput, setDateTimeInput] =
-        useState("");
+    const [
+        selectedMovie,
+        setSelectedMovie
+    ] = useState(null);
 
-    const [dateTimeSelection, setDateTimeSelection] =
-        useState({});
 
-    const [loading, setLoading] =
-        useState(true);
+    const [
+        showPrice,
+        setShowPrice
+    ] = useState("");
 
-    const [addingShow, setAddingShow] =
-        useState(false);
+
+    const [
+        dateTimeInput,
+        setDateTimeInput
+    ] = useState("");
+
+
+    const [
+        dateTimeSelection,
+        setDateTimeSelection
+    ] = useState({});
+
+
+    const [
+        loading,
+        setLoading
+    ] = useState(true);
+
+
+    const [
+        addingShow,
+        setAddingShow
+    ] = useState(false);
 
 
     // =====================================================
-    // LOAD MOVIES FROM DUMMY DATA
+    // LOAD MOVIES
     // =====================================================
 
     useEffect(() => {
@@ -67,7 +97,10 @@ const AddShows = () => {
         }
 
 
-        const [date, time] =
+        const [
+            date,
+            time
+        ] =
             dateTimeInput.split("T");
 
 
@@ -81,34 +114,40 @@ const AddShows = () => {
         }
 
 
-        setDateTimeSelection((prev) => {
+        setDateTimeSelection(
+            (prev) => {
 
-            const existingTimes =
-                prev[date] || [];
+                const existingTimes =
+                    prev[date] || [];
 
 
-            if (
-                existingTimes.includes(time)
-            ) {
+                if (
+                    existingTimes.includes(
+                        time
+                    )
+                ) {
 
-                alert(
-                    "This date and time is already added."
-                );
+                    alert(
+                        "This date and time is already added."
+                    );
 
-                return prev;
+                    return prev;
+                }
+
+
+                return {
+
+                    ...prev,
+
+                    [date]: [
+                        ...existingTimes,
+                        time
+                    ]
+
+                };
+
             }
-
-
-            return {
-
-                ...prev,
-
-                [date]: [
-                    ...existingTimes,
-                    time
-                ]
-            };
-        });
+        );
 
 
         setDateTimeInput("");
@@ -124,36 +163,44 @@ const AddShows = () => {
         time
     ) => {
 
-        setDateTimeSelection((prev) => {
+        setDateTimeSelection(
+            (prev) => {
 
-            const filteredTimes =
-                (prev[date] || []).filter(
-                    (item) =>
-                        item !== time
-                );
+                const filteredTimes =
+                    (
+                        prev[date] ||
+                        []
+                    ).filter(
+                        (item) =>
+                            item !== time
+                    );
 
 
-            if (
-                filteredTimes.length === 0
-            ) {
+                if (
+                    filteredTimes.length ===
+                    0
+                ) {
 
-                const {
-                    [date]: removed,
-                    ...rest
-                } = prev;
+                    const {
+                        [date]: removed,
+                        ...rest
+                    } = prev;
 
-                return rest;
+                    return rest;
+                }
+
+
+                return {
+
+                    ...prev,
+
+                    [date]:
+                        filteredTimes
+
+                };
+
             }
-
-
-            return {
-
-                ...prev,
-
-                [date]:
-                    filteredTimes
-            };
-        });
+        );
     };
 
 
@@ -161,182 +208,185 @@ const AddShows = () => {
     // ADD SHOW
     // =====================================================
 
-    const handleAddShow = async () => {
+    const handleAddShow =
+        async () => {
 
-        // =================================================
-        // CHECK MOVIE
-        // =================================================
+            // =============================================
+            // CHECK MOVIE
+            // =============================================
 
-        if (!selectedMovie) {
+            if (!selectedMovie) {
 
-            alert(
-                "Please select a movie."
-            );
-
-            return;
-        }
-
-
-        // =================================================
-        // CHECK PRICE
-        // =================================================
-
-        if (
-            !showPrice ||
-            Number(showPrice) <= 0
-        ) {
-
-            alert(
-                "Please enter a valid show price."
-            );
-
-            return;
-        }
-
-
-        // =================================================
-        // CHECK DATE/TIME
-        // =================================================
-
-        if (
-            Object.keys(
-                dateTimeSelection
-            ).length === 0
-        ) {
-
-            alert(
-                "Please add at least one show date and time."
-            );
-
-            return;
-        }
-
-
-        try {
-
-            setAddingShow(true);
-
-
-            // =================================================
-            // SEND SELECTED DUMMY MOVIE DIRECTLY
-            // =================================================
-
-            const showData = {
-
-                movie:
-                    selectedMovie,
-
-                price:
-                    Number(showPrice),
-
-                dateTimes:
-                    dateTimeSelection
-            };
-
-
-            console.log(
-                "Sending show data:"
-            );
-
-            console.log(
-                showData
-            );
-
-
-            // =================================================
-            // SEND TO BACKEND
-            // =================================================
-
-            const response =
-                await fetch(
-                    "http://localhost:5000/show/add",
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body:
-                            JSON.stringify(
-                                showData
-                            )
-                    }
+                alert(
+                    "Please select a movie."
                 );
 
-
-            // =================================================
-            // READ RESPONSE
-            // =================================================
-
-            const data =
-                await response.json();
-
-
-            console.log(
-                "Backend response:",
-                data
-            );
-
-
-            // =================================================
-            // ERROR
-            // =================================================
-
-            if (
-                !response.ok ||
-                !data.success
-            ) {
-
-                throw new Error(
-                    data.message ||
-                    "Failed to add show"
-                );
+                return;
             }
 
 
-            // =================================================
-            // SUCCESS
-            // =================================================
+            // =============================================
+            // CHECK PRICE
+            // =============================================
 
-            alert(
-                "Movie and show added successfully to MongoDB!"
-            );
+            if (
+                !showPrice ||
+                Number(showPrice) <= 0
+            ) {
 
+                alert(
+                    "Please enter a valid show price."
+                );
 
-            // =================================================
-            // CLEAR FORM
-            // =================================================
-
-            setSelectedMovie(null);
-
-            setShowPrice("");
-
-            setDateTimeInput("");
-
-            setDateTimeSelection({});
+                return;
+            }
 
 
-        } catch (error) {
+            // =============================================
+            // CHECK DATE/TIME
+            // =============================================
 
-            console.error(
-                "Error adding show:",
-                error
-            );
+            if (
+                Object.keys(
+                    dateTimeSelection
+                ).length === 0
+            ) {
+
+                alert(
+                    "Please add at least one show date and time."
+                );
+
+                return;
+            }
 
 
-            alert(
-                error.message ||
-                "Failed to add show."
-            );
+            try {
+
+                setAddingShow(true);
 
 
-        } finally {
+                // =============================================
+                // SHOW DATA
+                // =============================================
 
-            setAddingShow(false);
-        }
-    };
+                const showData = {
+
+                    movie:
+                        selectedMovie,
+
+                    price:
+                        Number(showPrice),
+
+                    dateTimes:
+                        dateTimeSelection
+
+                };
+
+
+                console.log(
+                    "Sending show data:",
+                    showData
+                );
+
+
+                // =============================================
+                // SEND TO BACKEND
+                // =============================================
+
+                const response =
+                    await fetch(
+                        "http://localhost:5000/show/add",
+                        {
+
+                            method: "POST",
+
+                            headers: {
+
+                                "Content-Type":
+                                    "application/json"
+
+                            },
+
+                            body:
+                                JSON.stringify(
+                                    showData
+                                )
+
+                        }
+                    );
+
+
+                // =============================================
+                // GET RESPONSE
+                // =============================================
+
+                const data =
+                    await response.json();
+
+
+                console.log(
+                    "Backend response:",
+                    data
+                );
+
+
+                // =============================================
+                // ERROR
+                // =============================================
+
+                if (
+                    !response.ok ||
+                    !data.success
+                ) {
+
+                    throw new Error(
+                        data.message ||
+                        "Failed to add show"
+                    );
+                }
+
+
+                // =============================================
+                // SUCCESS
+                // =============================================
+
+                alert(
+                    "Movie and show added successfully!"
+                );
+
+
+                // =============================================
+                // CLEAR FORM
+                // =============================================
+
+                setSelectedMovie(null);
+
+                setShowPrice("");
+
+                setDateTimeInput("");
+
+                setDateTimeSelection({});
+
+
+            } catch (error) {
+
+                console.error(
+                    "Error adding show:",
+                    error
+                );
+
+
+                alert(
+                    error.message ||
+                    "Failed to add show."
+                );
+
+
+            } finally {
+
+                setAddingShow(false);
+            }
+        };
 
 
     // =====================================================
@@ -354,7 +404,9 @@ const AddShows = () => {
     // =====================================================
 
     return (
+
         <>
+
             <Title
                 text1="Add"
                 text2="Shows"
@@ -367,14 +419,28 @@ const AddShows = () => {
 
             <div className="mt-10">
 
-                <p className="text-lg font-medium">
+                <p className="
+                    text-lg
+                    font-medium
+                ">
+
                     Now Playing Movies
+
                 </p>
 
 
-                <div className="mt-4 overflow-x-auto pb-5 scrollbar-thin">
+                <div className="
+                    mt-4
+                    overflow-x-auto
+                    pb-5
+                    scrollbar-thin
+                ">
 
-                    <div className="flex gap-5 w-max">
+                    <div className="
+                        flex
+                        gap-5
+                        w-max
+                    ">
 
                         {nowPlayingMovies.map(
                             (movie) => {
@@ -395,6 +461,7 @@ const AddShows = () => {
 
 
                                 return (
+
                                     <div
                                         key={movieId}
                                         onClick={() =>
@@ -402,15 +469,30 @@ const AddShows = () => {
                                                 movie
                                             )
                                         }
-                                        className="w-40 flex-shrink-0 cursor-pointer group"
+                                        className="
+                                            w-40
+                                            flex-shrink-0
+                                            cursor-pointer
+                                            group
+                                        "
                                     >
 
                                         <div
-                                            className={`relative w-40 h-60 overflow-hidden rounded-lg shadow-md border-2 transition-all ${
-                                                isSelected
-                                                    ? "border-primary"
-                                                    : "border-transparent"
-                                            }`}
+                                            className={`
+                                                relative
+                                                w-40
+                                                h-60
+                                                overflow-hidden
+                                                rounded-lg
+                                                shadow-md
+                                                border-2
+                                                transition-all
+                                                ${
+                                                    isSelected
+                                                        ? "border-primary"
+                                                        : "border-transparent"
+                                                }
+                                            `}
                                         >
 
                                             <img
@@ -424,26 +506,62 @@ const AddShows = () => {
                                                     movie.name ||
                                                     "Movie"
                                                 }
-                                                className="w-full h-full object-cover brightness-90 group-hover:brightness-100 group-hover:scale-105 transition duration-300"
+                                                className="
+                                                    w-full
+                                                    h-full
+                                                    object-cover
+                                                    brightness-90
+                                                    group-hover:brightness-100
+                                                    group-hover:scale-105
+                                                    transition
+                                                    duration-300
+                                                "
                                             />
 
 
-                                            <div className="absolute bottom-0 left-2 right-2 bg-black/75 px-2 py-1 rounded-md text-xs flex justify-between items-center">
+                                            <div className="
+                                                absolute
+                                                bottom-0
+                                                left-2
+                                                right-2
+                                                bg-black/75
+                                                px-2
+                                                py-1
+                                                rounded-md
+                                                text-xs
+                                                flex
+                                                justify-between
+                                                items-center
+                                            ">
 
-                                                <p className="flex items-center gap-1 text-gray-200">
+                                                <p className="
+                                                    flex
+                                                    items-center
+                                                    gap-1
+                                                    text-gray-200
+                                                ">
 
-                                                    <StarIcon className="w-3.5 h-3.5 text-primary fill-primary" />
+                                                    <StarIcon
+                                                        className="
+                                                            w-3.5
+                                                            h-3.5
+                                                            text-primary
+                                                            fill-primary
+                                                        "
+                                                    />
 
                                                     {movie.vote_average
                                                         ? Number(
-                                                              movie.vote_average
-                                                          ).toFixed(1)
+                                                            movie.vote_average
+                                                        ).toFixed(1)
                                                         : "N/A"}
 
                                                 </p>
 
 
-                                                <p className="text-gray-300">
+                                                <p className="
+                                                    text-gray-300
+                                                ">
 
                                                     {kConverter(
                                                         movie.vote_count ||
@@ -458,9 +576,26 @@ const AddShows = () => {
 
                                             {isSelected && (
 
-                                                <div className="absolute top-2 right-2 bg-primary h-7 w-7 flex items-center justify-center rounded-full">
+                                                <div className="
+                                                    absolute
+                                                    top-2
+                                                    right-2
+                                                    bg-primary
+                                                    h-7
+                                                    w-7
+                                                    flex
+                                                    items-center
+                                                    justify-center
+                                                    rounded-full
+                                                ">
 
-                                                    <CheckIcon className="w-4 h-4 text-white" />
+                                                    <CheckIcon
+                                                        className="
+                                                            w-4
+                                                            h-4
+                                                            text-white
+                                                        "
+                                                    />
 
                                                 </div>
 
@@ -469,9 +604,16 @@ const AddShows = () => {
                                         </div>
 
 
-                                        <div className="mt-2 px-1">
+                                        <div className="
+                                            mt-2
+                                            px-1
+                                        ">
 
-                                            <p className="font-medium text-sm truncate">
+                                            <p className="
+                                                font-medium
+                                                text-sm
+                                                truncate
+                                            ">
 
                                                 {movie.title ||
                                                     movie.name ||
@@ -480,7 +622,10 @@ const AddShows = () => {
                                             </p>
 
 
-                                            <p className="text-xs text-gray-400">
+                                            <p className="
+                                                text-xs
+                                                text-gray-400
+                                            ">
 
                                                 {movie.release_date ||
                                                     movie.releaseDate ||
@@ -491,7 +636,9 @@ const AddShows = () => {
                                         </div>
 
                                     </div>
+
                                 );
+
                             }
                         )}
 
@@ -508,16 +655,33 @@ const AddShows = () => {
 
             <div className="mt-8">
 
-                <label className="block text-sm font-medium mb-2">
+                <label className="
+                    block
+                    text-sm
+                    font-medium
+                    mb-2
+                ">
 
                     Show Price
 
                 </label>
 
 
-                <div className="inline-flex items-center gap-2 border border-gray-600 px-3 py-2 rounded-md">
+                <div className="
+                    inline-flex
+                    items-center
+                    gap-2
+                    border
+                    border-gray-600
+                    px-3
+                    py-2
+                    rounded-md
+                ">
 
-                    <p className="text-gray-400 text-sm">
+                    <p className="
+                        text-gray-400
+                        text-sm
+                    ">
 
                         {currency}
 
@@ -533,7 +697,11 @@ const AddShows = () => {
                                 e.target.value
                             )
                         }
-                        className="outline-none bg-transparent text-white"
+                        className="
+                            outline-none
+                            bg-transparent
+                            text-white
+                        "
                         placeholder="Enter price"
                     />
 
@@ -548,7 +716,12 @@ const AddShows = () => {
 
             <div className="mt-6">
 
-                <label className="block text-sm font-medium mb-2">
+                <label className="
+                    block
+                    text-sm
+                    font-medium
+                    mb-2
+                ">
 
                     Select Show Date & Time
 
@@ -563,7 +736,13 @@ const AddShows = () => {
                             e.target.value
                         )
                     }
-                    className="outline-none border p-2 rounded-md bg-transparent"
+                    className="
+                        outline-none
+                        border
+                        p-2
+                        rounded-md
+                        bg-transparent
+                    "
                 />
 
 
@@ -572,7 +751,16 @@ const AddShows = () => {
                     onClick={
                         handleDateTimeAdd
                     }
-                    className="ml-3 bg-primary/80 text-white px-3 py-2 text-sm rounded-lg hover:bg-primary"
+                    className="
+                        ml-3
+                        bg-primary/80
+                        text-white
+                        px-3
+                        py-2
+                        text-sm
+                        rounded-lg
+                        hover:bg-primary
+                    "
                 >
 
                     Add Time
@@ -592,14 +780,19 @@ const AddShows = () => {
 
                 <div className="mt-6">
 
-                    <h2 className="font-medium mb-2">
+                    <h2 className="
+                        font-medium
+                        mb-2
+                    ">
 
                         Selected Date-Time
 
                     </h2>
 
 
-                    <div className="space-y-3">
+                    <div className="
+                        space-y-3
+                    ">
 
                         {Object.entries(
                             dateTimeSelection
@@ -610,21 +803,37 @@ const AddShows = () => {
                                     key={date}
                                 >
 
-                                    <p className="font-medium">
+                                    <p className="
+                                        font-medium
+                                    ">
 
                                         {date}
 
                                     </p>
 
 
-                                    <div className="flex flex-wrap gap-2 mt-1">
+                                    <div className="
+                                        flex
+                                        flex-wrap
+                                        gap-2
+                                        mt-1
+                                    ">
 
                                         {times.map(
                                             (time) => (
 
                                                 <div
                                                     key={`${date}-${time}`}
-                                                    className="border border-primary px-2 py-1 flex items-center rounded text-sm"
+                                                    className="
+                                                        border
+                                                        border-primary
+                                                        px-2
+                                                        py-1
+                                                        flex
+                                                        items-center
+                                                        rounded
+                                                        text-sm
+                                                    "
                                                 >
 
                                                     <span>
@@ -640,7 +849,12 @@ const AddShows = () => {
                                                             )
                                                         }
                                                         size={14}
-                                                        className="ml-2 text-red-500 hover:text-red-700 cursor-pointer"
+                                                        className="
+                                                            ml-2
+                                                            text-red-500
+                                                            hover:text-red-700
+                                                            cursor-pointer
+                                                        "
                                                     />
 
                                                 </div>
@@ -674,11 +888,20 @@ const AddShows = () => {
                 disabled={
                     addingShow
                 }
-                className={`bg-primary text-white px-8 py-2 mt-6 rounded transition-all ${
-                    addingShow
-                        ? "opacity-50 cursor-not-allowed"
-                        : "hover:bg-primary/90 cursor-pointer"
-                }`}
+                className={`
+                    bg-primary
+                    text-white
+                    px-8
+                    py-2
+                    mt-6
+                    rounded
+                    transition-all
+                    ${
+                        addingShow
+                            ? "opacity-50 cursor-not-allowed"
+                            : "hover:bg-primary/90 cursor-pointer"
+                    }
+                `}
             >
 
                 {addingShow
@@ -690,5 +913,6 @@ const AddShows = () => {
         </>
     );
 };
+
 
 export default AddShows;

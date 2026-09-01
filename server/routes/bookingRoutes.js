@@ -4,10 +4,11 @@ import {
     createBooking,
     getOccupiedSeats,
     getAllBookings,
-    getBookingById
+    getBookingById,
 } from "../controllers/bookingController.js";
 
-const bookingRouter = express.Router();
+const bookingRouter =
+    express.Router();
 
 
 // =====================================================
@@ -22,7 +23,7 @@ bookingRouter.post(
 
 
 // =====================================================
-// GET OCCUPIED SEATS FOR A SHOW
+// GET OCCUPIED SEATS
 // GET /booking/seats/:showId
 // =====================================================
 
@@ -35,7 +36,6 @@ bookingRouter.get(
 // =====================================================
 // GET ALL BOOKINGS
 // GET /booking/all
-// Used by Admin List Bookings
 // =====================================================
 
 bookingRouter.get(
