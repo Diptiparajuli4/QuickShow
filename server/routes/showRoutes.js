@@ -1,20 +1,27 @@
 import express from "express";
-import { 
-  getAllShows, 
-  getMovies, 
-  getShow, 
-  getUniqueShows,
-  addMovie
+
+import {
+    getMovies,
+    addMovie,
+    addShow,
+    getAllShows,
+    getShow,
+    getUniqueShows
 } from "../controllers/showController.js";
 
-import { protect } from "../middleWare/auth.js";
+const router = express.Router();
 
-const showRouter = express.Router();
 
-showRouter.get("/now-playing", protect, getMovies);
-showRouter.post("/movies", protect, addMovie);
-showRouter.get("/all", getAllShows);
-showRouter.get("/unique", getUniqueShows);
-showRouter.get("/:movieId", getShow);
+// Movies
+router.get("/movies", getMovies);
+router.post("/movie/add", addMovie);
 
-export default showRouter;
+
+// Shows
+router.post("/add", addShow);
+router.get("/all", getAllShows);
+router.get("/:movieId", getShow);
+router.get("/unique", getUniqueShows);
+
+
+export default router;

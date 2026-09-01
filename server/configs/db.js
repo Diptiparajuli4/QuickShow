@@ -1,33 +1,44 @@
 import mongoose from "mongoose";
 
+
+// ========================================
+// CONNECT TO MONGODB
+// ========================================
+
 const connectDB = async () => {
-    try {
-        const conn = await mongoose.connect(process.env.MONGODB_URI);
+  try {
 
-        console.log(
-            `MongoDB Connected Successfully: ${conn.connection.host}`
-        );
+    // Check whether MongoDB URL exists
+    if (!process.env.MONGODB_URI) {
+      console.error(
+        "MONGODB_URI is not defined in .env file"
+      );
 
-    } catch (error) {
-
-        console.error(
-            "MongoDB Connection Error:",
-            error.message
-        );
-
-        process.exit(1);
+      process.exit(1);
     }
+
+
+    // Connect to MongoDB
+    const conn = await mongoose.connect(
+      process.env.MONGODB_URI
+    );
+
+
+    // Connection successful
+    console.log(
+      `MongoDB Connected Successfully: ${conn.connection.host}`
+    );
+
+  } catch (error) {
+
+    console.error(
+      "MongoDB Connection Error:",
+      error.message
+    );
+
+    process.exit(1);
+  }
 };
 
+
 export default connectDB;
-
-// import mongoose from "mongoose";
-
-// const connectDB = async () =>{
-//     try {
-//         mongoose.connection.on('connected', ()=> console.log('Database Connected'));
-//         await mongoose.connect(`${process.env.MONGODB_URI}/quickshow`)
-//     } catch (error) {
-//         console.log(error.message);
-//     }
-// }

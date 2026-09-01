@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Search,
-  User,
   Settings,
   Ticket,
   LogOut,
@@ -12,75 +11,168 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
+import { useAppContext } from "../context/AppContext";
 
 const Navbar = () => {
   const navigate = useNavigate();
 
   const { user, logout } = useAuth();
+  const { axios } = useAppContext();
 
   const [showMenu, setShowMenu] = useState(false);
+
+  // ==========================================
+  // SEARCH STATES
+  // ==========================================
+
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [movies, setMovies] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   // ==========================================
-  // FAVORITES STATE
+  // FAVORITE STATE
   // ==========================================
 
-  const [favorites, setFavorites] = useState([]);
+  const [hasFavorites, setHasFavorites] = useState(false);
 
   const menuRef = useRef(null);
+  const searchRef = useRef(null);
+
+  // ==========================================
+  // CHECK FAVORITES
+  // ==========================================
+
+  const checkFavorites = () => {
+    try {
+      /*
+       * Change these keys if your Favorite page
+       * uses a different localStorage key.
+       */
+
+      const possibleKeys = [
+        "quickshow_favorites",
+        "favorites",
+        "favoriteMovies",
+        "favorite",
+      ];
+
+      let favoriteMovies = [];
+
+      for (const key of possibleKeys) {
+        const storedData =
+          localStorage.getItem(key);
+
+        if (!storedData) {
+          continue;
+        }
+
+        try {
+          const parsedData =
+            JSON.parse(storedData);
+
+          if (Array.isArray(parsedData)) {
+            favoriteMovies = parsedData;
+            break;
+          }
+
+          /*
+           * Also support an object such as:
+           *
+           * {
+           *   movies: [...]
+           * }
+           */
+
+          if (
+            parsedData &&
+            Array.isArray(parsedData.movies)
+          ) {
+            favoriteMovies =
+              parsedData.movies;
+            break;
+          }
+        } catch (error) {
+          console.error(
+            `Error parsing ${key}:`,
+            error
+          );
+        }
+      }
+
+      setHasFavorites(
+        favoriteMovies.length > 0
+      );
+    } catch (error) {
+      console.error(
+        "Error checking favorites:",
+        error
+      );
+
+      setHasFavorites(false);
+    }
+  };
 
   // ==========================================
   // LOAD FAVORITES
   // ==========================================
 
   useEffect(() => {
-    const loadFavorites = () => {
-      try {
-        const savedFavorites = JSON.parse(
-          localStorage.getItem("quickshow_favorites") || "[]"
-        );
+    checkFavorites();
 
-        setFavorites(savedFavorites);
-      } catch (error) {
-        console.error(
-          "Error loading favorites:",
-          error
-        );
+    /*
+     * Detect changes made in another browser tab.
+     */
 
-        setFavorites([]);
-      }
+    const handleStorageChange = () => {
+      checkFavorites();
     };
 
-    // Load favorites when Navbar first opens
-    loadFavorites();
-
-    // Listen for favorite changes
-    window.addEventListener(
-      "favoritesUpdated",
-      loadFavorites
-    );
-
-    // Also listen for localStorage changes
     window.addEventListener(
       "storage",
-      loadFavorites
+      handleStorageChange
+    );
+
+    /*
+     * Custom event allows the Favorites page
+     * to immediately tell Navbar that favorites
+     * have changed in the SAME tab.
+     */
+
+    window.addEventListener(
+      "favoritesUpdated",
+      checkFavorites
+    );
+
+    /*
+     * Also check periodically so the navbar
+     * updates even if the Favorite page changes
+     * localStorage without dispatching an event.
+     */
+
+    const interval = setInterval(
+      checkFavorites,
+      1000
     );
 
     return () => {
       window.removeEventListener(
-        "favoritesUpdated",
-        loadFavorites
+        "storage",
+        handleStorageChange
       );
 
       window.removeEventListener(
-        "storage",
-        loadFavorites
+        "favoritesUpdated",
+        checkFavorites
       );
+
+      clearInterval(interval);
     };
   }, []);
 
   // ==========================================
-  // CLOSE DROPDOWN WHEN CLICKING OUTSIDE
+  // CLOSE DROPDOWNS WHEN CLICKING OUTSIDE
   // ==========================================
 
   useEffect(() => {
@@ -90,6 +182,13 @@ const Navbar = () => {
         !menuRef.current.contains(event.target)
       ) {
         setShowMenu(false);
+      }
+
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target)
+      ) {
+        setSearchOpen(false);
       }
     };
 
@@ -105,6 +204,103 @@ const Navbar = () => {
       );
     };
   }, []);
+
+  // ==========================================
+  // FETCH MOVIES FROM DATABASE
+  // ==========================================
+
+  const fetchMovies = async () => {
+    try {
+      setSearchLoading(true);
+
+      const { data } =
+        await axios.get(
+          "/show/now-playing"
+        );
+
+      if (data.success) {
+        setMovies(data.movies || []);
+      } else {
+        setMovies([]);
+      }
+    } catch (error) {
+      console.error(
+        "Error fetching movies for search:",
+        error
+      );
+
+      setMovies([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // ==========================================
+  // LOAD MOVIES WHEN SEARCH OPENS
+  // ==========================================
+
+  useEffect(() => {
+    if (searchOpen) {
+      fetchMovies();
+    }
+  }, [searchOpen]);
+
+  // ==========================================
+  // SEARCH MOVIES
+  // ==========================================
+
+  useEffect(() => {
+    const searchValue =
+      searchText.trim().toLowerCase();
+
+    if (!searchValue) {
+      setSearchResults([]);
+      return;
+    }
+
+    const results = movies.filter((movie) => {
+      const title = (
+        movie.title ||
+        movie.name ||
+        ""
+      ).toLowerCase();
+
+      return title.includes(searchValue);
+    });
+
+    setSearchResults(results);
+  }, [searchText, movies]);
+
+  // ==========================================
+  // OPEN MOVIE DETAIL
+  // ==========================================
+
+  const handleMovieClick = (movie) => {
+    const movieId =
+      movie._id || movie.id;
+
+    if (!movieId) {
+      return;
+    }
+
+    setSearchText("");
+    setSearchResults([]);
+    setSearchOpen(false);
+
+    navigate(`/movie/${movieId}`);
+
+    window.scrollTo(0, 0);
+  };
+
+  // ==========================================
+  // CLOSE SEARCH
+  // ==========================================
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchText("");
+    setSearchResults([]);
+  };
 
   // ==========================================
   // SIGN OUT
@@ -136,12 +332,12 @@ const Navbar = () => {
     user?.email ||
     "user@example.com";
 
-  // ==========================================
-  // USER INITIAL
-  // ==========================================
-
   const userInitial =
     userName.charAt(0).toUpperCase();
+
+  // ==========================================
+  // PAGE
+  // ==========================================
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
@@ -156,7 +352,10 @@ const Navbar = () => {
           to="/"
           className="text-2xl font-bold text-white"
         >
-          Quick<span className="text-primary">Show</span>
+          Quick
+          <span className="text-primary">
+            Show
+          </span>
         </Link>
 
         {/* ================================= */}
@@ -165,16 +364,12 @@ const Navbar = () => {
 
         <div className="hidden md:flex items-center gap-8 text-sm text-gray-200">
 
-          {/* HOME */}
-
           <Link
             to="/"
             className="hover:text-primary transition"
           >
             Home
           </Link>
-
-          {/* MOVIES */}
 
           <Link
             to="/movies"
@@ -183,16 +378,12 @@ const Navbar = () => {
             Movies
           </Link>
 
-          {/* THEATERS */}
-
           <Link
             to="/theaters"
             className="hover:text-primary transition"
           >
             Theaters
           </Link>
-
-          {/* RELEASES */}
 
           <Link
             to="/releases"
@@ -205,7 +396,7 @@ const Navbar = () => {
           {/* FAVORITES */}
           {/* ================================= */}
 
-          {favorites.length > 0 && (
+          {hasFavorites && (
             <Link
               to="/favorite"
               className="hover:text-primary transition"
@@ -226,38 +417,156 @@ const Navbar = () => {
           {/* SEARCH */}
           {/* ================================= */}
 
-          {searchOpen ? (
+          <div
+            className="relative"
+            ref={searchRef}
+          >
 
-            <div className="flex items-center gap-2 border border-gray-600 rounded-full px-3 py-1">
+            {searchOpen ? (
 
-              <input
-                type="text"
-                placeholder="Search movies..."
-                className="bg-transparent outline-none text-sm text-white w-32"
-                autoFocus
-              />
+              <div className="relative">
 
-              <X
-                size={18}
-                className="cursor-pointer text-gray-300 hover:text-white"
+                {/* SEARCH INPUT */}
+
+                <div className="flex items-center gap-2 border border-gray-600 rounded-full px-3 py-1.5 bg-black/80">
+
+                  <Search
+                    size={18}
+                    className="text-gray-400"
+                  />
+
+                  <input
+                    type="text"
+                    placeholder="Search movies..."
+                    value={searchText}
+                    onChange={(e) =>
+                      setSearchText(
+                        e.target.value
+                      )
+                    }
+                    className="bg-transparent outline-none text-sm text-white w-48"
+                    autoFocus
+                  />
+
+                  <X
+                    size={18}
+                    className="cursor-pointer text-gray-300 hover:text-white"
+                    onClick={closeSearch}
+                  />
+
+                </div>
+
+                {/* SEARCH RESULTS */}
+
+                {searchText.trim() !== "" && (
+
+                  <div className="absolute right-0 top-12 w-80 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl overflow-hidden">
+
+                    {searchLoading ? (
+
+                      <div className="px-4 py-4 text-sm text-gray-400 text-center">
+                        Searching...
+                      </div>
+
+                    ) : searchResults.length > 0 ? (
+
+                      <div className="max-h-80 overflow-y-auto">
+
+                        {searchResults.map(
+                          (movie) => {
+
+                            const movieId =
+                              movie._id ||
+                              movie.id;
+
+                            return (
+
+                              <button
+                                key={movieId}
+                                onClick={() =>
+                                  handleMovieClick(
+                                    movie
+                                  )
+                                }
+                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-800 transition text-left"
+                              >
+
+                                {/* POSTER */}
+
+                                <img
+                                  src={
+                                    movie.poster_path ||
+                                    movie.poster ||
+                                    movie.image
+                                  }
+                                  alt={
+                                    movie.title ||
+                                    "Movie"
+                                  }
+                                  className="w-10 h-14 object-cover rounded"
+                                />
+
+                                {/* DETAILS */}
+
+                                <div className="min-w-0">
+
+                                  <p className="text-white text-sm font-medium truncate">
+                                    {movie.title ||
+                                      movie.name ||
+                                      "Untitled Movie"}
+                                  </p>
+
+                                  {movie.release_date && (
+
+                                    <p className="text-gray-400 text-xs mt-1">
+                                      {
+                                        movie.release_date
+                                      }
+                                    </p>
+
+                                  )}
+
+                                </div>
+
+                              </button>
+
+                            );
+                          }
+                        )}
+
+                      </div>
+
+                    ) : (
+
+                      <div className="px-4 py-5 text-center">
+
+                        <p className="text-gray-400 text-sm">
+                          Movie not available
+                        </p>
+
+                      </div>
+
+                    )}
+
+                  </div>
+
+                )}
+
+              </div>
+
+            ) : (
+
+              <Search
+                size={22}
+                className="text-white cursor-pointer hover:text-primary transition"
                 onClick={() =>
-                  setSearchOpen(false)
+                  setSearchOpen(true)
                 }
               />
 
-            </div>
+            )}
 
-          ) : (
-
-            <Search
-              size={22}
-              className="text-white cursor-pointer hover:text-primary transition"
-              onClick={() =>
-                setSearchOpen(true)
-              }
-            />
-
-          )}
+          </div>
 
           {/* ================================= */}
           {/* USER PROFILE */}
@@ -272,7 +581,9 @@ const Navbar = () => {
 
             <button
               onClick={() =>
-                setShowMenu((prev) => !prev)
+                setShowMenu(
+                  (prev) => !prev
+                )
               }
               className="w-9 h-9 rounded-full bg-white flex items-center justify-center overflow-hidden border border-gray-300 hover:scale-105 transition"
             >
@@ -309,8 +620,6 @@ const Navbar = () => {
 
                   <div className="flex items-center gap-3">
 
-                    {/* USER IMAGE */}
-
                     <div className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
 
                       {user?.image ? (
@@ -331,8 +640,6 @@ const Navbar = () => {
 
                     </div>
 
-                    {/* NAME + EMAIL */}
-
                     <div className="min-w-0">
 
                       <p className="font-semibold truncate">
@@ -349,9 +656,7 @@ const Navbar = () => {
 
                 </div>
 
-                {/* ================================= */}
                 {/* MANAGE ACCOUNT */}
-                {/* ================================= */}
 
                 <button
                   onClick={() => {
@@ -372,9 +677,7 @@ const Navbar = () => {
 
                 </button>
 
-                {/* ================================= */}
                 {/* MY BOOKINGS */}
-                {/* ================================= */}
 
                 <button
                   onClick={() => {
@@ -395,9 +698,7 @@ const Navbar = () => {
 
                 </button>
 
-                {/* ================================= */}
                 {/* SIGN OUT */}
-                {/* ================================= */}
 
                 <button
                   onClick={handleLogout}
@@ -415,9 +716,7 @@ const Navbar = () => {
 
                 </button>
 
-                {/* ================================= */}
                 {/* ADD ACCOUNT */}
-                {/* ================================= */}
 
                 <button
                   onClick={() => {
@@ -442,9 +741,7 @@ const Navbar = () => {
 
                 </button>
 
-                {/* ================================= */}
                 {/* FOOTER */}
-                {/* ================================= */}
 
                 <div className="bg-gray-50 border-t border-gray-200 px-5 py-3 text-center">
 

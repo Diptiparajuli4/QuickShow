@@ -1,129 +1,260 @@
-import React, { createContext, useContext, useState } from 'react'
 
-const AuthContext = createContext(null)
+import React, {
+    createContext,
+    useContext,
+    useState
+} from "react";
+
+import axios from "axios";
+
+const AuthContext = createContext(null);
+
+// ==========================================
+// BACKEND URL
+// ==========================================
+
+axios.defaults.baseURL =
+    import.meta.env.VITE_BASE_URL || "http://localhost:5000";
+
+axios.defaults.withCredentials = true;
 
 
-// ========================================
-// ADMIN EMAIL
-// ========================================
-
-const ADMIN_EMAIL = 'admin@gmail.com'
-
+// ==========================================
+// AUTH PROVIDER
+// ==========================================
 
 export const AuthProvider = ({ children }) => {
+
+    // ==========================================
+    // CURRENT USER
+    // ==========================================
 
     const [user, setUser] = useState(() => {
 
         try {
 
-            const stored = localStorage.getItem('auth_user')
+            const storedUser =
+                localStorage.getItem("auth_user");
 
-            return stored
-                ? JSON.parse(stored)
-                : null
+            return storedUser
+                ? JSON.parse(storedUser)
+                : null;
 
-        } catch {
+        } catch (error) {
 
-            return null
+            console.error(
+                "Error loading stored user:",
+                error
+            );
+
+            return null;
 
         }
 
-    })
+    });
 
 
-    // ========================================
+    // ==========================================
     // LOGIN
-    // ========================================
+    // ==========================================
 
     const login = async (email, password) => {
 
-        // Check if this is the admin email
-        const isAdmin =
-            email.toLowerCase() === ADMIN_EMAIL.toLowerCase()
+        try {
+
+            console.log("Sending login request...");
+            console.log("Backend:", axios.defaults.baseURL);
+
+            const { data } = await axios.post(
+                "/user/login",
+                {
+                    email,
+                    password
+                }
+            );
 
 
-        const loggedInUser = {
+            console.log("Login response:", data);
 
-            name: isAdmin
-                ? 'Admin'
-                : 'Demo User',
 
-            email: email,
+            if (!data.success) {
 
-            avatar: null,
+                throw new Error(
+                    data.message || "Login failed"
+                );
 
-            role: isAdmin
-                ? 'admin'
-                : 'user'
+            }
+
+
+            const loggedInUser =
+                data.user;
+
+
+            // Save user in React state
+            setUser(loggedInUser);
+
+
+            // Save user in localStorage
+            localStorage.setItem(
+                "auth_user",
+                JSON.stringify(loggedInUser)
+            );
+
+
+            // Save token if backend sends one
+            if (data.token) {
+
+                localStorage.setItem(
+                    "token",
+                    data.token
+                );
+
+            }
+
+
+            return loggedInUser;
+
+
+        } catch (error) {
+
+            console.error(
+                "Login error:",
+                error.response?.data ||
+                error.message
+            );
+
+
+            throw new Error(
+                error.response?.data?.message ||
+                error.message ||
+                "Login failed"
+            );
 
         }
 
-
-        setUser(loggedInUser)
-
-
-        localStorage.setItem(
-            'auth_user',
-            JSON.stringify(loggedInUser)
-        )
+    };
 
 
-        return loggedInUser
-
-    }
-
-
-    // ========================================
+    // ==========================================
     // SIGNUP
-    // ========================================
+    // ==========================================
 
-    const signup = async (name, email, password) => {
+    const signup = async (
+        name,
+        email,
+        password
+    ) => {
 
-        const newUser = {
+        try {
 
-            name,
+            console.log("Sending signup request...");
+            console.log("Backend:", axios.defaults.baseURL);
 
-            email,
 
-            avatar: null,
+            const { data } = await axios.post(
+                "/user/signup",
+                {
+                    name,
+                    email,
+                    password
+                }
+            );
 
-            role: 'user'
+
+            console.log(
+                "Signup response:",
+                data
+            );
+
+
+            if (!data.success) {
+
+                throw new Error(
+                    data.message ||
+                    "Signup failed"
+                );
+
+            }
+
+
+            const newUser =
+                data.user;
+
+
+            // Save new user
+            setUser(newUser);
+
+
+            // Save user locally
+            localStorage.setItem(
+                "auth_user",
+                JSON.stringify(newUser)
+            );
+
+
+            // Save token if backend sends one
+            if (data.token) {
+
+                localStorage.setItem(
+                    "token",
+                    data.token
+                );
+
+            }
+
+
+            return newUser;
+
+
+        } catch (error) {
+
+            console.error(
+                "Signup error:",
+                error.response?.data ||
+                error.message
+            );
+
+
+            throw new Error(
+                error.response?.data?.message ||
+                error.message ||
+                "Signup failed"
+            );
 
         }
 
-
-        setUser(newUser)
-
-
-        localStorage.setItem(
-            'auth_user',
-            JSON.stringify(newUser)
-        )
+    };
 
 
-        return newUser
-
-    }
-
-
-    // ========================================
+    // ==========================================
     // LOGOUT
-    // ========================================
+    // ==========================================
 
     const logout = () => {
 
-        setUser(null)
+        setUser(null);
 
-        localStorage.removeItem('auth_user')
+        localStorage.removeItem(
+            "auth_user"
+        );
 
-    }
+        localStorage.removeItem(
+            "token"
+        );
 
+    };
+
+
+    // ==========================================
+    // AUTH CONTEXT
+    // ==========================================
 
     return (
 
         <AuthContext.Provider
             value={{
                 user,
+                setUser,
                 login,
                 signup,
                 logout
@@ -134,25 +265,30 @@ export const AuthProvider = ({ children }) => {
 
         </AuthContext.Provider>
 
-    )
+    );
 
-}
+};
 
+
+// ==========================================
+// USE AUTH
+// ==========================================
 
 export const useAuth = () => {
 
-    const ctx = useContext(AuthContext)
+    const context =
+        useContext(AuthContext);
 
 
-    if (!ctx) {
+    if (!context) {
 
         throw new Error(
-            'useAuth must be used inside AuthProvider'
-        )
+            "useAuth must be used inside AuthProvider"
+        );
 
     }
 
 
-    return ctx
+    return context;
 
-}
+};

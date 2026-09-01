@@ -1,6 +1,9 @@
+
 import express from "express";
 
 import {
+    registerUser,
+    loginUser,
     getUserBookings,
     updateFavourites,
     getFavourites
@@ -8,9 +11,28 @@ import {
 
 import { protect } from "../middleWare/auth.js";
 
-
 const userRouter = express.Router();
 
+// ==========================================
+// AUTHENTICATION
+// ==========================================
+
+// Create new user account
+userRouter.post(
+    "/signup",
+    registerUser
+);
+
+// Login existing user
+userRouter.post(
+    "/login",
+    loginUser
+);
+
+
+// ==========================================
+// USER BOOKINGS
+// ==========================================
 
 // Get logged-in user's bookings
 userRouter.get(
@@ -19,6 +41,10 @@ userRouter.get(
     getUserBookings
 );
 
+
+// ==========================================
+// FAVOURITE MOVIES
+// ==========================================
 
 // Add/remove favourite movie
 userRouter.post(
@@ -34,6 +60,5 @@ userRouter.get(
     protect,
     getFavourites
 );
-
 
 export default userRouter;
