@@ -1,3 +1,4 @@
+
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import Profile from './pages/Profile'
@@ -10,7 +11,11 @@ import Favorite from './pages/Favorite'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 
-import { Routes, Route, useLocation } from 'react-router-dom'
+import {
+    Routes,
+    Route,
+    useLocation
+} from 'react-router-dom'
 
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -27,43 +32,93 @@ const App = () => {
 
     const { pathname } = useLocation()
 
-    const isAdminRoute = pathname.startsWith('/admin')
 
-    const { user } = useAuth()
+    // =====================================================
+    // CHECK ADMIN ROUTE
+    // =====================================================
+
+    const isAdminRoute =
+        pathname.startsWith('/admin')
+
+
+    // =====================================================
+    // GET AUTH DATA
+    // =====================================================
+
+    const {
+        user,
+        admin,
+        loading
+    } = useAuth()
+
+
+    // =====================================================
+    // ADMIN CHECK
+    // =====================================================
+
+    const isAdmin =
+        admin?.role === 'admin'
+
+
+    // =====================================================
+    // WAIT FOR AUTHENTICATION TO LOAD
+    // =====================================================
+
+    if (loading) {
+
+        return (
+            <div className="min-h-screen bg-black text-white flex items-center justify-center">
+
+                <p className="text-gray-400">
+                    Loading...
+                </p>
+
+            </div>
+        )
+
+    }
 
 
     return (
         <>
 
-            {/* Navbar for normal user pages */}
+            {/* ================================================= */}
+            {/* NAVBAR FOR NORMAL USER PAGES */}
+            {/* ================================================= */}
+
             {!isAdminRoute && <Navbar />}
 
 
             <Routes>
 
-                {/* ========================= */}
+
+                {/* ================================================= */}
                 {/* NORMAL USER PAGES */}
-                {/* ========================= */}
+                {/* ================================================= */}
 
                 <Route
                     path="/"
                     element={<Home />}
                 />
 
+
                 <Route
                     path="/home"
                     element={<Home />}
                 />
+
 
                 <Route
                     path="/movies"
                     element={<Movies />}
                 />
 
+
                 <Route
                     path="/movies/:id"
                     element={<MovieDetail />}
                 />
+
 
                 <Route
                     path="/movies/:id/:date"
@@ -73,23 +128,27 @@ const App = () => {
                         </ProtectedRoute>
                     }
                 />
+
+
                 <Route
                     path="/my-booking"
                     element={
                         <ProtectedRoute>
                             <MyBooking />
                         </ProtectedRoute>
-                        }
+                    }
                 />
+
 
                 <Route
                     path="/favorite"
                     element={
                         <ProtectedRoute>
-                          <Favorite />
+                            <Favorite />
                         </ProtectedRoute>
-                        }
+                    }
                 />
+
 
                 <Route
                     path="/profile"
@@ -97,17 +156,19 @@ const App = () => {
                         <ProtectedRoute>
                             <Profile />
                         </ProtectedRoute>
-                        }
+                    }
                 />
 
-                {/* ========================= */}
+
+                {/* ================================================= */}
                 {/* LOGIN / SIGNUP */}
-                {/* ========================= */}
+                {/* ================================================= */}
 
                 <Route
                     path="/login"
                     element={<Login />}
                 />
+
 
                 <Route
                     path="/signup"
@@ -115,25 +176,31 @@ const App = () => {
                 />
 
 
-                {/* ========================= */}
+                {/* ================================================= */}
                 {/* ADMIN ROUTES */}
-                {/* ========================= */}
+                {/* ================================================= */}
 
                 <Route
                     path="/admin/*"
                     element={
-                        user?.role === 'admin' ? (
+
+                        isAdmin ? (
+
                             <Layout />
+
                         ) : (
+
                             <div className="min-h-screen flex flex-col justify-center items-center bg-black text-white px-4">
 
                                 <h1 className="text-2xl font-bold mb-4">
                                     Admin Access Required
                                 </h1>
 
+
                                 <p className="text-gray-400 mb-6 text-center">
                                     Please login with an administrator account.
                                 </p>
+
 
                                 <a
                                     href="/login"
@@ -143,7 +210,9 @@ const App = () => {
                                 </a>
 
                             </div>
+
                         )
+
                     }
                 >
 
@@ -152,15 +221,18 @@ const App = () => {
                         element={<Dashboard />}
                     />
 
+
                     <Route
                         path="add-shows"
                         element={<AddShows />}
                     />
 
+
                     <Route
                         path="list-shows"
                         element={<ListShows />}
                     />
+
 
                     <Route
                         path="list-bookings"
@@ -169,10 +241,14 @@ const App = () => {
 
                 </Route>
 
+
             </Routes>
 
 
-            {/* Footer for normal user pages */}
+            {/* ================================================= */}
+            {/* FOOTER FOR NORMAL USER PAGES */}
+            {/* ================================================= */}
+
             {!isAdminRoute && <Footer />}
 
         </>

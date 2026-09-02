@@ -1,3 +1,4 @@
+
 import React, {
     useState
 } from "react";
@@ -38,9 +39,9 @@ const Login = () => {
         useNavigate();
 
 
-    // =========================================
+    // =====================================================
     // LOGIN
-    // =========================================
+    // =====================================================
 
     const handleSubmit = async (e) => {
 
@@ -48,9 +49,11 @@ const Login = () => {
 
         setError("");
 
+
+        // Check empty fields
         if (
             !email.trim() ||
-            !password.trim()
+            !password
         ) {
 
             setError(
@@ -58,6 +61,7 @@ const Login = () => {
             );
 
             return;
+
         }
 
 
@@ -66,6 +70,7 @@ const Login = () => {
 
         try {
 
+            // Login checks the database through AuthContext
             const loggedInUser =
                 await login(
                     email.trim(),
@@ -74,32 +79,70 @@ const Login = () => {
 
 
             console.log(
-                "Logged in:",
+                "Logged in user:",
                 loggedInUser
             );
 
 
-            // =================================
-            // ADMIN
-            // =================================
+            // =================================================
+            // ADMIN ACCOUNT
+            // =================================================
 
             if (
-                loggedInUser.role === "admin" ||
-                loggedInUser.isAdmin === true
+                loggedInUser.role === "admin"
             ) {
 
-                navigate("/admin");
+                console.log(
+                    "Admin detected - redirecting to admin"
+                );
+
+
+                navigate(
+                    "/admin",
+                    {
+                        replace: true
+                    }
+                );
+
 
                 return;
+
             }
 
 
-            // =================================
-            // NORMAL USER
-            // =================================
+            // =================================================
+            // NORMAL USER ACCOUNT
+            // =================================================
 
-            navigate("/");
+            if (
+                loggedInUser.role === "user"
+            ) {
 
+                console.log(
+                    "User detected - redirecting to home"
+                );
+
+
+                navigate(
+                    "/",
+                    {
+                        replace: true
+                    }
+                );
+
+
+                return;
+
+            }
+
+
+            // =================================================
+            // UNKNOWN ROLE
+            // =================================================
+
+            setError(
+                "Your account has an invalid role."
+            );
 
         } catch (error) {
 
@@ -111,7 +154,7 @@ const Login = () => {
 
             setError(
                 error.message ||
-                "Unable to login. Please try again."
+                "Unable to login. Please check your email and password."
             );
 
         } finally {
@@ -127,13 +170,17 @@ const Login = () => {
 
         <div className="min-h-screen flex items-center justify-center bg-black px-4">
 
+            {/* Background */}
+
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-primary/20 via-black to-black pointer-events-none" />
 
 
             <div className="relative z-10 w-full max-w-md">
 
 
-                {/* LOGO */}
+                {/* =================================================
+                    LOGO
+                ================================================= */}
 
                 <div className="flex justify-center mb-8">
 
@@ -150,7 +197,9 @@ const Login = () => {
                 </div>
 
 
-                {/* CARD */}
+                {/* =================================================
+                    LOGIN CARD
+                ================================================= */}
 
                 <div className="bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl p-8">
 
@@ -169,7 +218,9 @@ const Login = () => {
                     </p>
 
 
-                    {/* ERROR */}
+                    {/* =================================================
+                        ERROR
+                    ================================================= */}
 
                     {error && (
 
@@ -181,6 +232,10 @@ const Login = () => {
 
                     )}
 
+
+                    {/* =================================================
+                        FORM
+                    ================================================= */}
 
                     <form
                         onSubmit={handleSubmit}
@@ -250,7 +305,9 @@ const Login = () => {
                         </div>
 
 
-                        {/* LOGIN */}
+                        {/* =================================================
+                            LOGIN BUTTON
+                        ================================================= */}
 
                         <button
                             type="submit"
@@ -267,6 +324,10 @@ const Login = () => {
 
                     </form>
 
+
+                    {/* =================================================
+                        SIGNUP LINK
+                    ================================================= */}
 
                     <p className="mt-6 text-center text-sm text-gray-400">
 

@@ -1,36 +1,14 @@
 
-import Booking from "../models/Booking.js";
-import Movie from "../models/Movie.js";
 import User from "../models/User.js";
-
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 
-// ==========================================
-// CREATE JWT TOKEN
-// ==========================================
+// =====================================================
+// SIGNUP USER
+// =====================================================
 
-const createToken = (userId) => {
-
-    return jwt.sign(
-        {
-            id: userId
-        },
-        process.env.JWT_SECRET,
-        {
-            expiresIn: "7d"
-        }
-    );
-
-};
-
-
-// ==========================================
-// SIGNUP / REGISTER USER
-// ==========================================
-
-export const registerUser = async (req, res) => {
+export const signupUser = async (req, res) => {
 
     try {
 
@@ -41,85 +19,157 @@ export const registerUser = async (req, res) => {
         } = req.body;
 
 
-        // Check required fields
-        if (!name || !email || !password) {
+        // =================================================
+        // VALIDATE INPUT
+        // =================================================
+
+        if (
+            !name ||
+            !email ||
+            !password
+        ) {
 
             return res.status(400).json({
+
                 success: false,
-                message: "Please fill in all fields"
+
+                message:
+                    "Please fill in all fields."
+
             });
 
         }
 
 
-        // Check if email already exists
-        const existingUser = await User.findOne({
-            email
-        });
+        // =================================================
+        // CLEAN DATA
+        // =================================================
+
+        const cleanName =
+            name.trim();
+
+        const cleanEmail =
+            email.trim().toLowerCase();
+
+
+        // =================================================
+        // CHECK EXISTING USER
+        // =================================================
+
+        const existingUser =
+            await User.findOne({
+                email: cleanEmail
+            });
 
 
         if (existingUser) {
 
             return res.status(400).json({
+
                 success: false,
-                message: "User already exists with this email"
+
+                message:
+                    "Email is already registered."
+
             });
 
         }
 
 
-        // Hash password
+        // =================================================
+        // HASH PASSWORD
+        // =================================================
+
         const hashedPassword =
-            await bcrypt.hash(password, 10);
+            await bcrypt.hash(
+                password,
+                10
+            );
 
 
-        // Create user
-        const user = await User.create({
+        // =================================================
+        // CREATE USER
+        // =================================================
 
-            name,
+        const user =
+            await User.create({
 
-            email,
+                name: cleanName,
 
-            password: hashedPassword,
+                email: cleanEmail,
 
-            favourites: []
+                password: hashedPassword,
 
-        });
+                image: "",
+
+                // IMPORTANT:
+                // Public signup can ONLY create users
+                role: "user",
+
+                favourites: []
+
+            });
 
 
-        // Create login token
+        // =================================================
+        // CREATE TOKEN
+        // =================================================
+
         const token =
-            createToken(user._id);
+            jwt.sign(
+
+                {
+                    id: user._id,
+
+                    role: user.role
+                },
+
+                process.env.JWT_SECRET,
+
+                {
+                    expiresIn: "7d"
+                }
+
+            );
 
 
-        // Don't send password to frontend
-        const userResponse = {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            isAdmin: user.isAdmin === true || user.role === "admin"
-        };
-
+        // =================================================
+        // SEND RESPONSE
+        // =================================================
 
         return res.status(201).json({
 
             success: true,
 
-            message: "Account created successfully",
+            message:
+                "Account created successfully.",
 
-            user: userResponse,
+            token,
 
-            token
+            user: {
+
+                _id: user._id,
+
+                name: user.name,
+
+                email: user.email,
+
+                image: user.image,
+
+                role: user.role,
+
+                favourites:
+                    user.favourites
+
+            }
 
         });
 
-
     } catch (error) {
 
-        console.log(
+        console.error(
             "Signup error:",
-            error.message
+            error
         );
 
 
@@ -127,7 +177,8 @@ export const registerUser = async (req, res) => {
 
             success: false,
 
-            message: error.message
+            message:
+                "Unable to create account."
 
         });
 
@@ -136,9 +187,9 @@ export const registerUser = async (req, res) => {
 };
 
 
-// ==========================================
-// LOGIN USER
-// ==========================================
+// =====================================================
+// LOGIN USER / ADMIN
+// =====================================================
 
 export const loginUser = async (req, res) => {
 
@@ -150,27 +201,44 @@ export const loginUser = async (req, res) => {
         } = req.body;
 
 
-        // Check fields
-        if (!email || !password) {
+        // =================================================
+        // VALIDATE INPUT
+        // =================================================
+
+        if (
+            !email ||
+            !password
+        ) {
 
             return res.status(400).json({
 
                 success: false,
 
                 message:
-                    "Email and password are required"
+                    "Please enter email and password."
 
             });
 
         }
 
 
-        // Find user
-        const user = await User.findOne({
-            email
-        });
+        // =================================================
+        // FIND ACCOUNT IN MONGODB
+        // =================================================
+
+        const cleanEmail =
+            email.trim().toLowerCase();
 
 
+        const user =
+            await User.findOne({
+
+                email: cleanEmail
+
+            });
+
+
+        // Account does not exist
         if (!user) {
 
             return res.status(401).json({
@@ -178,72 +246,97 @@ export const loginUser = async (req, res) => {
                 success: false,
 
                 message:
-                    "Invalid email or password"
+                    "Invalid email or password."
 
             });
 
         }
 
 
-        // Compare password
-        const isPasswordCorrect =
+        // =================================================
+        // CHECK PASSWORD
+        // =================================================
+
+        const passwordMatch =
             await bcrypt.compare(
                 password,
                 user.password
             );
 
 
-        if (!isPasswordCorrect) {
+        if (!passwordMatch) {
 
             return res.status(401).json({
 
                 success: false,
 
                 message:
-                    "Invalid email or password"
+                    "Invalid email or password."
 
             });
 
         }
 
 
-        // Create token
+        // =================================================
+        // CREATE JWT TOKEN
+        // =================================================
+
         const token =
-            createToken(user._id);
+            jwt.sign(
+
+                {
+                    id: user._id,
+
+                    role: user.role
+                },
+
+                process.env.JWT_SECRET,
+
+                {
+                    expiresIn: "7d"
+                }
+
+            );
 
 
-        // User information sent to frontend
-        const userResponse = {
-
-            id: user._id,
-
-            name: user.name,
-
-            email: user.email,
-
-            role: user.role
-
-        };
-
+        // =================================================
+        // RETURN USER DATA
+        // =================================================
 
         return res.status(200).json({
 
             success: true,
 
-            message: "Login successful",
+            message:
+                "Login successful.",
 
-            user: userResponse,
+            token,
 
-            token
+            user: {
+
+                _id: user._id,
+
+                name: user.name,
+
+                email: user.email,
+
+                image: user.image,
+
+                role: user.role,
+
+                favourites:
+                    user.favourites
+
+            }
 
         });
 
-
     } catch (error) {
 
-        console.log(
+        console.error(
             "Login error:",
-            error.message
+            error
         );
 
 
@@ -251,206 +344,8 @@ export const loginUser = async (req, res) => {
 
             success: false,
 
-            message: error.message
-
-        });
-
-    }
-
-};
-
-
-// ==========================================
-// GET USER BOOKINGS
-// ==========================================
-
-export const getUserBookings = async (req, res) => {
-
-    try {
-
-        // User id comes from JWT middleware
-        const userId = req.user.id;
-
-
-        const bookings = await Booking.find({
-            user: userId
-        })
-            .populate({
-                path: "show",
-                populate: {
-                    path: "movie"
-                }
-            })
-            .sort({
-                createdAt: -1
-            });
-
-
-        res.json({
-
-            success: true,
-
-            bookings
-
-        });
-
-
-    } catch (error) {
-
-        console.log(error.message);
-
-
-        res.json({
-
-            success: false,
-
-            message: error.message
-
-        });
-
-    }
-
-};
-
-
-// ==========================================
-// ADD / REMOVE FAVOURITE MOVIE
-// ==========================================
-
-export const updateFavourites = async (req, res) => {
-
-    try {
-
-        const userId = req.user.id;
-
-        const {
-            movieId
-        } = req.body;
-
-
-        const user =
-            await User.findById(userId);
-
-
-        if (!user) {
-
-            return res.json({
-
-                success: false,
-
-                message: "User not found"
-
-            });
-
-        }
-
-
-        // Add movie if not already favourite
-        if (!user.favourites.includes(movieId)) {
-
-            user.favourites.push(movieId);
-
-        }
-
-        // Remove movie if already favourite
-        else {
-
-            user.favourites =
-                user.favourites.filter(
-                    (id) =>
-                        id.toString() !== movieId
-                );
-
-        }
-
-
-        await user.save();
-
-
-        res.json({
-
-            success: true,
-
             message:
-                "Favourite movies updated successfully"
-
-        });
-
-
-    } catch (error) {
-
-        console.log(error.message);
-
-
-        res.json({
-
-            success: false,
-
-            message: error.message
-
-        });
-
-    }
-
-};
-
-
-// ==========================================
-// GET FAVOURITE MOVIES
-// ==========================================
-
-export const getFavourites = async (req, res) => {
-
-    try {
-
-        const userId = req.user.id;
-
-
-        const user =
-            await User.findById(userId);
-
-
-        if (!user) {
-
-            return res.json({
-
-                success: false,
-
-                message: "User not found"
-
-            });
-
-        }
-
-
-        const movies = await Movie.find({
-
-            _id: {
-                $in: user.favourites
-            }
-
-        });
-
-
-        res.json({
-
-            success: true,
-
-            movies
-
-        });
-
-
-    } catch (error) {
-
-        console.log(error.message);
-
-
-        res.json({
-
-            success: false,
-
-            message: error.message
+                "Server error during login."
 
         });
 

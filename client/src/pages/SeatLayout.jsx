@@ -2,19 +2,12 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
-import {
-  ArrowRightIcon,
-  ClockIcon,
-} from "lucide-react";
+import { ArrowRightIcon, ClockIcon } from "lucide-react";
 import BlurCircle from "../components/BlurCircle";
 import { toast } from "react-toastify";
+import { useAppContext } from "../context/AppContext";
 
 const SeatLayout = () => {
-
-  // =========================================
-  // SEAT ROWS
-  // =========================================
-
   const groupRows = [
     ["A", "B"],
     ["C", "D"],
@@ -23,1277 +16,536 @@ const SeatLayout = () => {
     ["I", "J"],
   ];
 
-  // =========================================
-  // URL PARAMETERS
-  // =========================================
-
   const { id, date } = useParams();
 
-  const navigate = useNavigate();
-
-  // =========================================
-  // STATES
-  // =========================================
-
   const [selectedSeats, setSelectedSeats] = useState([]);
-
   const [selectedTime, setSelectedTime] = useState(null);
-
   const [show, setShow] = useState(null);
+
+  // Seats already booked in MongoDB
+  const [occupiedSeats, setOccupiedSeats] = useState([]);
 
   const [loading, setLoading] = useState(true);
 
-  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  // =========================================
-  // GET TOKEN
-  // =========================================
+  const { axios, getToken, user } = useAppContext();
 
-  const token = localStorage.getItem("token");
+  // ============================================================
+  // GET SHOW DATA
+  // ============================================================
 
-  // =========================================
-  // FETCH SHOW FROM DATABASE
-  // =========================================
+  const getShow = async () => {
+    try {
+      setLoading(true);
+
+      const { data } = await axios.get(`/api/show/${id}`);
+
+      console.log("Show data:", data);
+
+      if (data.success) {
+        setShow(data);
+      }
+    } catch (error) {
+      console.log("Error getting show:", error);
+      toast.error("Unable to load show");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ============================================================
+  // GET OCCUPIED SEATS FROM DATABASE
+  // ============================================================
+
+  const getOccupiedSeats = async (showId) => {
+    try {
+      if (!showId) return;
+
+      console.log("Getting occupied seats for:", showId);
+
+      const { data } = await axios.get(
+        `/api/booking/occupied-seats/${showId}`
+      );
+
+      console.log("Occupied seats response:", data);
+
+      if (data.success) {
+        setOccupiedSeats(data.occupiedSeats || []);
+      } else {
+        setOccupiedSeats([]);
+      }
+    } catch (error) {
+      console.log("Error getting occupied seats:", error);
+
+      setOccupiedSeats([]);
+    }
+  };
+
+  // ============================================================
+  // LOAD SHOW
+  // ============================================================
 
   useEffect(() => {
+    getShow();
+  }, [id]);
 
-    const fetchShow = async () => {
+  // ============================================================
+  // WHEN USER SELECTS SHOW TIME
+  // GET OCCUPIED SEATS FOR THAT SHOW
+  // ============================================================
 
-      try {
+  useEffect(() => {
+    if (selectedTime?.showId) {
+      getOccupiedSeats(selectedTime.showId);
 
-        setLoading(true);
-        setError("");
+      // Clear previously selected seats
+      setSelectedSeats([]);
+    }
+  }, [selectedTime]);
 
-        console.log(
-          "Fetching show from MongoDB..."
-        );
-
-        console.log(
-          "Movie ID:",
-          id
-        );
-
-        console.log(
-          "Selected Date:",
-          date
-        );
-
-        // =====================================
-        // GET ALL SHOWS FROM DATABASE
-        // =====================================
-
-        const response = await fetch(
-          "http://localhost:3000/show/all"
-        );
-
-        if (!response.ok) {
-
-          throw new Error(
-            `Server error: ${response.status}`
-          );
-
-        }
-
-        const data = await response.json();
-
-        console.log(
-          "Shows received:",
-          data
-        );
-
-        // =====================================
-        // CHECK RESPONSE
-        // =====================================
-
-        if (
-          !data.success ||
-          !Array.isArray(data.shows)
-        ) {
-
-          throw new Error(
-            data.message ||
-            "Invalid show data received"
-          );
-
-        }
-
-        // =====================================
-        // FIND SHOWS FOR THIS MOVIE
-        // =====================================
-
-        const movieShows = data.shows.filter(
-          (item) => {
-
-            if (!item.movie) {
-              return false;
-            }
-
-            const movieId =
-              item.movie._id ||
-              item.movie.id;
-
-            return (
-              String(movieId) ===
-              String(id)
-            );
-
-          }
-        );
-
-        console.log(
-          "Shows for this movie:",
-          movieShows
-        );
-
-        // =====================================
-        // FIND SHOW FOR SELECTED DATE
-        // =====================================
-
-        const dateShows = movieShows.filter(
-          (item) => {
-
-            if (!item.showDateTime) {
-              return false;
-            }
-
-            const showDate =
-              new Date(
-                item.showDateTime
-              )
-                .toISOString()
-                .split("T")[0];
-
-            return (
-              showDate === date
-            );
-
-          }
-        );
-
-        console.log(
-          "Shows for selected date:",
-          dateShows
-        );
-
-        // =====================================
-        // NO SHOW FOR DATE
-        // =====================================
-
-        if (dateShows.length === 0) {
-
-          setShow(null);
-
-          setError(
-            "No show is available for this date."
-          );
-
-          return;
-
-        }
-
-        // =====================================
-        // CREATE SHOW OBJECT
-        // =====================================
-
-        const movie =
-          dateShows[0].movie;
-
-        setShow({
-          movie: movie,
-
-          shows: dateShows,
-        });
-
-        // =====================================
-        // AUTOMATICALLY SELECT FIRST TIME
-        // =====================================
-
-        setSelectedTime(
-          dateShows[0]
-        );
-
-      } catch (err) {
-
-        console.error(
-          "Error fetching show:",
-          err
-        );
-
-        setShow(null);
-
-        setError(
-          "Unable to load show details."
-        );
-
-      } finally {
-
-        setLoading(false);
-
-      }
-
-    };
-
-    fetchShow();
-
-  }, [id, date]);
-
-  // =========================================
-  // SEAT CLICK
-  // =========================================
+  // ============================================================
+  // SELECT / UNSELECT SEAT
+  // ============================================================
 
   const handleSeatClick = (seatId) => {
-
-    // -----------------------------------------
-    // NO TIME SELECTED
-    // -----------------------------------------
-
+    // User must select show time first
     if (!selectedTime) {
-
-      toast(
-        "Please select a show time first"
-      );
-
-      return;
-
+      return toast.warning("Please select time first");
     }
 
-    // -----------------------------------------
-    // CHECK OCCUPIED SEATS
-    // -----------------------------------------
+    // ----------------------------------------
+    // PREVENT OCCUPIED SEAT
+    // ----------------------------------------
 
-    const occupiedSeats =
-      selectedTime.occupiedSeats || {};
-
-    if (
-      occupiedSeats[seatId]
-    ) {
-
-      toast(
-        "This seat is already occupied"
-      );
-
-      return;
-
+    if (occupiedSeats.includes(seatId)) {
+      return toast.error(`${seatId} is already occupied`);
     }
 
-    // -----------------------------------------
+    // ----------------------------------------
     // MAXIMUM 5 SEATS
-    // -----------------------------------------
+    // ----------------------------------------
 
     if (
-      !selectedSeats.includes(
-        seatId
-      ) &&
+      !selectedSeats.includes(seatId) &&
       selectedSeats.length >= 5
     ) {
-
-      toast(
-        "You can only select 5 seats"
-      );
-
-      return;
-
+      return toast.warning("You can only select 5 seats");
     }
 
-    // -----------------------------------------
-    // SELECT / DESELECT
-    // -----------------------------------------
+    // ----------------------------------------
+    // SELECT / UNSELECT
+    // ----------------------------------------
 
-    setSelectedSeats(
-      (previousSeats) => {
-
-        if (
-          previousSeats.includes(
-            seatId
-          )
-        ) {
-
-          return previousSeats.filter(
-            (seat) =>
-              seat !== seatId
-          );
-
-        }
-
-        return [
-          ...previousSeats,
-          seatId,
-        ];
-
+    setSelectedSeats((prev) => {
+      if (prev.includes(seatId)) {
+        // Remove seat
+        return prev.filter((seat) => seat !== seatId);
+      } else {
+        // Add seat
+        return [...prev, seatId];
       }
-    );
-
+    });
   };
 
-  // =========================================
-  // CHANGE SHOW TIME
-  // =========================================
+  // ============================================================
+  // RENDER SEATS
+  // ============================================================
 
-  const handleTimeChange = (showItem) => {
+  const renderSeats = (row, count = 9) => (
+    <div key={row} className="flex gap-2 mt-2">
+      <div className="flex flex-wrap items-center justify-center gap-2">
 
-    setSelectedTime(
-      showItem
-    );
+        {Array.from({ length: count }, (_, i) => {
+          const seatId = `${row}${i + 1}`;
 
-    // Clear seats when changing time
-    setSelectedSeats([]);
+          const isOccupied = occupiedSeats.includes(seatId);
 
-  };
+          const isSelected = selectedSeats.includes(seatId);
 
-  // =========================================
-  // BOOKING
-  // =========================================
+          return (
+            <button
+              key={seatId}
+              type="button"
+              disabled={isOccupied}
+              onClick={() => handleSeatClick(seatId)}
+              className={`
+                h-8
+                w-8
+                rounded
+                border
+                text-xs
+                transition-all
 
-  const handleBooking = async () => {
+                ${
+                  isOccupied
+                    ? "bg-gray-700 text-gray-500 border-gray-600 cursor-not-allowed opacity-50"
+                    : isSelected
+                    ? "bg-primary text-white border-primary cursor-pointer scale-105"
+                    : "border-primary/60 text-white cursor-pointer hover:bg-primary/20"
+                }
+              `}
+            >
+              {seatId}
+            </button>
+          );
+        })}
 
-    // -----------------------------------------
+      </div>
+    </div>
+  );
+
+  // ============================================================
+  // PROCEED TO CHECKOUT
+  // ============================================================
+
+  const handleCheckout = async () => {
+    // ----------------------------------------
+    // CHECK LOGIN
+    // ----------------------------------------
+
+    if (!user) {
+      return toast.warning("Please login before booking");
+    }
+
+    // ----------------------------------------
     // CHECK TIME
-    // -----------------------------------------
+    // ----------------------------------------
 
     if (!selectedTime) {
-
-      toast(
-        "Please select a show time"
-      );
-
-      return;
-
+      return toast.warning("Please select a show time");
     }
 
-    // -----------------------------------------
+    // ----------------------------------------
     // CHECK SEATS
-    // -----------------------------------------
+    // ----------------------------------------
 
-    if (
-      selectedSeats.length === 0
-    ) {
-
-      toast(
-        "Please select at least one seat"
-      );
-
-      return;
-
+    if (selectedSeats.length === 0) {
+      return toast.warning("Please select at least one seat");
     }
 
-    // -----------------------------------------
-    // CHECK LOGIN
-    // -----------------------------------------
+    // ----------------------------------------
+    // DOUBLE CHECK OCCUPIED SEATS
+    // ----------------------------------------
 
-    if (!token) {
+    const alreadyOccupied = selectedSeats.filter((seat) =>
+      occupiedSeats.includes(seat)
+    );
 
-      toast(
-        "Please login to continue"
+    if (alreadyOccupied.length > 0) {
+      return toast.error(
+        `These seats are already occupied: ${alreadyOccupied.join(", ")}`
       );
-
-      navigate("/login");
-
-      return;
-
     }
 
     try {
+      // ----------------------------------------
+      // GET TOKEN
+      // ----------------------------------------
 
-      // ---------------------------------------
-      // DATABASE SHOW PRICE
-      // ---------------------------------------
+      const token = await getToken();
 
-      const price =
-        Number(
-          selectedTime.showPrice
-        ) || 0;
+      // ----------------------------------------
+      // MOVIE DATA
+      // ----------------------------------------
 
-      // ---------------------------------------
+      const movie = show.movie;
+
+      // ----------------------------------------
+      // SHOW PRICE
+      // ----------------------------------------
+
+      const showPrice =
+        selectedTime.showPrice ||
+        selectedTime.price ||
+        movie.showPrice ||
+        movie.price ||
+        200;
+
+      // ----------------------------------------
       // TOTAL AMOUNT
-      // ---------------------------------------
+      // ----------------------------------------
 
       const totalAmount =
-        selectedSeats.length *
-        price;
+        showPrice * selectedSeats.length;
 
-      console.log(
-        "Booking information:",
+      // ----------------------------------------
+      // BOOKING DATA
+      // ----------------------------------------
+
+      const bookingData = {
+        showId: selectedTime.showId,
+
+        movieId: movie._id,
+
+        movie: movie.title,
+
+        poster_path: movie.poster_path,
+
+        date: date,
+
+        time: selectedTime.time,
+
+        seats: selectedSeats,
+
+        amount: totalAmount,
+
+        runtime: movie.runtime,
+      };
+
+      console.log("Sending booking:", bookingData);
+
+      // ----------------------------------------
+      // SAVE BOOKING TO MONGODB
+      // ----------------------------------------
+
+      const { data } = await axios.post(
+        "/api/booking/create",
+        bookingData,
         {
-          showId:
-            selectedTime._id,
-
-          movieId:
-            id,
-
-          date,
-
-          time:
-            selectedTime.showDateTime,
-
-          seats:
-            selectedSeats,
-
-          price,
-
-          amount:
-            totalAmount,
-        }
-      );
-
-      // =======================================
-      // SEND BOOKING TO BACKEND
-      // =======================================
-
-      const response = await fetch(
-        "http://localhost:3000/booking/add",
-        {
-          method: "POST",
-
           headers: {
-
-            "Content-Type":
-              "application/json",
-
-            Authorization:
-              `Bearer ${token}`,
-
+            Authorization: `Bearer ${token}`,
           },
-
-          body: JSON.stringify({
-
-            showId:
-              selectedTime._id,
-
-            bookedSeats:
-              selectedSeats,
-
-          }),
-
         }
       );
 
-      const data =
-        await response.json();
+      console.log("Booking response:", data);
 
-      console.log(
-        "Booking response:",
-        data
-      );
+      // ----------------------------------------
+      // BOOKING SUCCESS
+      // ----------------------------------------
 
-      // =======================================
-      // CHECK RESPONSE
-      // =======================================
+      if (data.success) {
+        toast.success("Booking created successfully!");
 
-      if (!response.ok || !data.success) {
+        // Update occupied seats immediately
+        setOccupiedSeats((prev) => [
+          ...prev,
+          ...selectedSeats,
+        ]);
 
-        toast(
-          data.message ||
-          "Booking failed"
+        // Clear selected seats
+        setSelectedSeats([]);
+
+        // Navigate to My Booking
+        navigate("/my-booking");
+      } else {
+        toast.error(
+          data.message || "Booking failed"
         );
-
-        return;
-
       }
 
-      // =======================================
-      // SUCCESS
-      // =======================================
-
-      toast.success(
-        "Booking successful!"
-      );
-
-      // =======================================
-      // GO TO MY BOOKINGS
-      // =======================================
-
-      navigate(
-        "/my-booking"
-      );
-
-      window.scrollTo(
-        0,
-        0
-      );
-
-    } catch (err) {
-
-      console.error(
+    } catch (error) {
+      console.log(
         "Booking error:",
-        err
+        error.response?.data || error
       );
 
-      toast(
-        "Unable to complete booking"
+      toast.error(
+        error.response?.data?.message ||
+          "Unable to create booking"
       );
-
     }
-
   };
 
-  // =========================================
-  // RENDER SEATS
-  // =========================================
+  // ============================================================
+  // LOADING
+  // ============================================================
 
-  const renderSeats = (
-    row,
-    count = 9
-  ) => {
-
+  if (loading || !show) {
     return (
+      <div className="text-center pt-40 text-white">
+        Loading...
+      </div>
+    );
+  }
 
-      <div
-        key={row}
-        className="flex gap-2 mt-2"
-      >
+  // ============================================================
+  // PAGE
+  // ============================================================
 
-        <div
-          className="
-            flex
-            flex-wrap
-            items-center
-            justify-center
-            gap-2
-          "
-        >
+  return (
+    <div className="flex flex-col md:flex-row px-6 md:px-16 lg:px-40 pt-40">
 
-          {Array.from(
-            {
-              length: count,
-            },
-            (_, index) => {
+      {/* ====================================================== */}
+      {/* TIMING SECTION */}
+      {/* ====================================================== */}
 
-              const seatId =
-                `${row}${index + 1}`;
+      <div className="w-60 bg-primary/10 border border-primary/20 rounded-lg py-10">
 
-              const occupiedSeats =
-                selectedTime?.occupiedSeats ||
-                {};
+        <p className="text-lg font-semibold px-6">
+          Available Timings
+        </p>
 
-              const isOccupied =
-                Boolean(
-                  occupiedSeats[
-                    seatId
-                  ]
-                );
+        <div className="mt-5 space-y-2">
 
-              const isSelected =
-                selectedSeats.includes(
-                  seatId
-                );
+          {show?.dateTime?.[date]?.map(
+            (item, index) => (
+              <div
+                key={index}
+                onClick={() => {
+                  setSelectedTime(item);
+                  setSelectedSeats([]);
+                }}
+                className={`
+                  flex
+                  items-center
+                  gap-2
+                  px-6
+                  py-2
+                  cursor-pointer
+                  transition-all
 
-              return (
-
-                <button
-                  key={seatId}
-                  type="button"
-                  disabled={isOccupied}
-                  onClick={() =>
-                    handleSeatClick(
-                      seatId
-                    )
+                  ${
+                    selectedTime?.showId === item.showId
+                      ? "bg-primary text-white"
+                      : "hover:bg-primary/20"
                   }
-                  className={`
-                    h-8
-                    w-8
-                    rounded
-                    border
-                    text-xs
-                    transition-all
+                `}
+              >
 
-                    ${
-                      isOccupied
-                        ? `
-                          bg-gray-700
-                          text-gray-500
-                          border-gray-700
-                          cursor-not-allowed
-                        `
-                        : isSelected
-                        ? `
-                          bg-primary
-                          text-white
-                          border-primary
-                        `
-                        : `
-                          border-primary/60
-                          cursor-pointer
-                          hover:bg-primary/20
-                        `
-                    }
-                  `}
-                >
+                <ClockIcon className="w-4 h-4" />
 
-                  {seatId}
+                <p className="text-sm">
+                  {new Date(
+                    item.time
+                  ).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
 
-                </button>
-
-              );
-
-            }
+              </div>
+            )
           )}
 
         </div>
-
       </div>
 
-    );
+      {/* ====================================================== */}
+      {/* SEAT LAYOUT */}
+      {/* ====================================================== */}
 
-  };
-
-  // =========================================
-  // LOADING
-  // =========================================
-
-  if (loading) {
-
-    return (
-
-      <div
-        className="
-          flex
-          items-center
-          justify-center
-          min-h-screen
-          text-white
-        "
-      >
-
-        <p className="text-xl">
-
-          Loading show details...
-
-        </p>
-
-      </div>
-
-    );
-
-  }
-
-  // =========================================
-  // ERROR
-  // =========================================
-
-  if (!show) {
-
-    return (
-
-      <div
-        className="
-          flex
-          flex-col
-          items-center
-          justify-center
-          min-h-screen
-          text-white
-          gap-4
-        "
-      >
-
-        <h1 className="text-2xl font-semibold">
-
-          Show Not Available
-
-        </h1>
-
-        <p className="text-gray-400">
-
-          {error ||
-            "No show found for this movie and date."}
-
-        </p>
-
-        <button
-          onClick={() =>
-            navigate("/movies")
-          }
-          className="
-            bg-primary
-            px-6
-            py-2
-            rounded
-            cursor-pointer
-          "
-        >
-
-          Back to Movies
-
-        </button>
-
-      </div>
-
-    );
-
-  }
-
-  // =========================================
-  // CURRENT PRICE
-  // =========================================
-
-  const ticketPrice =
-    Number(
-      selectedTime?.showPrice
-    ) || 0;
-
-  // =========================================
-  // TOTAL PRICE
-  // =========================================
-
-  const totalPrice =
-    selectedSeats.length *
-    ticketPrice;
-
-  // =========================================
-  // PAGE
-  // =========================================
-
-  return (
-
-    <div
-      className="
-        flex
-        flex-col
-        md:flex-row
-        px-6
-        md:px-16
-        lg:px-40
-        pt-40
-        gap-10
-      "
-    >
-
-      {/* ===================================== */}
-      {/* MOVIE INFORMATION */}
-      {/* ===================================== */}
-
-      <div
-        className="
-          md:w-60
-          bg-primary/10
-          border
-          border-primary/20
-          rounded-lg
-          p-5
-          h-fit
-        "
-      >
-
-        <img
-          src={
-            show.movie?.poster_path
-              ? show.movie.poster_path.startsWith(
-                  "http"
-                )
-                ? show.movie.poster_path
-                : `https://image.tmdb.org/t/p/w500${show.movie.poster_path}`
-              : "/fallback.jpg"
-          }
-          alt={
-            show.movie?.title ||
-            "Movie"
-          }
-          className="
-            w-full
-            rounded-lg
-            object-cover
-            mb-4
-          "
-        />
-
-        <h2
-          className="
-            text-lg
-            font-semibold
-            text-white
-          "
-        >
-
-          {show.movie?.title}
-
-        </h2>
-
-        {/* ================================= */}
-        {/* SELECTED DATE */}
-        {/* ================================= */}
-
-        <p
-          className="
-            text-sm
-            text-gray-400
-            mt-2
-          "
-        >
-
-          📅 {date}
-
-        </p>
-
-        {/* ================================= */}
-        {/* SELECTED PRICE */}
-        {/* ================================= */}
-
-        <p
-          className="
-            text-sm
-            text-gray-400
-            mt-2
-          "
-        >
-
-          💰 Rs. {ticketPrice}
-
-          {" "}per ticket
-
-        </p>
-
-      </div>
-
-      {/* ===================================== */}
-      {/* MAIN SEAT SECTION */}
-      {/* ===================================== */}
-
-      <div
-        className="
-          relative
-          flex-1
-          flex
-          flex-col
-          items-center
-          max-md:mt-5
-        "
-      >
+      <div className="relative flex-1 flex flex-col items-center max-md:mt-16">
 
         <BlurCircle
           top="-100px"
           left="-100px"
         />
 
-        <BlurCircle
-          right="0"
-        />
+        <BlurCircle right="0" />
 
-        {/* ================================= */}
-        {/* TITLE */}
-        {/* ================================= */}
-
-        <h1
-          className="
-            text-2xl
-            font-semibold
-            mb-6
-          "
-        >
-
+        <h1 className="text-2xl font-semibold mb-4">
           Select Your Seat
-
         </h1>
 
-        {/* ================================= */}
-        {/* AVAILABLE TIMINGS */}
-        {/* ================================= */}
-
-        <div
-          className="
-            w-full
-            max-w-3xl
-            mb-8
-          "
-        >
-
-          <h2
-            className="
-              text-lg
-              font-semibold
-              mb-4
-            "
-          >
-
-            Available Timings
-
-          </h2>
-
-          <div
-            className="
-              flex
-              flex-wrap
-              gap-3
-            "
-          >
-
-            {show.shows.map(
-              (showItem) => {
-
-                const showTime =
-                  new Date(
-                    showItem.showDateTime
-                  );
-
-                const isSelected =
-                  selectedTime?._id ===
-                  showItem._id;
-
-                return (
-
-                  <button
-                    key={
-                      showItem._id
-                    }
-                    type="button"
-                    onClick={() =>
-                      handleTimeChange(
-                        showItem
-                      )
-                    }
-                    className={`
-                      flex
-                      items-center
-                      gap-2
-                      px-5
-                      py-3
-                      rounded-lg
-                      border
-                      transition-all
-                      cursor-pointer
-
-                      ${
-                        isSelected
-                          ? `
-                            bg-primary
-                            text-white
-                            border-primary
-                          `
-                          : `
-                            border-primary/30
-                            hover:bg-primary/20
-                          `
-                      }
-                    `}
-                  >
-
-                    <ClockIcon
-                      className="w-4 h-4"
-                    />
-
-                    <span>
-
-                      {showTime.toLocaleTimeString(
-                        [],
-                        {
-                          hour:
-                            "2-digit",
-
-                          minute:
-                            "2-digit",
-                        }
-                      )}
-
-                    </span>
-
-                    <span
-                      className="
-                        text-xs
-                        opacity-80
-                      "
-                    >
-
-                      Rs.{" "}
-                      {
-                        showItem.showPrice
-                      }
-
-                    </span>
-
-                  </button>
-
-                );
-
-              }
-            )}
-
-          </div>
-
-        </div>
-
-        {/* ================================= */}
-        {/* SCREEN */}
-        {/* ================================= */}
-
         <img
-          src={
-            assets.screenImage
-          }
+          src={assets.screenImage}
           alt="screen"
           className="max-w-full"
         />
 
-        <p
-          className="
-            text-gray-400
-            text-sm
-            mb-6
-          "
-        >
-
+        <p className="text-gray-400 text-sm mb-6">
           SCREEN SIDE
-
         </p>
 
-        {/* ================================= */}
-        {/* SEATS */}
-        {/* ================================= */}
-
-        <div
-          className="
-            flex
-            flex-col
-            items-center
-            mt-10
-            text-xs
-            text-gray-300
-          "
-        >
-
-          {groupRows.map(
-            (group, index) => (
-
-              <div
-                key={index}
-                className="
-                  grid
-                  grid-cols-2
-                  gap-8
-                  mb-4
-                "
-              >
-
-                {group.map(
-                  (row) =>
-                    renderSeats(row)
-                )}
-
-              </div>
-
-            )
-          )}
-
-        </div>
-
-        {/* ================================= */}
+        {/* ==================================================== */}
         {/* SEAT LEGEND */}
-        {/* ================================= */}
+        {/* ==================================================== */}
 
-        <div
-          className="
-            flex
-            items-center
-            gap-6
-            mt-6
-            text-sm
-          "
-        >
+        <div className="flex gap-6 mb-6 text-sm">
 
-          <div
-            className="
-              flex
-              items-center
-              gap-2
-            "
-          >
-
-            <div
-              className="
-                w-5
-                h-5
-                border
-                border-primary/60
-                rounded
-              "
-            />
-
-            <span>
-              Available
-            </span>
-
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 border border-primary/60 rounded" />
+            <span>Available</span>
           </div>
 
-          <div
-            className="
-              flex
-              items-center
-              gap-2
-            "
-          >
-
-            <div
-              className="
-                w-5
-                h-5
-                bg-primary
-                rounded
-              "
-            />
-
-            <span>
-              Selected
-            </span>
-
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 bg-primary rounded" />
+            <span>Selected</span>
           </div>
 
-          <div
-            className="
-              flex
-              items-center
-              gap-2
-            "
-          >
-
-            <div
-              className="
-                w-5
-                h-5
-                bg-gray-700
-                rounded
-              "
-            />
-
-            <span>
-              Occupied
-            </span>
-
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 bg-gray-700 opacity-50 rounded" />
+            <span>Occupied</span>
           </div>
 
         </div>
 
-        {/* ================================= */}
-        {/* BOOKING SUMMARY */}
-        {/* ================================= */}
+        {/* ==================================================== */}
+        {/* SEATS */}
+        {/* ==================================================== */}
 
-        <div
-          className="
-            mt-10
-            mb-20
-            w-full
-            max-w-xl
-            p-6
-            bg-primary/10
-            border
-            border-primary/20
-            rounded-lg
-          "
-        >
+        <div className="flex flex-col items-center mt-10 text-xs text-gray-300">
 
-          <p
-            className="
-              text-white
-              text-lg
-              mb-2
-            "
-          >
+          {groupRows.map((group, index) => (
+            <div
+              key={index}
+              className="grid grid-cols-2 gap-8 mb-4"
+            >
+              {group.map((row) =>
+                renderSeats(row)
+              )}
+            </div>
+          ))}
 
-            Selected Seats:
+        </div>
 
-            {" "}
+        {/* ==================================================== */}
+        {/* SELECTED SEATS */}
+        {/* ==================================================== */}
+
+        <div className="mt-8 flex flex-col items-center">
+
+          <p className="text-white text-lg mb-2">
+            Selected Seats:{" "}
 
             {selectedSeats.length > 0
-              ? selectedSeats.join(
-                  ", "
-                )
+              ? selectedSeats.join(", ")
               : "None"}
-
           </p>
 
-          <p
-            className="
-              text-gray-400
-              mb-2
-            "
-          >
-
-            Tickets:
-
-            {" "}
-
-            {selectedSeats.length}
-
+          <p className="text-gray-400 text-sm mb-4">
+            Total Seats: {selectedSeats.length}
           </p>
 
-          <p
-            className="
-              text-gray-400
-              mb-4
-            "
-          >
+          {/* ================================================== */}
+          {/* CHECKOUT BUTTON */}
+          {/* ================================================== */}
 
-            Price per ticket:
-
-            {" "}
-
-            Rs. {ticketPrice}
-
-          </p>
-
-          <div
+          <button
+            onClick={handleCheckout}
             className="
               flex
               items-center
-              justify-between
-              gap-4
+              justify-center
+              gap-2
+              px-8
+              py-3
+              text-sm
+              bg-primary
+              hover:bg-primary-dull
+              transition
+              rounded-full
+              font-medium
+              cursor-pointer
+              active:scale-95
             "
           >
+            Proceed to Checkout
 
-            <p
-              className="
-                text-xl
-                font-semibold
-                text-white
-              "
-            >
+            <ArrowRightIcon
+              strokeWidth={3}
+              className="w-4 h-4"
+            />
 
-              Total:
-
-              {" "}
-
-              Rs. {totalPrice}
-
-            </p>
-
-            <button
-              onClick={
-                handleBooking
-              }
-              className="
-                flex
-                items-center
-                justify-center
-                gap-2
-                px-8
-                py-3
-                text-sm
-                bg-primary
-                hover:bg-primary-dull
-                transition
-                rounded-full
-                font-medium
-                cursor-pointer
-                active:scale-95
-              "
-            >
-
-              Proceed to CheckOut
-
-              <ArrowRightIcon
-                strokeWidth={3}
-                className="w-4 h-4"
-              />
-
-            </button>
-
-          </div>
+          </button>
 
         </div>
 
       </div>
-
     </div>
-
   );
-
 };
 
 export default SeatLayout;
