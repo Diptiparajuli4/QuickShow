@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -13,13 +14,11 @@ import DateSelect from "../components/DateSelect";
 import timeFormat from "../lib/timeFormat";
 import MovieCard from "../components/MovieCard";
 
-
 const MovieDetail = () => {
 
     const navigate = useNavigate();
 
     const { id } = useParams();
-
 
     // =====================================================
     // STATE
@@ -35,6 +34,172 @@ const MovieDetail = () => {
 
     const [isFavorite, setIsFavorite] = useState(false);
 
+    const [favoriteLoading, setFavoriteLoading] = useState(false);
+
+
+    // =====================================================
+    // CHECK FAVOURITE
+    // =====================================================
+
+    const checkFavourite = async (movie) => {
+
+        try {
+
+            if (!movie) {
+                return;
+            }
+
+            // =================================================
+            // GET TOKEN
+            // =================================================
+
+            const token = localStorage.getItem("token");
+
+            // User is not logged in
+            if (!token) {
+
+                setIsFavorite(false);
+
+                return;
+            }
+
+            console.log(
+                "Checking favourite from MongoDB..."
+            );
+
+
+            // =================================================
+            // GET CURRENT USER
+            // =================================================
+
+            const response = await fetch(
+                "http://localhost:5000/user/me",
+                {
+                    method: "GET",
+
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+
+            // =================================================
+            // TOKEN EXPIRED
+            // =================================================
+
+            if (response.status === 401) {
+
+                localStorage.removeItem("token");
+
+                setIsFavorite(false);
+
+                return;
+            }
+
+
+            // =================================================
+            // OTHER ERROR
+            // =================================================
+
+            if (!response.ok) {
+
+                setIsFavorite(false);
+
+                return;
+            }
+
+
+            // =================================================
+            // READ RESPONSE
+            // =================================================
+
+            const data = await response.json();
+
+            console.log(
+                "Current user:",
+                data.user
+            );
+
+            console.log(
+                "User favourites:",
+                data.user?.favourites
+            );
+
+
+            // =================================================
+            // GET FAVOURITES
+            // =================================================
+
+            const favourites =
+                Array.isArray(data.user?.favourites)
+                    ? data.user.favourites
+                    : [];
+
+
+            // =================================================
+            // CURRENT MOVIE MONGODB ID
+            // =================================================
+
+            const movieId = movie._id;
+
+            console.log(
+                "Current movie MongoDB ID:",
+                movieId
+            );
+
+
+            if (!movieId) {
+
+                setIsFavorite(false);
+
+                return;
+            }
+
+
+            // =================================================
+            // CHECK FAVOURITE
+            // =================================================
+
+            const alreadyFavourite =
+                favourites.some(
+                    (favourite) => {
+
+                        const favouriteId =
+                            favourite?._id ||
+                            favourite?.id ||
+                            favourite;
+
+                        return (
+                            String(favouriteId) ===
+                            String(movieId)
+                        );
+
+                    }
+                );
+
+
+            console.log(
+                "Already favourite:",
+                alreadyFavourite
+            );
+
+
+            setIsFavorite(
+                alreadyFavourite
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Error checking favourite:",
+                error
+            );
+
+            setIsFavorite(false);
+        }
+    };
+
 
     // =====================================================
     // GET MOVIE DETAILS FROM MONGODB
@@ -47,12 +212,20 @@ const MovieDetail = () => {
             setLoading(true);
 
             console.log(
+                "================================="
+            );
+
+            console.log(
                 "Fetching movie details from MongoDB..."
             );
 
             console.log(
                 "Movie ID from URL:",
                 id
+            );
+
+            console.log(
+                "================================="
             );
 
 
@@ -65,16 +238,11 @@ const MovieDetail = () => {
             );
 
 
-            // =================================================
-            // CHECK RESPONSE
-            // =================================================
-
             if (!response.ok) {
 
                 throw new Error(
                     `Server error: ${response.status}`
                 );
-
             }
 
 
@@ -83,7 +251,6 @@ const MovieDetail = () => {
             // =================================================
 
             const data = await response.json();
-
 
             console.log(
                 "Shows received:",
@@ -103,7 +270,6 @@ const MovieDetail = () => {
                 throw new Error(
                     "Invalid show data received from server."
                 );
-
             }
 
 
@@ -162,13 +328,14 @@ const MovieDetail = () => {
                     movieIds.add(stringId);
 
                     uniqueMovies.push(movie);
-
                 }
 
             });
 
 
-            setAllMovies(uniqueMovies);
+            setAllMovies(
+                uniqueMovies
+            );
 
 
             console.log(
@@ -178,29 +345,30 @@ const MovieDetail = () => {
 
 
             // =================================================
-            // FIND THE MOVIE REQUESTED IN URL
+            // FIND MOVIE REQUESTED IN URL
             // =================================================
 
-            const movieShows = data.shows.filter(
-                (showItem) => {
+            const movieShows =
+                data.shows.filter(
+                    (showItem) => {
 
-                    if (!showItem.movie) {
-                        return false;
+                        if (!showItem.movie) {
+                            return false;
+                        }
+
+
+                        const movieId =
+                            showItem.movie._id ||
+                            showItem.movie.id;
+
+
+                        return (
+                            String(movieId) ===
+                            String(id)
+                        );
+
                     }
-
-
-                    const movieId =
-                        showItem.movie._id ||
-                        showItem.movie.id;
-
-
-                    return (
-                        String(movieId) ===
-                        String(id)
-                    );
-
-                }
-            );
+                );
 
 
             console.log(
@@ -239,6 +407,11 @@ const MovieDetail = () => {
                 movie
             );
 
+            console.log(
+                "MongoDB Movie _id:",
+                movie._id
+            );
+
 
             // =================================================
             // COMBINE ALL DATE/TIME DATA
@@ -251,8 +424,7 @@ const MovieDetail = () => {
                 (showItem) => {
 
                     // -----------------------------------------
-                    // CASE 1:
-                    // Backend returns dateTimes
+                    // CASE 1: dateTimes
                     // -----------------------------------------
 
                     if (
@@ -266,30 +438,20 @@ const MovieDetail = () => {
                             ([date, times]) => {
 
                                 if (
-                                    !combinedDateTimes[
-                                        date
-                                    ]
+                                    !combinedDateTimes[date]
                                 ) {
 
-                                    combinedDateTimes[
-                                        date
-                                    ] = [];
-
+                                    combinedDateTimes[date] = [];
                                 }
 
 
                                 if (
-                                    Array.isArray(
-                                        times
-                                    )
+                                    Array.isArray(times)
                                 ) {
 
-                                    combinedDateTimes[
-                                        date
-                                    ].push(
+                                    combinedDateTimes[date].push(
                                         ...times
                                     );
-
                                 }
 
                             }
@@ -299,8 +461,7 @@ const MovieDetail = () => {
 
 
                     // -----------------------------------------
-                    // CASE 2:
-                    // Backend returns showDateTime
+                    // CASE 2: showDateTime
                     // -----------------------------------------
 
                     if (
@@ -332,28 +493,22 @@ const MovieDetail = () => {
 
 
                             if (
-                                !combinedDateTimes[
-                                    date
-                                ]
+                                !combinedDateTimes[date]
                             ) {
 
-                                combinedDateTimes[
-                                    date
-                                ] = [];
-
+                                combinedDateTimes[date] = [];
                             }
 
 
                             if (
-                                !combinedDateTimes[
-                                    date
-                                ].includes(time)
+                                !combinedDateTimes[date].includes(
+                                    time
+                                )
                             ) {
 
-                                combinedDateTimes[
-                                    date
-                                ].push(time);
-
+                                combinedDateTimes[date].push(
+                                    time
+                                );
                             }
 
                         }
@@ -373,13 +528,9 @@ const MovieDetail = () => {
             ).forEach(
                 (date) => {
 
-                    combinedDateTimes[
-                        date
-                    ] = [
+                    combinedDateTimes[date] = [
                         ...new Set(
-                            combinedDateTimes[
-                                date
-                            ]
+                            combinedDateTimes[date]
                         )
                     ].sort();
 
@@ -396,13 +547,6 @@ const MovieDetail = () => {
             // =================================================
             // GET TRAILER
             // =================================================
-            //
-            // If your Movie document contains a trailer field,
-            // this will use it.
-            //
-            // Otherwise trailer will simply not be displayed.
-            //
-            // =================================================
 
             let trailer = null;
 
@@ -410,38 +554,20 @@ const MovieDetail = () => {
             if (movie.trailer) {
 
                 trailer = {
-
-                    videoUrl:
-                        movie.trailer,
-
+                    videoUrl: movie.trailer,
                 };
 
-            }
-
-            else if (
-                movie.trailer_url
-            ) {
+            } else if (movie.trailer_url) {
 
                 trailer = {
-
-                    videoUrl:
-                        movie.trailer_url,
-
+                    videoUrl: movie.trailer_url,
                 };
 
-            }
-
-            else if (
-                movie.videoUrl
-            ) {
+            } else if (movie.videoUrl) {
 
                 trailer = {
-
-                    videoUrl:
-                        movie.videoUrl,
-
+                    videoUrl: movie.videoUrl,
                 };
-
             }
 
 
@@ -464,38 +590,16 @@ const MovieDetail = () => {
 
                 trailer:
                     trailer,
-
             });
 
 
             // =================================================
-            // FAVORITES
+            // CHECK USER FAVOURITE
             // =================================================
 
-            const favorites =
-                JSON.parse(
-                    localStorage.getItem(
-                        "quickshow_favorites"
-                    ) || "[]"
-                );
-
-
-            const movieId =
-                String(
-                    movie._id ||
-                    movie.id
-                );
-
-
-            setIsFavorite(
-                favorites.some(
-                    (favoriteId) =>
-                        String(
-                            favoriteId
-                        ) === movieId
-                )
+            await checkFavourite(
+                movie
             );
-
 
         } catch (error) {
 
@@ -509,14 +613,12 @@ const MovieDetail = () => {
         } finally {
 
             setLoading(false);
-
         }
-
     };
 
 
     // =====================================================
-    // LOAD MOVIE
+    // LOAD MOVIE WHEN ID CHANGES
     // =====================================================
 
     useEffect(() => {
@@ -527,87 +629,219 @@ const MovieDetail = () => {
 
 
     // =====================================================
-    // TOGGLE FAVORITE
+    // TOGGLE FAVOURITE
     // =====================================================
 
-    const toggleFavorite = () => {
+    const toggleFavorite = async () => {
 
-        if (!show?.movie) {
-            return;
-        }
+        try {
 
+            // =================================================
+            // CHECK MOVIE
+            // =================================================
 
-        const movieId =
-            String(
-                show.movie._id ||
-                show.movie.id
-            );
+            if (!show?.movie) {
 
-
-        const favorites =
-            JSON.parse(
-                localStorage.getItem(
-                    "quickshow_favorites"
-                ) || "[]"
-            );
-
-
-        const alreadyFavorite =
-            favorites.some(
-                (favoriteId) =>
-                    String(
-                        favoriteId
-                    ) === movieId
-            );
-
-
-        let updatedFavorites;
-
-
-        if (alreadyFavorite) {
-
-            updatedFavorites =
-                favorites.filter(
-                    (favoriteId) =>
-                        String(
-                            favoriteId
-                        ) !== movieId
+                alert(
+                    "Movie information is not available."
                 );
 
+                return;
+            }
 
-            setIsFavorite(false);
 
+            // =================================================
+            // GET TOKEN
+            // =================================================
+
+            const token =
+                localStorage.getItem("token");
+
+
+            // =================================================
+            // USER NOT LOGGED IN
+            // =================================================
+
+            if (!token) {
+
+                alert(
+                    "Please login first to add movies to your favourites."
+                );
+
+                navigate("/login");
+
+                return;
+            }
+
+
+            // =================================================
+            // GET MONGODB MOVIE ID
+            // =================================================
+
+            const movieId =
+                show.movie._id;
+
+
+            console.log(
+                "================================="
+            );
+
+            console.log(
+                "MOVIE FAVOURITE REQUEST"
+            );
+
+            console.log(
+                "Movie:",
+                show.movie.title
+            );
+
+            console.log(
+                "MongoDB Movie ID:",
+                movieId
+            );
+
+            console.log(
+                "================================="
+            );
+
+
+            // =================================================
+            // CHECK MOVIE ID
+            // =================================================
+
+            if (!movieId) {
+
+                alert(
+                    "MongoDB Movie ID not found."
+                );
+
+                return;
+            }
+
+
+            // =================================================
+            // PREVENT DOUBLE CLICK
+            // =================================================
+
+            if (favoriteLoading) {
+                return;
+            }
+
+
+            setFavoriteLoading(true);
+
+
+            // =================================================
+            // SEND REQUEST
+            // =================================================
+
+            const response = await fetch(
+                `http://localhost:5000/user/favourite/${movieId}`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        Authorization:
+                            `Bearer ${token}`,
+
+                        "Content-Type":
+                            "application/json",
+                    },
+                }
+            );
+
+
+            // =================================================
+            // READ RESPONSE
+            // =================================================
+
+            const data =
+                await response.json();
+
+
+            console.log(
+                "Favourite status:",
+                response.status
+            );
+
+            console.log(
+                "Favourite response:",
+                data
+            );
+
+
+            // =================================================
+            // TOKEN EXPIRED
+            // =================================================
+
+            if (
+                response.status === 401
+            ) {
+
+                localStorage.removeItem(
+                    "token"
+                );
+
+                setIsFavorite(false);
+
+                alert(
+                    "Your session has expired. Please login again."
+                );
+
+                navigate("/login");
+
+                return;
+            }
+
+
+            // =================================================
+            // BACKEND ERROR
+            // =================================================
+
+            if (!response.ok) {
+
+                alert(
+                    data.message ||
+                    "Unable to update favourite."
+                );
+
+                return;
+            }
+
+
+            // =================================================
+            // UPDATE HEART FROM BACKEND
+            // =================================================
+
+            setIsFavorite(
+                data.isFavourite === true
+            );
+
+
+            // =================================================
+            // SUCCESS MESSAGE
+            // =================================================
+
+            alert(
+                data.message ||
+                "Favourite updated successfully."
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Favourite request error:",
+                error
+            );
+
+            alert(
+                "Unable to update favourite. Please try again."
+            );
+
+        } finally {
+
+            setFavoriteLoading(false);
         }
-
-        else {
-
-            updatedFavorites = [
-                ...favorites,
-                movieId,
-            ];
-
-
-            setIsFavorite(true);
-
-        }
-
-
-        localStorage.setItem(
-            "quickshow_favorites",
-            JSON.stringify(
-                updatedFavorites
-            )
-        );
-
-
-        // Tell Navbar favorites changed
-
-        window.dispatchEvent(
-            new Event(
-                "favoritesUpdated"
-            )
-        );
-
     };
 
 
@@ -628,9 +862,7 @@ const MovieDetail = () => {
                 </h1>
 
             </div>
-
         );
-
     }
 
 
@@ -654,8 +886,14 @@ const MovieDetail = () => {
                 <button
 
                     onClick={() => {
+
                         navigate("/movies");
-                        window.scrollTo(0, 0);
+
+                        window.scrollTo(
+                            0,
+                            0
+                        );
+
                     }}
 
                     className="mt-5 px-6 py-2 bg-primary rounded-md"
@@ -667,9 +905,7 @@ const MovieDetail = () => {
                 </button>
 
             </div>
-
         );
-
     }
 
 
@@ -774,10 +1010,13 @@ const MovieDetail = () => {
     const releaseYear =
         movie.release_date
             ? movie.release_date.split("-")[0]
+
             : movie.releaseDate
+
                 ? String(
                     movie.releaseDate
                 ).split("-")[0]
+
                 : "N/A";
 
 
@@ -887,11 +1126,14 @@ const MovieDetail = () => {
 
                     <div className="flex items-center gap-2 text-gray-300">
 
-                        <StarIcon className="w-5 h-5 text-primary fill-primary" />
+                        <StarIcon
+                            className="w-5 h-5 text-primary fill-primary"
+                        />
 
                         {rating}
 
                         {" "}
+
                         User Rating
 
                     </div>
@@ -931,7 +1173,9 @@ const MovieDetail = () => {
                     <div className="flex items-center flex-wrap gap-4 mt-4">
 
 
+                        {/* ================================================= */}
                         {/* WATCH TRAILER */}
+                        {/* ================================================= */}
 
                         {embedUrl && (
 
@@ -947,16 +1191,19 @@ const MovieDetail = () => {
 
                             >
 
-                                <PlayCircleIcon className="w-5 h-5" />
+                                <PlayCircleIcon
+                                    className="w-5 h-5"
+                                />
 
                                 Watch Trailer
 
                             </button>
-
                         )}
 
 
+                        {/* ================================================= */}
                         {/* BUY TICKETS */}
+                        {/* ================================================= */}
 
                         <a
 
@@ -971,19 +1218,45 @@ const MovieDetail = () => {
                         </a>
 
 
-                        {/* FAVORITE */}
+                        {/* ================================================= */}
+                        {/* FAVOURITE */}
+                        {/* ================================================= */}
 
                         <button
+
+                            type="button"
 
                             onClick={
                                 toggleFavorite
                             }
 
-                            className={`p-2.5 rounded-full transition cursor-pointer active:scale-95 ${
+                            disabled={
+                                favoriteLoading
+                            }
+
+                            title={
                                 isFavorite
-                                    ? "bg-primary text-white"
-                                    : "bg-gray-700 text-white"
-                            }`}
+                                    ? "Remove from favourites"
+                                    : "Add to favourites"
+                            }
+
+                            className={`
+                                p-2.5
+                                rounded-full
+                                transition
+                                cursor-pointer
+                                active:scale-95
+                                ${
+                                    isFavorite
+                                        ? "bg-primary text-white"
+                                        : "bg-gray-700 text-white"
+                                }
+                                ${
+                                    favoriteLoading
+                                        ? "opacity-60 cursor-not-allowed"
+                                        : ""
+                                }
+                            `}
 
                         >
 
@@ -1028,7 +1301,12 @@ const MovieDetail = () => {
                         <div className="flex items-center gap-4 w-max px-4">
 
                             {casts
-                                .slice(0, 12)
+
+                                .slice(
+                                    0,
+                                    12
+                                )
+
                                 .map(
                                     (
                                         cast,
@@ -1150,7 +1428,10 @@ const MovieDetail = () => {
                                     )
                             )
 
-                            .slice(0, 4)
+                            .slice(
+                                0,
+                                4
+                            )
 
                             .map(
                                 (
@@ -1171,9 +1452,11 @@ const MovieDetail = () => {
                                     >
 
                                         <MovieCard
+
                                             movie={
                                                 otherMovie
                                             }
+
                                         />
 
                                     </div>
@@ -1289,10 +1572,7 @@ const MovieDetail = () => {
                 )}
 
         </div>
-
     );
-
 };
-
 
 export default MovieDetail;

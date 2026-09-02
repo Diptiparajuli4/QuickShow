@@ -1,67 +1,175 @@
-
-import React, { useEffect, useState } from "react";
-
-import {
-  dummyShowsData,
-} from "../assets/assets";
+import React, {
+  useEffect,
+  useState,
+} from "react";
 
 import BlurCircle from "../components/BlurCircle";
 import MovieCard from "../components/MovieCard";
 
 const Favorite = () => {
 
-  const [favoriteMovies, setFavoriteMovies] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [favoriteMovies, setFavoriteMovies] =
+    useState([]);
 
-  // ==========================================
+  const [loading, setLoading] =
+    useState(true);
+
+
+  // =====================================================
   // FETCH FAVORITE MOVIES
-  // ==========================================
+  // =====================================================
 
-  const fetchFavoriteMovies = () => {
+  const fetchFavoriteMovies = async () => {
 
     try {
 
-      // Get favorite movie IDs
-      const savedFavorites = JSON.parse(
-        localStorage.getItem(
-          "quickshow_favorites"
-        ) || "[]"
-      );
+      setLoading(true);
+
+      // =================================================
+      // GET JWT TOKEN
+      // =================================================
+
+      const token =
+        localStorage.getItem("token");
+
+      // =================================================
+      // USER NOT LOGGED IN
+      // =================================================
+
+      if (!token) {
+
+        setFavoriteMovies([]);
+
+        return;
+      }
+
+
+      // =================================================
+      // GET CURRENT USER
+      // =================================================
+
+      const response =
+        await fetch(
+          "http://localhost:5000/user/me",
+          {
+            method: "GET",
+
+            headers: {
+              Authorization:
+                `Bearer ${token}`,
+            },
+          }
+        );
+
+
+      // =================================================
+      // TOKEN EXPIRED
+      // =================================================
+
+      if (
+        response.status === 401
+      ) {
+
+        localStorage.removeItem(
+          "token"
+        );
+
+        setFavoriteMovies([]);
+
+        return;
+      }
+
+
+      // =================================================
+      // OTHER SERVER ERROR
+      // =================================================
+
+      if (!response.ok) {
+
+        throw new Error(
+          `Server error: ${response.status}`
+        );
+      }
+
+
+      // =================================================
+      // READ JSON
+      // =================================================
+
+      const data =
+        await response.json();
+
 
       console.log(
-        "Saved Favorite IDs:",
-        savedFavorites
+        "Current user:",
+        data.user
       );
 
-      // ==========================================
-      // FIND MOVIES USING SAVED IDS
-      // ==========================================
 
-      const movies = savedFavorites
-        .map((favoriteId) => {
+      // =================================================
+      // GET FAVOURITES
+      // =================================================
 
-          return dummyShowsData.find(
-            (movie) =>
-              String(movie._id) ===
-                String(favoriteId) ||
-              String(movie.id) ===
-                String(favoriteId)
-          );
+      const favourites =
+        Array.isArray(
+          data.user?.favourites
+        )
+          ? data.user.favourites
+          : [];
 
-        })
-        .filter(Boolean);
 
       console.log(
-        "Favorite Movies:",
+        "Raw favourites:",
+        favourites
+      );
+
+
+      // =================================================
+      // GET POPULATED MOVIE OBJECTS
+      // =================================================
+      //
+      // Because userController has:
+      //
+      // .populate("favourites")
+      //
+      // favourites should contain complete Movie
+      // documents.
+      //
+      // =================================================
+
+      const movies =
+        favourites.filter(
+          (movie) => {
+
+            return (
+              movie &&
+              typeof movie === "object" &&
+              movie._id !== undefined &&
+              movie._id !== null
+            );
+
+          }
+        );
+
+
+      console.log(
+        "Favourite movie objects:",
         movies
       );
 
-      setFavoriteMovies(movies);
+
+      // =================================================
+      // SAVE MOVIES
+      // =================================================
+
+      setFavoriteMovies(
+        movies
+      );
 
     } catch (error) {
 
       console.error(
-        "Error loading favorite movies:",
+        "Error fetching favourite movies:",
         error
       );
 
@@ -72,11 +180,13 @@ const Favorite = () => {
       setLoading(false);
 
     }
+
   };
 
-  // ==========================================
-  // LOAD FAVORITES WHEN PAGE OPENS
-  // ==========================================
+
+  // =====================================================
+  // FETCH WHEN PAGE OPENS
+  // =====================================================
 
   useEffect(() => {
 
@@ -84,86 +194,118 @@ const Favorite = () => {
 
   }, []);
 
-  // ==========================================
-  // LISTEN FOR FAVORITE CHANGES
-  // ==========================================
 
-  useEffect(() => {
-
-    const handleFavoritesUpdated = () => {
-
-      fetchFavoriteMovies();
-
-    };
-
-    window.addEventListener(
-      "favoritesUpdated",
-      handleFavoritesUpdated
-    );
-
-    return () => {
-
-      window.removeEventListener(
-        "favoritesUpdated",
-        handleFavoritesUpdated
-      );
-
-    };
-
-  }, []);
-
-  // ==========================================
+  // =====================================================
   // LOADING
-  // ==========================================
+  // =====================================================
 
   if (loading) {
 
     return (
+
       <div className="flex items-center justify-center h-screen">
 
-        <h1 className="text-xl">
-          Loading favorites...
+        <h1 className="text-xl font-medium">
+
+          Loading favourite movies...
+
         </h1>
 
       </div>
+
     );
 
   }
 
-  // ==========================================
-  // NO FAVORITE MOVIES
-  // ==========================================
 
-  if (favoriteMovies.length === 0) {
+  // =====================================================
+  // CHECK LOGIN
+  // =====================================================
+
+  const token =
+    localStorage.getItem("token");
+
+
+  if (!token) {
 
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
+
+      <div className="flex flex-col items-center justify-center h-screen px-6">
 
         <h1 className="text-3xl font-bold text-center">
-          No favorite movies
+
+          Please login to view your favourite movies
+
         </h1>
 
-        <p className="text-gray-400 mt-2">
-          Movies you favorite will appear here.
+
+        <p className="text-gray-400 mt-3 text-center">
+
+          Login to save and view your favourite movies.
+
         </p>
 
       </div>
+
     );
 
   }
 
-  // ==========================================
-  // FAVORITE MOVIES
-  // ==========================================
+
+  // =====================================================
+  // NO FAVOURITES
+  // =====================================================
+
+  if (
+    favoriteMovies.length === 0
+  ) {
+
+    return (
+
+      <div className="relative my-40 mb-60 px-6 md:px-16 lg:px-40 xl:px-44 overflow-hidden min-h-[60vh]">
+
+        <BlurCircle
+          top="150px"
+          left="0px"
+        />
+
+        <BlurCircle
+          bottom="50px"
+          right="50px"
+        />
+
+
+        <div className="flex flex-col items-center justify-center h-[50vh]">
+
+          <h1 className="text-3xl font-bold text-center">
+
+            No favourite movies
+
+          </h1>
+
+
+          <p className="text-gray-400 mt-3 text-center">
+
+            Movies you add to favourites will appear here.
+
+          </p>
+
+        </div>
+
+      </div>
+
+    );
+
+  }
+
+
+  // =====================================================
+  // DISPLAY FAVOURITES
+  // =====================================================
 
   return (
 
-    <div
-      className="relative my-40 mb-60 px-6 md:px-16 lg:px-40
-      xl:px-44 overflow-hidden min-h-[480vh]"
-    >
-
-      {/* BACKGROUND CIRCLES */}
+    <div className="relative my-40 mb-60 px-6 md:px-16 lg:px-40 xl:px-44 overflow-hidden min-h-[480vh]">
 
       <BlurCircle
         top="150px"
@@ -175,33 +317,41 @@ const Favorite = () => {
         right="50px"
       />
 
+
+      {/* ================================================= */}
       {/* TITLE */}
+      {/* ================================================= */}
 
       <h1 className="text-lg font-medium my-4">
-        Your Favorite Movies
+
+        My Favourite Movies
+
       </h1>
 
+
+      {/* ================================================= */}
       {/* MOVIE GRID */}
+      {/* ================================================= */}
 
-      <div
-        className="grid grid-cols-1 sm:grid-cols-2
-        lg:grid-cols-4 gap-8 mt-8"
-      >
+      <div className="flex flex-wrap max-sm:justify-center gap-8">
 
-        {favoriteMovies.map((movie) => (
+        {favoriteMovies.map(
+          (movie) => (
 
-          <MovieCard
-            movie={movie}
-            key={movie._id || movie.id}
-          />
+            <MovieCard
+              key={String(movie._id)}
+              movie={movie}
+            />
 
-        ))}
+          )
+        )}
 
       </div>
 
     </div>
 
   );
+
 };
 
 export default Favorite;

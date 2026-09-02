@@ -8,7 +8,9 @@ import {
     useNavigate
 } from "react-router-dom";
 
-import { assets } from "../assets/assets";
+import {
+    assets
+} from "../assets/assets";
 
 import {
     useAuth
@@ -50,7 +52,10 @@ const Login = () => {
         setError("");
 
 
-        // Check empty fields
+        // =================================================
+        // VALIDATE INPUT
+        // =================================================
+
         if (
             !email.trim() ||
             !password
@@ -70,12 +75,84 @@ const Login = () => {
 
         try {
 
-            // Login checks the database through AuthContext
-            const loggedInUser =
+            // =================================================
+            // LOGIN THROUGH AUTH CONTEXT
+            // =================================================
+
+            const result =
                 await login(
                     email.trim(),
                     password
                 );
+
+
+            console.log(
+                "Login result:",
+                result
+            );
+
+
+            // =================================================
+            // GET USER
+            // =================================================
+
+            // AuthContext may return:
+            //
+            // 1. user directly
+            //
+            // OR
+            //
+            // 2. { user, token }
+            //
+            // This handles both.
+
+            const loggedInUser =
+                result?.user ||
+                result;
+
+
+            // =================================================
+            // SAVE TOKEN
+            // =================================================
+
+            // If AuthContext returns the token,
+            // save it here.
+
+            if (result?.token) {
+
+                localStorage.setItem(
+                    "token",
+                    result.token
+                );
+
+                console.log(
+                    "JWT token saved successfully."
+                );
+
+            }
+
+
+            // =================================================
+            // CHECK TOKEN
+            // =================================================
+
+            console.log(
+                "Token in localStorage:",
+                localStorage.getItem("token")
+            );
+
+
+            // =================================================
+            // CHECK USER
+            // =================================================
+
+            if (!loggedInUser) {
+
+                throw new Error(
+                    "Login successful, but user information was not received."
+                );
+
+            }
 
 
             console.log(
@@ -85,7 +162,7 @@ const Login = () => {
 
 
             // =================================================
-            // ADMIN ACCOUNT
+            // ADMIN
             // =================================================
 
             if (
@@ -93,7 +170,7 @@ const Login = () => {
             ) {
 
                 console.log(
-                    "Admin detected - redirecting to admin"
+                    "Admin detected - redirecting to admin."
                 );
 
 
@@ -111,7 +188,7 @@ const Login = () => {
 
 
             // =================================================
-            // NORMAL USER ACCOUNT
+            // NORMAL USER
             // =================================================
 
             if (
@@ -119,7 +196,7 @@ const Login = () => {
             ) {
 
                 console.log(
-                    "User detected - redirecting to home"
+                    "User detected - redirecting to home."
                 );
 
 
@@ -144,6 +221,7 @@ const Login = () => {
                 "Your account has an invalid role."
             );
 
+
         } catch (error) {
 
             console.error(
@@ -166,21 +244,38 @@ const Login = () => {
     };
 
 
+    // =====================================================
+    // PAGE
+    // =====================================================
+
     return (
 
         <div className="min-h-screen flex items-center justify-center bg-black px-4">
 
-            {/* Background */}
 
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-primary/20 via-black to-black pointer-events-none" />
+            {/* ================================================= */}
+            {/* BACKGROUND */}
+            {/* ================================================= */}
+
+            <div
+                className="
+                    absolute
+                    inset-0
+                    bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))]
+                    from-primary/20
+                    via-black
+                    to-black
+                    pointer-events-none
+                "
+            />
 
 
             <div className="relative z-10 w-full max-w-md">
 
 
-                {/* =================================================
-                    LOGO
-                ================================================= */}
+                {/* ================================================= */}
+                {/* LOGO */}
+                {/* ================================================= */}
 
                 <div className="flex justify-center mb-8">
 
@@ -197,12 +292,25 @@ const Login = () => {
                 </div>
 
 
-                {/* =================================================
-                    LOGIN CARD
-                ================================================= */}
+                {/* ================================================= */}
+                {/* LOGIN CARD */}
+                {/* ================================================= */}
 
-                <div className="bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl p-8">
+                <div
+                    className="
+                        bg-white/5
+                        border
+                        border-white/10
+                        backdrop-blur-md
+                        rounded-2xl
+                        p-8
+                    "
+                >
 
+
+                    {/* ================================================= */}
+                    {/* TITLE */}
+                    {/* ================================================= */}
 
                     <h1 className="text-2xl font-bold text-white mb-1">
 
@@ -218,13 +326,25 @@ const Login = () => {
                     </p>
 
 
-                    {/* =================================================
-                        ERROR
-                    ================================================= */}
+                    {/* ================================================= */}
+                    {/* ERROR */}
+                    {/* ================================================= */}
 
                     {error && (
 
-                        <div className="mb-4 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+                        <div
+                            className="
+                                mb-4
+                                px-4
+                                py-3
+                                bg-red-500/10
+                                border
+                                border-red-500/30
+                                rounded-lg
+                                text-red-400
+                                text-sm
+                            "
+                        >
 
                             {error}
 
@@ -233,9 +353,9 @@ const Login = () => {
                     )}
 
 
-                    {/* =================================================
-                        FORM
-                    ================================================= */}
+                    {/* ================================================= */}
+                    {/* FORM */}
+                    {/* ================================================= */}
 
                     <form
                         onSubmit={handleSubmit}
@@ -243,13 +363,20 @@ const Login = () => {
                     >
 
 
+                        {/* ================================================= */}
                         {/* EMAIL */}
+                        {/* ================================================= */}
 
                         <div>
 
                             <label
                                 htmlFor="email"
-                                className="block text-sm text-gray-300 mb-1.5"
+                                className="
+                                    block
+                                    text-sm
+                                    text-gray-300
+                                    mb-1.5
+                                "
                             >
 
                                 Email address
@@ -267,20 +394,43 @@ const Login = () => {
                                     )
                                 }
                                 placeholder="you@example.com"
-                                className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition text-sm"
+                                className="
+                                    w-full
+                                    px-4
+                                    py-2.5
+                                    rounded-lg
+                                    bg-white/10
+                                    border
+                                    border-white/10
+                                    text-white
+                                    placeholder-gray-500
+                                    focus:outline-none
+                                    focus:border-primary
+                                    focus:ring-1
+                                    focus:ring-primary
+                                    transition
+                                    text-sm
+                                "
                                 required
                             />
 
                         </div>
 
 
+                        {/* ================================================= */}
                         {/* PASSWORD */}
+                        {/* ================================================= */}
 
                         <div>
 
                             <label
                                 htmlFor="password"
-                                className="block text-sm text-gray-300 mb-1.5"
+                                className="
+                                    block
+                                    text-sm
+                                    text-gray-300
+                                    mb-1.5
+                                "
                             >
 
                                 Password
@@ -298,21 +448,49 @@ const Login = () => {
                                     )
                                 }
                                 placeholder="••••••••"
-                                className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition text-sm"
+                                className="
+                                    w-full
+                                    px-4
+                                    py-2.5
+                                    rounded-lg
+                                    bg-white/10
+                                    border
+                                    border-white/10
+                                    text-white
+                                    placeholder-gray-500
+                                    focus:outline-none
+                                    focus:border-primary
+                                    focus:ring-1
+                                    focus:ring-primary
+                                    transition
+                                    text-sm
+                                "
                                 required
                             />
 
                         </div>
 
 
-                        {/* =================================================
-                            LOGIN BUTTON
-                        ================================================= */}
+                        {/* ================================================= */}
+                        {/* LOGIN BUTTON */}
+                        {/* ================================================= */}
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-2.5 bg-primary hover:bg-primary-dull disabled:opacity-50 disabled:cursor-not-allowed transition rounded-lg font-semibold text-white text-sm"
+                            className="
+                                w-full
+                                py-2.5
+                                bg-primary
+                                hover:bg-primary-dull
+                                disabled:opacity-50
+                                disabled:cursor-not-allowed
+                                transition
+                                rounded-lg
+                                font-semibold
+                                text-white
+                                text-sm
+                            "
                         >
 
                             {loading
@@ -325,9 +503,9 @@ const Login = () => {
                     </form>
 
 
-                    {/* =================================================
-                        SIGNUP LINK
-                    ================================================= */}
+                    {/* ================================================= */}
+                    {/* SIGNUP */}
+                    {/* ================================================= */}
 
                     <p className="mt-6 text-center text-sm text-gray-400">
 
@@ -335,7 +513,11 @@ const Login = () => {
 
                         <Link
                             to="/signup"
-                            className="text-primary hover:underline font-medium"
+                            className="
+                                text-primary
+                                hover:underline
+                                font-medium
+                            "
                         >
 
                             Create one

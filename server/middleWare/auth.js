@@ -1,54 +1,109 @@
+
 import jwt from "jsonwebtoken";
 
-// Middleware to verify user authentication
-export const protect = async (req, res, next) => {
-    try {
-        const token = req.headers.authorization?.split(" ")[1];
+// =====================================================
+// PROTECT USER ROUTES
+// =====================================================
 
-        if (!token) {
-            return res.status(401).json({
-                success: false,
-                message: "Access denied. No token provided.",
-            });
-        }
+export const protect = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    // Authorization: Bearer TOKEN
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const authHeader =
+      req.headers.authorization;
 
-        // Store user information in request object
-        req.user = decoded;
-
-        next();
-
-    } catch (error) {
-        console.log(error.message);
-
-        return res.status(401).json({
-            success: false,
-            message: "Invalid token or token expired.",
-        });
+    if (!authHeader) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Access denied. No token provided.",
+      });
     }
+
+    const token =
+      authHeader.startsWith("Bearer ")
+        ? authHeader.split(" ")[1]
+        : null;
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Access denied. Invalid authorization format.",
+      });
+    }
+
+    // =================================================
+    // VERIFY TOKEN
+    // =================================================
+
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET
+    );
+
+    // =================================================
+    // SAVE USER INFORMATION
+    // =================================================
+
+    req.user = decoded;
+
+    console.log(
+      "Authenticated user:",
+      req.user
+    );
+
+    next();
+  } catch (error) {
+    console.error(
+      "Authentication error:",
+      error.message
+    );
+
+    return res.status(401).json({
+      success: false,
+      message:
+        "Invalid token or token expired.",
+    });
+  }
 };
 
+// =====================================================
+// PROTECT ADMIN ROUTES
+// =====================================================
 
-// Middleware to verify admin access
-export const protectAdmin = async (req, res, next) => {
-    try {
-        // Check if user exists and has admin role
-        if (!req.user || req.user.role !== "admin") {
-            return res.status(403).json({
-                success: false,
-                message: "Admin access required.",
-            });
-        }
-
-        next();
-
-    } catch (error) {
-        console.log(error.message);
-
-        return res.status(403).json({
-            success: false,
-            message: "Admin authentication failed.",
-        });
+export const protectAdmin = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    if (
+      !req.user ||
+      req.user.role !== "admin"
+    ) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Admin access required.",
+      });
     }
+
+    next();
+  } catch (error) {
+    console.error(
+      "Admin authentication error:",
+      error.message
+    );
+
+    return res.status(403).json({
+      success: false,
+      message:
+        "Admin authentication failed.",
+    });
+  }
 };

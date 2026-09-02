@@ -6,6 +6,8 @@ import React, {
     useState,
 } from "react";
 
+import { useNavigate } from "react-router-dom";
+
 
 // =====================================================
 // CREATE CONTEXT
@@ -19,6 +21,9 @@ const AuthContext = createContext();
 // =====================================================
 
 export const AuthProvider = ({ children }) => {
+
+    const navigate = useNavigate();
+
 
     // =================================================
     // USER
@@ -55,12 +60,18 @@ export const AuthProvider = ({ children }) => {
             const savedAdmin =
                 localStorage.getItem("adminUser");
 
+            const token =
+                localStorage.getItem("token");
+
 
             // =============================================
             // RESTORE ADMIN
             // =============================================
 
-            if (savedAdmin) {
+            if (
+                savedAdmin &&
+                token
+            ) {
 
                 const adminData =
                     JSON.parse(savedAdmin);
@@ -72,8 +83,6 @@ export const AuthProvider = ({ children }) => {
                 ) {
 
                     setAdmin(adminData);
-
-                    // Make sure user session is not active
                     setUser(null);
 
                 } else {
@@ -83,7 +92,7 @@ export const AuthProvider = ({ children }) => {
                     );
 
                     localStorage.removeItem(
-                        "adminToken"
+                        "token"
                     );
 
                 }
@@ -95,7 +104,10 @@ export const AuthProvider = ({ children }) => {
             // RESTORE NORMAL USER
             // =============================================
 
-            else if (savedUser) {
+            else if (
+                savedUser &&
+                token
+            ) {
 
                 const userData =
                     JSON.parse(savedUser);
@@ -107,8 +119,6 @@ export const AuthProvider = ({ children }) => {
                 ) {
 
                     setUser(userData);
-
-                    // Make sure admin session is not active
                     setAdmin(null);
 
                 } else {
@@ -118,10 +128,21 @@ export const AuthProvider = ({ children }) => {
                     );
 
                     localStorage.removeItem(
-                        "userToken"
+                        "token"
                     );
 
                 }
+
+            }
+
+            // =============================================
+            // NO VALID SESSION
+            // =============================================
+
+            else {
+
+                setUser(null);
+                setAdmin(null);
 
             }
 
@@ -134,12 +155,9 @@ export const AuthProvider = ({ children }) => {
 
 
             // Clear corrupted session
-            localStorage.removeItem(
-                "userUser"
-            );
 
             localStorage.removeItem(
-                "userToken"
+                "userUser"
             );
 
             localStorage.removeItem(
@@ -147,7 +165,7 @@ export const AuthProvider = ({ children }) => {
             );
 
             localStorage.removeItem(
-                "adminToken"
+                "token"
             );
 
 
@@ -187,7 +205,9 @@ export const AuthProvider = ({ children }) => {
 
                         body: JSON.stringify({
                             email:
-                                email.trim().toLowerCase(),
+                                email
+                                    .trim()
+                                    .toLowerCase(),
 
                             password,
                         }),
@@ -229,6 +249,10 @@ export const AuthProvider = ({ children }) => {
                 data.token;
 
 
+            // =============================================
+            // CHECK SERVER RESPONSE
+            // =============================================
+
             if (
                 !loggedInUser ||
                 !token
@@ -250,21 +274,16 @@ export const AuthProvider = ({ children }) => {
             ) {
 
                 // Remove normal user session
-                localStorage.removeItem(
-                    "userToken"
-                );
 
                 localStorage.removeItem(
                     "userUser"
                 );
 
 
-                setUser(null);
-
-
                 // Save admin session
+
                 localStorage.setItem(
-                    "adminToken",
+                    "token",
                     token
                 );
 
@@ -276,9 +295,18 @@ export const AuthProvider = ({ children }) => {
                 );
 
 
-                // Keep admin logged in
+                // Update React state
+
+                setUser(null);
+
                 setAdmin(
                     loggedInUser
+                );
+
+
+                console.log(
+                    "Admin token saved:",
+                    localStorage.getItem("token")
                 );
 
 
@@ -299,21 +327,16 @@ export const AuthProvider = ({ children }) => {
             ) {
 
                 // Remove admin session
-                localStorage.removeItem(
-                    "adminToken"
-                );
 
                 localStorage.removeItem(
                     "adminUser"
                 );
 
 
-                setAdmin(null);
-
-
                 // Save normal user session
+
                 localStorage.setItem(
-                    "userToken",
+                    "token",
                     token
                 );
 
@@ -325,9 +348,18 @@ export const AuthProvider = ({ children }) => {
                 );
 
 
-                // Keep user logged in
+                // Update React state
+
+                setAdmin(null);
+
                 setUser(
                     loggedInUser
+                );
+
+
+                console.log(
+                    "User token saved:",
+                    localStorage.getItem("token")
                 );
 
 
@@ -346,6 +378,7 @@ export const AuthProvider = ({ children }) => {
             throw new Error(
                 "Invalid account role."
             );
+
 
         } catch (error) {
 
@@ -389,7 +422,9 @@ export const AuthProvider = ({ children }) => {
                                 name.trim(),
 
                             email:
-                                email.trim().toLowerCase(),
+                                email
+                                    .trim()
+                                    .toLowerCase(),
 
                             password,
                         }),
@@ -406,6 +441,10 @@ export const AuthProvider = ({ children }) => {
                 data
             );
 
+
+            // =============================================
+            // SIGNUP FAILED
+            // =============================================
 
             if (
                 !response.ok ||
@@ -427,6 +466,10 @@ export const AuthProvider = ({ children }) => {
                 data.token;
 
 
+            // =============================================
+            // CHECK SERVER RESPONSE
+            // =============================================
+
             if (
                 !newUser ||
                 !token
@@ -443,21 +486,17 @@ export const AuthProvider = ({ children }) => {
             // SIGNUP ALWAYS CREATES NORMAL USER
             // =============================================
 
-            localStorage.removeItem(
-                "adminToken"
-            );
+            // Remove admin session
 
             localStorage.removeItem(
                 "adminUser"
             );
 
 
-            setAdmin(null);
+            // Save normal user session
 
-
-            // Save new user
             localStorage.setItem(
-                "userToken",
+                "token",
                 token
             );
 
@@ -469,8 +508,18 @@ export const AuthProvider = ({ children }) => {
             );
 
 
+            // Update React state
+
+            setAdmin(null);
+
             setUser(
                 newUser
+            );
+
+
+            console.log(
+                "Signup token saved:",
+                localStorage.getItem("token")
             );
 
 
@@ -478,6 +527,7 @@ export const AuthProvider = ({ children }) => {
                 ...newUser,
                 token,
             };
+
 
         } catch (error) {
 
@@ -494,18 +544,62 @@ export const AuthProvider = ({ children }) => {
 
 
     // =====================================================
+    // CHECK LOGIN
+    // =====================================================
+
+    const isLoggedIn = () => {
+
+        return !!(
+            user ||
+            admin
+        );
+
+    };
+
+
+    // =====================================================
+    // REQUIRE LOGIN
+    // =====================================================
+
+    const requireLogin = (action) => {
+
+        if (!isLoggedIn()) {
+
+            navigate("/login");
+
+            return false;
+
+        }
+
+
+        if (
+            typeof action === "function"
+        ) {
+
+            action();
+
+        }
+
+
+        return true;
+
+    };
+
+
+    // =====================================================
     // USER LOGOUT
     // =====================================================
 
     const logoutUser = () => {
 
         localStorage.removeItem(
-            "userToken"
+            "token"
         );
 
         localStorage.removeItem(
             "userUser"
         );
+
 
         setUser(null);
 
@@ -519,12 +613,13 @@ export const AuthProvider = ({ children }) => {
     const logoutAdmin = () => {
 
         localStorage.removeItem(
-            "adminToken"
+            "token"
         );
 
         localStorage.removeItem(
             "adminUser"
         );
+
 
         setAdmin(null);
 
@@ -537,9 +632,21 @@ export const AuthProvider = ({ children }) => {
 
     const logout = () => {
 
-        logoutUser();
+        localStorage.removeItem(
+            "token"
+        );
 
-        logoutAdmin();
+        localStorage.removeItem(
+            "userUser"
+        );
+
+        localStorage.removeItem(
+            "adminUser"
+        );
+
+
+        setUser(null);
+        setAdmin(null);
 
     };
 
@@ -566,11 +673,25 @@ export const AuthProvider = ({ children }) => {
 
         logoutAdmin,
 
+
+        // =============================================
+        // LOGIN STATUS
+        // =============================================
+
         isUserLoggedIn:
             !!user,
 
         isAdminLoggedIn:
             !!admin,
+
+        isLoggedIn,
+
+
+        // =============================================
+        // PROTECTED ACTION
+        // =============================================
+
+        requireLogin,
 
     };
 
