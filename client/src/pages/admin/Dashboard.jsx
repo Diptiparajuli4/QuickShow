@@ -1,223 +1,178 @@
+import React, { useEffect, useState } from "react";
+
+import Title from "../../components/admin/Title";
+import Loading from "../../components/Loading";
+import BlurCircle from "../../components/BlurCircle";
+
 import {
     ChartLineIcon,
     CircleDollarSignIcon,
     PlayCircleIcon,
     UsersIcon,
     StarIcon,
+    ShieldCheckIcon
 } from "lucide-react";
 
-import React, {
-    useEffect,
-    useState,
-} from "react";
-
-import Loading from "../../components/Loading";
-import Title from "../../components/admin/Title.jsx";
-import BlurCircle from "../../components/BlurCircle";
-import dateFormat from "../../lib/dateFormat";
-
+import { dateFormat } from "../../lib/dateFormat";
 
 const Dashboard = () => {
 
     const currency =
         import.meta.env.VITE_CURRENCY || "Rs.";
 
-    const [dashboardData, setDashboardData] =
-        useState({
-            totalBookings: 0,
-            totalRevenue: 0,
-            activeShows: [],
-            totalUser: 0,
-        });
+    const [dashboardData, setDashboardData] = useState({
+        totalBookings: 0,
+        totalRevenue: 0,
+        activeShows: [],
+        totalUser: 0,
+        totalAdmin: 0,
+    });
 
-    const [loading, setLoading] =
-        useState(true);
-
+    const [loading, setLoading] = useState(true);
 
     // =====================================================
-    // FETCH ALL SHOWS FROM MONGODB
+    // FETCH DASHBOARD DATA
     // =====================================================
 
     const fetchDashboardData = async () => {
 
         try {
 
-            setLoading(true);
-
-            // ---------------------------------------------
-            // GET TOKEN
-            // ---------------------------------------------
-
             const token =
                 localStorage.getItem("token");
 
+            // =================================================
+            // DASHBOARD DATA
+            // USERS + ADMINS + BOOKINGS + REVENUE
+            // =================================================
 
-            if (!token) {
-
-                console.error(
-                    "No login token found."
-                );
-
-                setDashboardData({
-                    totalBookings: 0,
-                    totalRevenue: 0,
-                    activeShows: [],
-                    totalUser: 0,
-                });
-
-                return;
-            }
-
-
-            // ---------------------------------------------
-            // FETCH SHOWS FROM BACKEND
-            // ---------------------------------------------
-
-            const response =
+            const dashboardResponse =
                 await fetch(
-                    "http://localhost:5000/show/all",
+                    "http://localhost:5000/admin/dashboard",
                     {
-                        method: "GET",
-
                         headers: {
-                            "Content-Type":
-                                "application/json",
-
                             Authorization:
                                 `Bearer ${token}`,
                         },
                     }
                 );
 
-
-            // ---------------------------------------------
-            // READ RESPONSE
-            // ---------------------------------------------
-
-            const data =
-                await response.json();
-
+            const dashboardResult =
+                await dashboardResponse.json();
 
             console.log(
-                "Dashboard shows response:",
-                data
+                "Dashboard Result:",
+                dashboardResult
             );
 
-
-            // ---------------------------------------------
-            // CHECK RESPONSE
-            // ---------------------------------------------
-
-            if (!response.ok) {
-
-                throw new Error(
-                    data.message ||
-                    "Failed to fetch shows"
-                );
-            }
-
-
-            // ---------------------------------------------
-            // GET SHOWS
-            // ---------------------------------------------
-
-            const shows =
-                Array.isArray(data.shows)
-                    ? data.shows
-                    : [];
-
-
-            console.log(
-                "Shows fetched from MongoDB:",
-                shows
-            );
-
-
             // =================================================
-            // ONLY KEEP ACTIVE/FUTURE SHOWS
+            // ACTIVE SHOWS
+            // KEEPING YOUR EXISTING SHOW FETCH
             // =================================================
 
-            const now =
-                new Date();
-
-
-            const activeShows =
-                shows.filter(
-                    (show) => {
-
-                        if (
-                            !show.showDateTime
-                        ) {
-                            return false;
-                        }
-
-                        return (
-                            new Date(
-                                show.showDateTime
-                            ) >= now
-                        );
+            const showsResponse =
+                await fetch(
+                    "http://localhost:5000/show/all",
+                    {
+                        headers: {
+                            Authorization:
+                                `Bearer ${token}`,
+                        },
                     }
                 );
 
+            const showsData =
+                await showsResponse.json();
 
-            console.log(
-                "Active shows:",
-                activeShows
-            );
+            let activeShows = [];
 
+            if (showsData.success) {
 
-            // =================================================
-            // CALCULATE REVENUE
-            // =================================================
+                const now = new Date();
 
-            const totalRevenue =
-                activeShows.reduce(
-                    (total, show) =>
-                        total +
-                        Number(
-                            show.showPrice || 0
-                        ),
-                    0
-                );
-
+                activeShows =
+                    showsData.shows.filter(
+                        show =>
+                            new Date(
+                                show.showDateTime
+                            ) >= now
+                    );
+            }
 
             // =================================================
             // SET DASHBOARD DATA
             // =================================================
 
-            setDashboardData({
+            if (dashboardResult.success) {
 
-                totalBookings: 0,
+                setDashboardData({
 
-                totalRevenue:
-                    totalRevenue,
+                    // -----------------------------------------
+                    // EXISTING BOOKING COUNT
+                    // -----------------------------------------
 
-                activeShows:
+                    totalBookings:
+                        dashboardResult
+                            .dashboardData
+                            .totalBookings || 0,
+
+                    // -----------------------------------------
+                    // EXISTING REVENUE
+                    // -----------------------------------------
+
+                    totalRevenue:
+                        dashboardResult
+                            .dashboardData
+                            .totalRevenue || 0,
+
+                    // -----------------------------------------
+                    // EXISTING ACTIVE SHOWS
+                    // -----------------------------------------
+
                     activeShows,
 
-                totalUser: 0,
-            });
+                    // -----------------------------------------
+                    // TOTAL NORMAL USERS
+                    // FROM User COLLECTION
+                    // role = "user"
+                    // -----------------------------------------
 
+                    totalUser:
+                        Number(
+                            dashboardResult
+                                .dashboardData
+                                .totalUser
+                        ) || 0,
+
+                    // -----------------------------------------
+                    // TOTAL ADMINS
+                    // FROM User COLLECTION
+                    // role = "admin"
+                    // -----------------------------------------
+
+                    totalAdmin:
+                        Number(
+                            dashboardResult
+                                .dashboardData
+                                .totalAdmin
+                        ) || 0,
+                });
+
+            } else {
+
+                setDashboardData(prev => ({
+                    ...prev,
+                    activeShows
+                }));
+
+            }
 
         } catch (error) {
 
             console.error(
-                "Dashboard Error:",
+                "Dashboard fetch error:",
                 error
             );
-
-
-            setDashboardData({
-
-                totalBookings: 0,
-
-                totalRevenue: 0,
-
-                activeShows: [],
-
-                totalUser: 0,
-            });
-
 
         } finally {
 
@@ -225,7 +180,6 @@ const Dashboard = () => {
 
         }
     };
-
 
     // =====================================================
     // LOAD DASHBOARD
@@ -237,56 +191,6 @@ const Dashboard = () => {
 
     }, []);
 
-
-    // =====================================================
-    // DASHBOARD CARDS
-    // =====================================================
-
-    const dashboardCards = [
-
-        {
-            title: "Total Bookings",
-
-            value:
-                dashboardData.totalBookings,
-
-            icon:
-                ChartLineIcon,
-        },
-
-        {
-            title: "Total Revenue",
-
-            value:
-                `${currency}${dashboardData.totalRevenue}`,
-
-            icon:
-                CircleDollarSignIcon,
-        },
-
-        {
-            title: "Active Shows",
-
-            value:
-                dashboardData.activeShows.length,
-
-            icon:
-                PlayCircleIcon,
-        },
-
-        {
-            title: "Total Users",
-
-            value:
-                dashboardData.totalUser,
-
-            icon:
-                UsersIcon,
-        },
-
-    ];
-
-
     // =====================================================
     // LOADING
     // =====================================================
@@ -297,351 +201,515 @@ const Dashboard = () => {
 
     }
 
-
-    // =====================================================
-    // PAGE
-    // =====================================================
-
     return (
 
-        <>
+        <div className="relative">
 
-            <Title
-                text1="Admin"
-                text2="Dashboard"
+            <BlurCircle
+                top="0"
+                left="0"
             />
 
+            <BlurCircle
+                top="50%"
+                right="0"
+            />
 
-            {/* ================================================= */}
-            {/* DASHBOARD CARDS */}
-            {/* ================================================= */}
+            {/* =================================================
+                TITLE
+            ================================================= */}
+
+            <div className="mb-8">
+
+                <Title
+                    text1="Admin"
+                    text2="Dashboard"
+                />
+
+            </div>
+
+            {/* =================================================
+                DASHBOARD CARDS
+            ================================================= */}
 
             <div
                 className="
-                    relative
-                    flex
-                    flex-wrap
+                    grid
+                    grid-cols-1
+                    sm:grid-cols-2
+                    lg:grid-cols-5
                     gap-4
-                    mt-6
+                    mb-10
                 "
             >
 
-                <BlurCircle
-                    top="-100px"
-                    left="0"
-                />
-
+                {/* =================================================
+                    TOTAL BOOKINGS
+                ================================================= */}
 
                 <div
                     className="
-                        flex
-                        flex-wrap
-                        gap-4
-                        w-full
+                        bg-primary/10
+                        border
+                        border-primary/20
+                        rounded-lg
+                        p-5
                     "
                 >
 
-                    {dashboardCards.map(
-                        (card, index) => {
+                    <div
+                        className="
+                            flex
+                            items-center
+                            justify-between
+                        "
+                    >
 
-                            const Icon =
-                                card.icon;
+                        <div>
 
+                            <p
+                                className="
+                                    text-gray-400
+                                    text-sm
+                                "
+                            >
+                                Total Bookings
+                            </p>
 
-                            return (
+                            <h2
+                                className="
+                                    text-2xl
+                                    font-semibold
+                                    mt-1
+                                "
+                            >
+                                {
+                                    dashboardData
+                                        .totalBookings
+                                }
+                            </h2>
 
-                                <div
-                                    key={index}
-                                    className="
-                                        flex
-                                        items-center
-                                        justify-between
-                                        px-4
-                                        py-3
-                                        bg-primary/10
-                                        border
-                                        border-primary/20
-                                        rounded-md
-                                        max-w-50
-                                        w-full
-                                    "
-                                >
+                        </div>
 
-                                    <div>
+                        <ChartLineIcon
+                            className="
+                                w-8
+                                h-8
+                                text-primary
+                            "
+                        />
 
-                                        <h1
-                                            className="
-                                                text-sm
-                                            "
-                                        >
-                                            {card.title}
-                                        </h1>
+                    </div>
 
+                </div>
 
-                                        <p
-                                            className="
-                                                text-xl
-                                                font-medium
-                                                mt-1
-                                            "
-                                        >
-                                            {card.value}
-                                        </p>
+                {/* =================================================
+                    TOTAL REVENUE
+                ================================================= */}
 
-                                    </div>
+                <div
+                    className="
+                        bg-primary/10
+                        border
+                        border-primary/20
+                        rounded-lg
+                        p-5
+                    "
+                >
 
+                    <div
+                        className="
+                            flex
+                            items-center
+                            justify-between
+                        "
+                    >
 
-                                    <Icon
-                                        className="
-                                            w-6
-                                            h-6
-                                        "
-                                    />
+                        <div>
 
-                                </div>
+                            <p
+                                className="
+                                    text-gray-400
+                                    text-sm
+                                "
+                            >
+                                Total Revenue
+                            </p>
 
-                            );
+                            <h2
+                                className="
+                                    text-2xl
+                                    font-semibold
+                                    mt-1
+                                "
+                            >
+                                {currency}
 
-                        }
-                    )}
+                                {
+                                    Number(
+                                        dashboardData
+                                            .totalRevenue || 0
+                                    ).toLocaleString()
+                                }
+
+                            </h2>
+
+                        </div>
+
+                        <CircleDollarSignIcon
+                            className="
+                                w-8
+                                h-8
+                                text-primary
+                            "
+                        />
+
+                    </div>
+
+                </div>
+
+                {/* =================================================
+                    ACTIVE SHOWS
+                ================================================= */}
+
+                <div
+                    className="
+                        bg-primary/10
+                        border
+                        border-primary/20
+                        rounded-lg
+                        p-5
+                    "
+                >
+
+                    <div
+                        className="
+                            flex
+                            items-center
+                            justify-between
+                        "
+                    >
+
+                        <div>
+
+                            <p
+                                className="
+                                    text-gray-400
+                                    text-sm
+                                "
+                            >
+                                Active Shows
+                            </p>
+
+                            <h2
+                                className="
+                                    text-2xl
+                                    font-semibold
+                                    mt-1
+                                "
+                            >
+                                {
+                                    dashboardData
+                                        .activeShows
+                                        .length
+                                }
+                            </h2>
+
+                        </div>
+
+                        <PlayCircleIcon
+                            className="
+                                w-8
+                                h-8
+                                text-primary
+                            "
+                        />
+
+                    </div>
+
+                </div>
+
+                {/* =================================================
+                    TOTAL USERS
+                    FROM User COLLECTION
+                    WHERE role = "user"
+                ================================================= */}
+
+                <div
+                    className="
+                        bg-primary/10
+                        border
+                        border-primary/20
+                        rounded-lg
+                        p-5
+                    "
+                >
+
+                    <div
+                        className="
+                            flex
+                            items-center
+                            justify-between
+                        "
+                    >
+
+                        <div>
+
+                            <p
+                                className="
+                                    text-gray-400
+                                    text-sm
+                                "
+                            >
+                                Total Users
+                            </p>
+
+                            <h2
+                                className="
+                                    text-2xl
+                                    font-semibold
+                                    mt-1
+                                "
+                            >
+                                {
+                                    dashboardData.totalUser
+                                }
+                            </h2>
+
+                        </div>
+
+                        <UsersIcon
+                            className="
+                                w-8
+                                h-8
+                                text-primary
+                            "
+                        />
+
+                    </div>
+
+                </div>
+
+                {/* =================================================
+                    TOTAL ADMINS
+                    FROM User COLLECTION
+                    WHERE role = "admin"
+                ================================================= */}
+
+                <div
+                    className="
+                        bg-primary/10
+                        border
+                        border-primary/20
+                        rounded-lg
+                        p-5
+                    "
+                >
+
+                    <div
+                        className="
+                            flex
+                            items-center
+                            justify-between
+                        "
+                    >
+
+                        <div>
+
+                            <p
+                                className="
+                                    text-gray-400
+                                    text-sm
+                                "
+                            >
+                                Total Admins
+                            </p>
+
+                            <h2
+                                className="
+                                    text-2xl
+                                    font-semibold
+                                    mt-1
+                                "
+                            >
+                                {
+                                    dashboardData.totalAdmin
+                                }
+                            </h2>
+
+                        </div>
+
+                        <ShieldCheckIcon
+                            className="
+                                w-8
+                                h-8
+                                text-primary
+                            "
+                        />
+
+                    </div>
 
                 </div>
 
             </div>
 
+            {/* =====================================================
+                ACTIVE SHOWS
+            ===================================================== */}
 
-            {/* ================================================= */}
-            {/* ACTIVE SHOWS */}
-            {/* ================================================= */}
+            <div>
 
-            <p
-                className="
-                    mt-10
-                    text-lg
-                    font-medium
-                "
-            >
-                Active Shows
-            </p>
-
-
-            <div
-                className="
-                    relative
-                    grid
-                    grid-cols-1
-                    sm:grid-cols-2
-                    lg:grid-cols-3
-                    gap-5
-                    mt-4
-                    max-w-5xl
-                "
-            >
-
-                <BlurCircle
-                    top="100px"
-                    left="-10%"
+                <Title
+                    text1="Active"
+                    text2="Shows"
                 />
 
+                <div
+                    className="
+                        mt-6
+                        grid
+                        grid-cols-1
+                        sm:grid-cols-2
+                        lg:grid-cols-4
+                        gap-5
+                    "
+                >
 
-                {dashboardData.activeShows.length >
-                0 ? (
+                    {
+                        dashboardData
+                            .activeShows
+                            .map((show) => {
 
-                    dashboardData.activeShows.map(
-                        (show) => {
+                                const movie =
+                                    show.movie;
 
-                            /*
-                             * Because backend uses:
-                             *
-                             * .populate("movie")
-                             *
-                             * show.movie contains
-                             * the complete Movie document.
-                             */
-
-
-                            const movie =
-                                show.movie;
-
-
-                            return (
-
-                                <div
-                                    key={show._id}
-                                    className="
-                                        rounded-lg
-                                        overflow-hidden
-                                        hover:-translate-y-1
-                                        transition
-                                        duration-300
-                                        bg-gray-900
-                                        border
-                                        border-gray-800
-                                    "
-                                >
-
-                                    {/* ================================= */}
-                                    {/* MOVIE POSTER */}
-                                    {/* ================================= */}
+                                return (
 
                                     <div
+                                        key={show._id}
                                         className="
-                                            w-full
-                                            h-48
-                                            bg-black
+                                            relative
+                                            overflow-hidden
+                                            rounded-lg
+                                            bg-gray-900
+                                            border
+                                            border-gray-800
                                         "
                                     >
 
                                         <img
                                             src={
-                                                movie?.poster_path ||
-                                                ""
+                                                movie?.poster_path
                                             }
                                             alt={
                                                 movie?.title ||
                                                 "Movie"
                                             }
                                             className="
-                                                h-full
                                                 w-full
-                                                object-contain
+                                                h-64
+                                                object-cover
                                             "
                                         />
 
-                                    </div>
-
-
-                                    {/* ================================= */}
-                                    {/* MOVIE TITLE */}
-                                    {/* ================================= */}
-
-                                    <p
-                                        className="
-                                            font-medium
-                                            px-3
-                                            pt-3
-                                            truncate
-                                        "
-                                    >
-
-                                        {
-                                            movie?.title ||
-                                            "Untitled Movie"
-                                        }
-
-                                    </p>
-
-
-                                    {/* ================================= */}
-                                    {/* PRICE + RATING */}
-                                    {/* ================================= */}
-
-                                    <div
-                                        className="
-                                            flex
-                                            items-center
-                                            justify-between
-                                            px-3
-                                            mt-2
-                                        "
-                                    >
-
-                                        <p
+                                        <div
                                             className="
-                                                text-lg
-                                                font-medium
+                                                p-4
                                             "
                                         >
 
-                                            {currency}
-
-                                            {
-                                                show.showPrice
-                                            }
-
-                                        </p>
-
-
-                                        <p
-                                            className="
-                                                flex
-                                                items-center
-                                                gap-1
-                                                text-sm
-                                                text-gray-400
-                                            "
-                                        >
-
-                                            <StarIcon
+                                            <h3
                                                 className="
-                                                    w-4
-                                                    h-4
-                                                    text-primary
-                                                    fill-primary
+                                                    font-semibold
+                                                    text-lg
+                                                    truncate
                                                 "
-                                            />
+                                            >
+                                                {
+                                                    movie?.title ||
+                                                    "Unknown Movie"
+                                                }
+                                            </h3>
 
+                                            <div
+                                                className="
+                                                    flex
+                                                    items-center
+                                                    justify-between
+                                                    mt-2
+                                                "
+                                            >
 
-                                            {
-                                                movie?.vote_average
-                                                    ? Number(
-                                                        movie.vote_average
-                                                    ).toFixed(1)
-                                                    : "N/A"
-                                            }
+                                                <p
+                                                    className="
+                                                        text-primary
+                                                        font-medium
+                                                    "
+                                                >
+                                                    {currency}
 
-                                        </p>
+                                                    {
+                                                        show.showPrice
+                                                    }
+                                                </p>
+
+                                                <div
+                                                    className="
+                                                        flex
+                                                        items-center
+                                                        gap-1
+                                                        text-sm
+                                                    "
+                                                >
+
+                                                    <StarIcon
+                                                        className="
+                                                            w-4
+                                                            h-4
+                                                            fill-current
+                                                        "
+                                                    />
+
+                                                    <span>
+                                                        {
+                                                            movie?.vote_average
+                                                        }
+                                                    </span>
+
+                                                </div>
+
+                                            </div>
+
+                                            <p
+                                                className="
+                                                    text-gray-400
+                                                    text-sm
+                                                    mt-2
+                                                "
+                                            >
+                                                {
+                                                    dateFormat(
+                                                        show.showDateTime
+                                                    )
+                                                }
+                                            </p>
+
+                                        </div>
 
                                     </div>
 
+                                );
 
-                                    {/* ================================= */}
-                                    {/* SHOW DATE & TIME */}
-                                    {/* ================================= */}
+                            })
+                    }
 
-                                    <p
-                                        className="
-                                            px-3
-                                            py-3
-                                            text-sm
-                                            text-gray-400
-                                        "
-                                    >
-
-                                        {
-                                            dateFormat(
-                                                show.showDateTime
-                                            )
-                                        }
-
-                                    </p>
-
-                                </div>
-
-                            );
-
-                        }
-                    )
-
-                ) : (
-
-                    <p
-                        className="
-                            text-gray-500
-                        "
-                    >
-                        No Active Shows Available
-                    </p>
-
-                )}
+                </div>
 
             </div>
 
-        </>
+        </div>
 
     );
-
 };
-
 
 export default Dashboard;
