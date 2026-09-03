@@ -1,68 +1,81 @@
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 
-import Navbar from './components/Navbar'
-import Footer from './components/Footer'
-import Profile from './pages/Profile'
-import Home from './pages/Home'
-import Movies from './pages/Movies'
-import MovieDetail from './pages/MovieDetail'
-import SeatLayout from './pages/SeatLayout'
-import MyBooking from './pages/MyBooking'
-import Favorite from './pages/Favorite'
-import Login from './pages/Login'
-import Signup from './pages/Signup'
+import Profile from "./pages/Profile";
+import Home from "./pages/Home";
+import Movies from "./pages/Movies";
+import MovieDetail from "./pages/MovieDetail";
+import SeatLayout from "./pages/SeatLayout";
+import MyBooking from "./pages/MyBooking";
+import Favorite from "./pages/Favorite";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 
 import {
     Routes,
     Route,
-    useLocation
-} from 'react-router-dom'
+    useLocation,
+} from "react-router-dom";
 
-import ProtectedRoute from './components/ProtectedRoute'
+import ProtectedRoute from "./components/ProtectedRoute";
 
-import Dashboard from './pages/admin/Dashboard'
-import AddShows from './pages/admin/AddShows'
-import ListBookings from './pages/admin/ListBookings'
-import ListShows from './pages/admin/ListShows'
-import Layout from './pages/admin/Layout'
+// =====================================================
+// IMPORT TOASTER
+// =====================================================
 
-import { useAuth } from './context/AuthContext'
+import { Toaster } from 'react-hot-toast';
 
+// =====================================================
+// ADMIN PAGES
+// =====================================================
+
+import Dashboard from "./pages/admin/Dashboard";
+import AddShows from "./pages/admin/AddShows";
+import ListBookings from "./pages/admin/ListBookings";
+import ListShows from "./pages/admin/ListShows";
+import Layout from "./pages/admin/Layout";
+
+import { useAuth } from "./context/AuthContext";
+
+
+// =====================================================
+// APP
+// =====================================================
 
 const App = () => {
 
-    const { pathname } = useLocation()
+    const { pathname } = useLocation();
 
-
-    // =====================================================
+    // =================================================
     // CHECK ADMIN ROUTE
-    // =====================================================
+    // =================================================
 
     const isAdminRoute =
-        pathname.startsWith('/admin')
+        pathname.startsWith("/admin");
 
 
-    // =====================================================
-    // GET AUTH DATA
-    // =====================================================
+    // =================================================
+    // AUTH DATA
+    // =================================================
 
     const {
         user,
         admin,
-        loading
-    } = useAuth()
+        loading,
+    } = useAuth();
 
 
-    // =====================================================
+    // =================================================
     // ADMIN CHECK
-    // =====================================================
+    // =================================================
 
     const isAdmin =
-        admin?.role === 'admin'
+        admin?.role === "admin";
 
 
-    // =====================================================
-    // WAIT FOR AUTHENTICATION TO LOAD
-    // =====================================================
+    // =================================================
+    // WAIT FOR AUTH
+    // =================================================
 
     if (loading) {
 
@@ -74,26 +87,65 @@ const App = () => {
                 </p>
 
             </div>
-        )
-
+        );
     }
 
+
+    // =================================================
+    // PAGE
+    // =================================================
 
     return (
         <>
 
             {/* ================================================= */}
-            {/* NAVBAR FOR NORMAL USER PAGES */}
+            {/* TOASTER - Add this at the top level */}
+            {/* ================================================= */}
+
+            <Toaster 
+                position="top-center"
+                reverseOrder={false}
+                toastOptions={{
+                    duration: 3000,
+                    style: {
+                        background: '#363636',
+                        color: '#fff',
+                        border: '1px solid #444',
+                        padding: '16px',
+                        borderRadius: '8px',
+                    },
+                    success: {
+                        duration: 3000,
+                        iconTheme: {
+                            primary: '#4ade80',
+                            secondary: '#fff',
+                        },
+                    },
+                    error: {
+                        duration: 4000,
+                        iconTheme: {
+                            primary: '#ef4444',
+                            secondary: '#fff',
+                        },
+                    },
+                }}
+            />
+
+            {/* ================================================= */}
+            {/* NAVBAR */}
             {/* ================================================= */}
 
             {!isAdminRoute && <Navbar />}
 
 
+            {/* ================================================= */}
+            {/* ROUTES */}
+            {/* ================================================= */}
+
             <Routes>
 
-
                 {/* ================================================= */}
-                {/* NORMAL USER PAGES */}
+                {/* HOME */}
                 {/* ================================================= */}
 
                 <Route
@@ -101,18 +153,20 @@ const App = () => {
                     element={<Home />}
                 />
 
-
                 <Route
                     path="/home"
                     element={<Home />}
                 />
 
 
+                {/* ================================================= */}
+                {/* MOVIES */}
+                {/* ================================================= */}
+
                 <Route
                     path="/movies"
                     element={<Movies />}
                 />
-
 
                 <Route
                     path="/movies/:id"
@@ -120,25 +174,33 @@ const App = () => {
                 />
 
 
-                <Route
-                    path="/movies/:id/:date"
-                    element={
-                        <ProtectedRoute>
-                            <SeatLayout />
-                        </ProtectedRoute>
-                    }
+                {/* ================================================= */}
+                {/* SEAT LAYOUT */}
+                {/* ================================================= */}
+
+                <Route 
+                    path="/movies/:id/:date" 
+                    element={<SeatLayout />} 
                 />
 
+
+                {/* ================================================= */}
+                {/* MY BOOKINGS */}
+                {/* ================================================= */}
 
                 <Route
                     path="/my-booking"
                     element={
-                        <ProtectedRoute>
+                      
                             <MyBooking />
-                        </ProtectedRoute>
+                      
                     }
                 />
 
+
+                {/* ================================================= */}
+                {/* FAVORITES */}
+                {/* ================================================= */}
 
                 <Route
                     path="/favorite"
@@ -149,6 +211,10 @@ const App = () => {
                     }
                 />
 
+
+                {/* ================================================= */}
+                {/* PROFILE */}
+                {/* ================================================= */}
 
                 <Route
                     path="/profile"
@@ -161,7 +227,7 @@ const App = () => {
 
 
                 {/* ================================================= */}
-                {/* LOGIN / SIGNUP */}
+                {/* LOGIN */}
                 {/* ================================================= */}
 
                 <Route
@@ -170,6 +236,10 @@ const App = () => {
                 />
 
 
+                {/* ================================================= */}
+                {/* SIGNUP */}
+                {/* ================================================= */}
+
                 <Route
                     path="/signup"
                     element={<Signup />}
@@ -177,7 +247,7 @@ const App = () => {
 
 
                 {/* ================================================= */}
-                {/* ADMIN ROUTES */}
+                {/* ADMIN */}
                 {/* ================================================= */}
 
                 <Route
@@ -196,11 +266,9 @@ const App = () => {
                                     Admin Access Required
                                 </h1>
 
-
                                 <p className="text-gray-400 mb-6 text-center">
                                     Please login with an administrator account.
                                 </p>
-
 
                                 <a
                                     href="/login"
@@ -212,9 +280,10 @@ const App = () => {
                             </div>
 
                         )
-
                     }
                 >
+
+                    {/* ADMIN DASHBOARD */}
 
                     <Route
                         index
@@ -222,17 +291,23 @@ const App = () => {
                     />
 
 
+                    {/* ADD SHOWS */}
+
                     <Route
                         path="add-shows"
                         element={<AddShows />}
                     />
 
 
+                    {/* LIST SHOWS */}
+
                     <Route
                         path="list-shows"
                         element={<ListShows />}
                     />
 
+
+                    {/* LIST BOOKINGS */}
 
                     <Route
                         path="list-bookings"
@@ -241,19 +316,18 @@ const App = () => {
 
                 </Route>
 
-
             </Routes>
 
 
             {/* ================================================= */}
-            {/* FOOTER FOR NORMAL USER PAGES */}
+            {/* FOOTER */}
             {/* ================================================= */}
 
             {!isAdminRoute && <Footer />}
 
         </>
-    )
-}
+    );
+};
 
 
-export default App
+export default App;

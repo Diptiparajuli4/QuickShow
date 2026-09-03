@@ -1,21 +1,20 @@
 import React, { useState } from "react";
 import BlurCircle from "./BlurCircle";
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { useAuth } from "../context/AuthContext"; // 👈 corrected path
 
 const DateSelect = ({ dateTime = {}, id }) => {
   const navigate = useNavigate();
+  const { user, admin, isLoggedIn } = useAuth();
 
+  const currentUser = user || admin;
   const [selected, setSelected] = useState(null);
 
   // =========================================
   // GET DATES FROM DATABASE DATA
   // =========================================
-
   const dates = Object.keys(dateTime || {}).sort(
     (a, b) => new Date(a) - new Date(b)
   );
@@ -23,54 +22,48 @@ const DateSelect = ({ dateTime = {}, id }) => {
   // =========================================
   // BOOK NOW
   // =========================================
-
   const onBookHandler = () => {
-    // User must select a date
     if (!selected) {
       toast("Please select a date");
       return;
     }
 
+    if (!isLoggedIn()) {
+      toast("Please log in to book tickets");
+      navigate("/login", {
+        state: { from: `/movies/${id}/${selected}` },
+      });
+      return;
+    }
+
     console.log("Selected movie ID:", id);
     console.log("Selected date:", selected);
+    console.log("User ID:", currentUser._id || currentUser.id);
 
-    // =========================================
-    // GO TO BOOKING / SEAT LAYOUT PAGE
-    // =========================================
+    navigate(`/movies/${id}/${selected}`, {
+      state: {
+        userId: currentUser._id || currentUser.id,
+        userEmail: currentUser.email,
+        userName: currentUser.name,
+      },
+    });
 
-    navigate(`/movies/${id}/${selected}`);
-
-    // Scroll to top of booking page
     window.scrollTo(0, 0);
   };
 
   // =========================================
   // NO DATES
   // =========================================
-
   if (dates.length === 0) {
     return (
       <div id="dateSelect" className="pt-30">
         <div className="relative p-8 bg-primary/10 border border-primary/20 rounded-lg">
-
-          <BlurCircle
-            top="-100px"
-            left="-100px"
-          />
-
-          <BlurCircle
-            top="100px"
-            right="0px"
-          />
-
-          <p className="text-lg font-semibold">
-            Choose Date
-          </p>
-
+          <BlurCircle top="-100px" left="-100px" />
+          <BlurCircle top="100px" right="0px" />
+          <p className="text-lg font-semibold">Choose Date</p>
           <p className="text-gray-400 mt-4">
             No shows are available for this movie.
           </p>
-
         </div>
       </div>
     );
@@ -79,10 +72,8 @@ const DateSelect = ({ dateTime = {}, id }) => {
   // =========================================
   // PAGE
   // =========================================
-
   return (
     <div id="dateSelect" className="pt-30">
-
       <div
         className="
           flex
@@ -99,39 +90,13 @@ const DateSelect = ({ dateTime = {}, id }) => {
           rounded-lg
         "
       >
-
-        <BlurCircle
-          top="-100px"
-          left="-100px"
-        />
-
-        <BlurCircle
-          top="100px"
-          right="0px"
-        />
-
-        {/* ================================= */}
-        {/* DATE SECTION */}
-        {/* ================================= */}
+        <BlurCircle top="-100px" left="-100px" />
+        <BlurCircle top="100px" right="0px" />
 
         <div>
-
-          <p className="text-lg font-semibold">
-            Choose Date
-          </p>
-
+          <p className="text-lg font-semibold">Choose Date</p>
           <div className="flex items-center gap-6 text-sm mt-5">
-
-            {/* LEFT ARROW */}
-
-            <ChevronLeftIcon
-              width={28}
-              className="text-gray-400"
-            />
-
-            {/* ================================= */}
-            {/* DATABASE DATES */}
-            {/* ================================= */}
+            <ChevronLeftIcon width={28} className="text-gray-400" />
 
             <div
               className="
@@ -143,25 +108,13 @@ const DateSelect = ({ dateTime = {}, id }) => {
                 gap-4
               "
             >
-
               {dates.map((date) => {
-
-                const dateObject =
-                  new Date(`${date}T00:00:00`);
-
-                const day =
-                  dateObject.getDate();
-
-                const month =
-                  dateObject.toLocaleDateString(
-                    "en-US",
-                    {
-                      month: "short",
-                    }
-                  );
-
-                const isSelected =
-                  selected === date;
+                const dateObject = new Date(`${date}T00:00:00`);
+                const day = dateObject.getDate();
+                const month = dateObject.toLocaleDateString("en-US", {
+                  month: "short",
+                });
+                const isSelected = selected === date;
 
                 return (
                   <button
@@ -179,7 +132,6 @@ const DateSelect = ({ dateTime = {}, id }) => {
                       rounded
                       cursor-pointer
                       transition-all
-
                       ${
                         isSelected
                           ? "bg-primary text-white"
@@ -187,36 +139,16 @@ const DateSelect = ({ dateTime = {}, id }) => {
                       }
                     `}
                   >
-
-                    <span className="font-medium">
-                      {day}
-                    </span>
-
-                    <span>
-                      {month}
-                    </span>
-
+                    <span className="font-medium">{day}</span>
+                    <span>{month}</span>
                   </button>
                 );
-
               })}
-
             </div>
 
-            {/* RIGHT ARROW */}
-
-            <ChevronRightIcon
-              width={28}
-              className="text-gray-400"
-            />
-
+            <ChevronRightIcon width={28} className="text-gray-400" />
           </div>
-
         </div>
-
-        {/* ================================= */}
-        {/* BOOK NOW */}
-        {/* ================================= */}
 
         <button
           type="button"
@@ -234,9 +166,7 @@ const DateSelect = ({ dateTime = {}, id }) => {
         >
           Book Now
         </button>
-
       </div>
-
     </div>
   );
 };
