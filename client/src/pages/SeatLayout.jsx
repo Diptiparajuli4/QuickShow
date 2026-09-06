@@ -275,8 +275,7 @@ const SeatLayout = () => {
             }
 
             // ✅ Get token from localStorage (set by AuthContext during login)
-            const token = localStorage.getItem("token");
-            if (!token) {
+const token = localStorage.getItem("userToken") || localStorage.getItem("token");            if (!token) {
                 toast.error("Authentication token not found. Please log in again.");
                 return;
             }

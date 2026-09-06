@@ -34,23 +34,23 @@ export const dummyTrailers = [
 ]
 
 const dummyCastsData = [
-    { "name": "Milla Jovovich", "profile_path": "https://image.tmdb.org/t/p/original/usWnHCzbADijULREZYSJ0qfM00y.jpg", },
-    { "name": "Dave Bautista", "profile_path": "https://image.tmdb.org/t/p/original/snk6JiXOOoRjPtHU5VMoy6qbd32.jpg", },
-    { "name": "Arly Jover", "profile_path": "https://image.tmdb.org/t/p/original/zmznPrQ9GSZwcOIUT0c3GyETwrP.jpg", },
-    { "name": "Amara Okereke", "profile_path": "https://image.tmdb.org/t/p/original/nTSPtzWu6deZTJtWXHUpACVznY4.jpg", },
-    { "name": "Fraser James", "profile_path": "https://image.tmdb.org/t/p/original/mGAPQG2OKTgdKFkp9YpvCSqcbgY.jpg", },
-    { "name": "Deirdre Mullins", "profile_path": "https://image.tmdb.org/t/p/original/lJm89neuiVlYISEqNpGZA5kTAnP.jpg", },
-    { "name": "Sebastian Stankiewicz", "profile_path": "https://image.tmdb.org/t/p/original/hLN0Ca09KwQOFLZLPIEzgTIbqqg.jpg", },
-    { "name": "Tue Lunding", "profile_path": "https://image.tmdb.org/t/p/original/qY4W0zfGBYzlCyCC0QDJS1Muoa0.jpg", },
-    { "name": "Jacek Dzisiewicz", "profile_path": "https://image.tmdb.org/t/p/original/6Ksb8ANhhoWWGnlM6O1qrySd7e1.jpg", },
-    { "name": "Ian Hanmore", "profile_path": "https://image.tmdb.org/t/p/original/yhI4MK5atavKBD9wiJtaO1say1p.jpg", },
-    { "name": "Eveline Hall", "profile_path": "https://image.tmdb.org/t/p/original/uPq4xUPiJIMW5rXF9AT0GrRqgJY.jpg", },
-    { "name": "Kamila Klamut", "profile_path": "https://image.tmdb.org/t/p/original/usWnHCzbADijULREZYSJ0qfM00y.jpg", },
-    { "name": "Caoilinn Springall", "profile_path": "https://image.tmdb.org/t/p/original/uZNtbPHowlBYo74U1qlTaRlrdiY.jpg", },
-    { "name": "Jan Kowalewski", "profile_path": "https://image.tmdb.org/t/p/original/snk6JiXOOoRjPtHU5VMoy6qbd32.jpg", },
-    { "name": "Pawel Wysocki", "profile_path": "https://image.tmdb.org/t/p/original/zmznPrQ9GSZwcOIUT0c3GyETwrP.jpg", },
-    { "name": "Simon Lööf", "profile_path": "https://image.tmdb.org/t/p/original/cbZrB8crWlLEDjVUoak8Liak6s.jpg", },
-    { "name": "Tomasz Cymerman", "profile_path": "https://image.tmdb.org/t/p/original/nTSPtzWu6deZTJtWXHUpACVznY4.jpg", }
+    { "name": "Milla Jovovich", "profile_path": "https://image.tmdb.org/t/p/original/usWnHCzbADijULREZYSJ0qfM00y.jpg" },
+    { "name": "Dave Bautista", "profile_path": "https://image.tmdb.org/t/p/original/snk6JiXOOoRjPtHU5VMoy6qbd32.jpg" },
+    { "name": "Arly Jover", "profile_path": "https://image.tmdb.org/t/p/original/zmznPrQ9GSZwcOIUT0c3GyETwrP.jpg" },
+    { "name": "Amara Okereke", "profile_path": "https://image.tmdb.org/t/p/original/nTSPtzWu6deZTJtWXHUpACVznY4.jpg" },
+    { "name": "Fraser James", "profile_path": "https://image.tmdb.org/t/p/original/mGAPQG2OKTgdKFkp9YpvCSqcbgY.jpg" },
+    { "name": "Deirdre Mullins", "profile_path": "https://image.tmdb.org/t/p/original/lJm89neuiVlYISEqNpGZA5kTAnP.jpg" },
+    { "name": "Sebastian Stankiewicz", "profile_path": "https://image.tmdb.org/t/p/original/hLN0Ca09KwQOFLZLPIEzgTIbqqg.jpg" },
+    { "name": "Tue Lunding", "profile_path": "https://image.tmdb.org/t/p/original/qY4W0zfGBYzlCyCC0QDJS1Muoa0.jpg" },
+    { "name": "Jacek Dzisiewicz", "profile_path": "https://image.tmdb.org/t/p/original/6Ksb8ANhhoWWGnlM6O1qrySd7e1.jpg" },
+    { "name": "Ian Hanmore", "profile_path": "https://image.tmdb.org/t/p/original/yhI4MK5atavKBD9wiJtaO1say1p.jpg" },
+    { "name": "Eveline Hall", "profile_path": "https://image.tmdb.org/t/p/original/uPq4xUPiJIMW5rXF9AT0GrRqgJY.jpg" },
+    { "name": "Kamila Klamut", "profile_path": "https://image.tmdb.org/t/p/original/usWnHCzbADijULREZYSJ0qfM00y.jpg" },
+    { "name": "Caoilinn Springall", "profile_path": "https://image.tmdb.org/t/p/original/uZNtbPHowlBYo74U1qlTaRlrdiY.jpg" },
+    { "name": "Jan Kowalewski", "profile_path": "https://image.tmdb.org/t/p/original/snk6JiXOOoRjPtHU5VMoy6qbd32.jpg" },
+    { "name": "Pawel Wysocki", "profile_path": "https://image.tmdb.org/t/p/original/zmznPrQ9GSZwcOIUT0c3GyETwrP.jpg" },
+    { "name": "Simon Lööf", "profile_path": "https://image.tmdb.org/t/p/original/cbZrB8crWlLEDjVUoak8Liak6s.jpg" },
+    { "name": "Tomasz Cymerman", "profile_path": "https://image.tmdb.org/t/p/original/nTSPtzWu6deZTJtWXHUpACVznY4.jpg" }
 ]
 
 export const dummyShowsData = [
@@ -72,13 +72,13 @@ export const dummyShowsData = [
         "tagline": "She seeks the power to free her people.",
         "vote_average": 6.4,
         "vote_count": 15000,
-        "runtime": 102,
+        "runtime": 102
     },
     {
         "_id": "1232546",
         "id": 1232546,
         "title": "Until Dawn",
-        "overview": "One year after her sister Melanie mysteriously disappeared, Clover and her friends head into the remote valley where she vanished in search of answers. Exploring an abandoned visitor center, they find themselves stalked by a masked killer and horrifically murdered one by one...only to wake up and find themselves back at the beginning of the same evening.",
+        "overview": "One year after her sister Melanie mysteriously disappeared, Clover and her friends head into the remote valley where she vanished in search of answers.",
         "poster_path": "https://image.tmdb.org/t/p/original/juA4IWO52Fecx8lhAsxmDgy3M3.jpg",
         "backdrop_path": "https://image.tmdb.org/t/p/original/icFWIk1KfkWLZnugZAJEDauNZ94.jpg",
         "genres": [
@@ -91,7 +91,7 @@ export const dummyShowsData = [
         "tagline": "Every night a different nightmare.",
         "vote_average": 6.405,
         "vote_count": 18000,
-        "runtime": 103,
+        "runtime": 103
     },
     {
         "_id": "552524",
@@ -111,7 +111,7 @@ export const dummyShowsData = [
         "tagline": "Hold on to your coconuts.",
         "vote_average": 7.117,
         "vote_count": 27500,
-        "runtime": 108,
+        "runtime": 108
     },
     {
         "_id": "668489",
@@ -131,13 +131,13 @@ export const dummyShowsData = [
         "tagline": "No law. Only disorder.",
         "vote_average": 6.537,
         "vote_count": 35960,
-        "runtime": 107,
+        "runtime": 107
     },
     {
         "_id": "950387",
         "id": 950387,
         "title": "A Minecraft Movie",
-        "overview": "Four misfits find themselves struggling with ordinary problems when they are suddenly pulled through a mysterious portal into the Overworld: a bizarre, cubic wonderland that thrives on imagination. To get back home, they'll have to master this world while embarking on a magical quest with an unexpected, expert crafter, Steve.",
+        "overview": "Four misfits find themselves struggling with ordinary problems when they are suddenly pulled through a mysterious portal into the Overworld.",
         "poster_path": "https://image.tmdb.org/t/p/original/yFHHfHcUgGAxziP1C3lLt0q2T4s.jpg",
         "backdrop_path": "https://image.tmdb.org/t/p/original/2Nti3gYAX513wvhp8IiLL6ZDyOm.jpg",
         "genres": [
@@ -152,13 +152,13 @@ export const dummyShowsData = [
         "tagline": "Be there and be square.",
         "vote_average": 6.516,
         "vote_count": 15225,
-        "runtime": 101,
+        "runtime": 101
     },
     {
         "_id": "575265",
         "id": 575265,
         "title": "Mission: Impossible - The Final Reckoning",
-        "overview": "Ethan Hunt and team continue their search for the terrifying AI known as the Entity — which has infiltrated intelligence networks all over the globe — with the world's governments and a mysterious ghost from Hunt's past on their trail. Joined by new allies and armed with the means to shut the Entity down for good, Hunt is in a race against time to prevent the world as we know it from changing forever.",
+        "overview": "Ethan Hunt and team continue their search for the terrifying AI known as the Entity.",
         "poster_path": "https://image.tmdb.org/t/p/original/z53D72EAOxGRqdr7KXXWp9dJiDe.jpg",
         "backdrop_path": "https://image.tmdb.org/t/p/original/1p5aI299YBnqrEEvVGJERk2MXXb.jpg",
         "genres": [
@@ -172,13 +172,13 @@ export const dummyShowsData = [
         "tagline": "Our lives are the sum of our choices.",
         "vote_average": 7.042,
         "vote_count": 19885,
-        "runtime": 170,
+        "runtime": 170
     },
     {
         "_id": "986056",
         "id": 986056,
         "title": "Thunderbolts*",
-        "overview": "After finding themselves ensnared in a death trap, seven disillusioned castoffs must embark on a dangerous mission that will force them to confront the darkest corners of their pasts.",
+        "overview": "After finding themselves ensnared in a death trap, seven disillusioned castoffs must embark on a dangerous mission.",
         "poster_path": "https://image.tmdb.org/t/p/original/m9EtP1Yrzv6v7dMaC9mRaGhd1um.jpg",
         "backdrop_path": "https://image.tmdb.org/t/p/original/rthMuZfFv4fqEU4JVbgSW9wQ8rs.jpg",
         "genres": [
@@ -192,142 +192,305 @@ export const dummyShowsData = [
         "tagline": "Everyone deserves a second shot.",
         "vote_average": 7.443,
         "vote_count": 23569,
-        "runtime": 127,
+        "runtime": 127
+    },
+    {
+        "_id": "1022789",
+        "id": 1022789,
+        "title": "Inside Out 2",
+        "overview": "Teenager Riley's mind headquarters is undergoing a sudden demolition to make room for something entirely unexpected: new Emotions!",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJlvfA3g9NiVxSM5LUAxSeOFNzhGp0zjNVunBWwG-41g&s=10",
+        "backdrop_path": "https://image.tmdb.org/t/p/original/xg27Iio1522P2m23.jpg",
+        "genres": [
+            { "id": 16, "name": "Animation" },
+            { "id": 10751, "name": "Family" },
+            { "id": 35, "name": "Comedy" }
+        ],
+        "casts": dummyCastsData,
+        "release_date": "2024-06-12",
+        "original_language": "en",
+        "tagline": "Make room for new emotions.",
+        "vote_average": 7.6,
+        "vote_count": 4800,
+        "runtime": 96
+    },
+    {
+        "_id": "533535",
+        "id": 533535,
+        "title": "Deadpool & Wolverine",
+        "overview": "A listless Wade Wilson toils away in civilian life with his days as the morally flexible mercenary, Deadpool, behind him.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRx6z7XSeCJ2l_j2yqLPRI-lFroHotHHebO2ECLaCaeew&s=10",
+        "backdrop_path": "https://image.tmdb.org/t/p/original/yD4122.jpg",
+        "genres": [
+            { "id": 28, "name": "Action" },
+            { "id": 35, "name": "Comedy" },
+            { "id": 878, "name": "Science Fiction" }
+        ],
+        "casts": dummyCastsData,
+        "release_date": "2024-07-24",
+        "original_language": "en",
+        "tagline": "Everyone deserves a happy ending.",
+        "vote_average": 7.7,
+        "vote_count": 5200,
+        "runtime": 128
+    },
+    {
+        "_id": "519182",
+        "id": 519182,
+        "title": "Despicable Me 4",
+        "overview": "Gru and Lucy and their girls welcome a new member to the Gru family, Gru Jr., who is intent on tormenting his dad.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcScjnWl9-a6LO454CY3A4JivV95u2gsV9CsBObKSUwb5w&s=10",
+        "backdrop_path": "https://image.tmdb.org/t/p/original/lg0234.jpg",
+        "genres": [
+            { "id": 16, "name": "Animation" },
+            { "id": 10751, "name": "Family" },
+            { "id": 35, "name": "Comedy" }
+        ],
+        "casts": dummyCastsData,
+        "release_date": "2024-06-20",
+        "original_language": "en",
+        "tagline": "Things just got a little more despicable.",
+        "vote_average": 7.1,
+        "vote_count": 2100,
+        "runtime": 94
+    },
+    {
+        "_id": "693134",
+        "id": 693134,
+        "title": "Dune: Part Two",
+        "overview": "Follow the mythic journey of Paul Atreides as he unites with Chani and the Fremen while on a path of revenge.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSn35r4NtzZbFMYAYE4hjmZaPV34wjT_49V8FM6oJaRMQ&s=10",
+        "backdrop_path": "https://image.tmdb.org/t/p/original/xOMo8BRK7PfcJv9R22f3.jpg",
+        "genres": [
+            { "id": 878, "name": "Science Fiction" },
+            { "id": 12, "name": "Adventure" }
+        ],
+        "casts": dummyCastsData,
+        "release_date": "2024-02-27",
+        "original_language": "en",
+        "tagline": "Long live the fighters.",
+        "vote_average": 8.2,
+        "vote_count": 5100,
+        "runtime": 166
+    },
+    {
+        "_id": "823464",
+        "id": 823464,
+        "title": "Godzilla x Kong: The New Empire",
+        "overview": "Godzilla and Kong must reunite against a colossal undiscovered threat hidden within our world.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRTJbXhZcIU3mJi1K8ZG7L3Um0h4kwTRrJBIjnrnmC1rA&s=10",
+        "backdrop_path": "https://image.tmdb.org/t/p/original/b0019283.jpg",
+        "genres": [
+            { "id": 28, "name": "Action" },
+            { "id": 878, "name": "Science Fiction" },
+            { "id": 12, "name": "Adventure" }
+        ],
+        "casts": dummyCastsData,
+        "release_date": "2024-03-27",
+        "original_language": "en",
+        "tagline": "Rise together or fall alone.",
+        "vote_average": 7.2,
+        "vote_count": 3800,
+        "runtime": 115
+    },
+    {
+        "_id": "653346",
+        "id": 653346,
+        "title": "Kingdom of the Planet of the Apes",
+        "overview": "Many years after the reign of Caesar, a young ape undertakes a journey that will lead him to question everything.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcStMCHyVlrgBGxJeRRYYQyU8nZ3ETt3cywDY-dH0ZS2Rg&s=10",
+        "backdrop_path": "https://image.tmdb.org/t/p/original/p092384.jpg",
+        "genres": [
+            { "id": 878, "name": "Science Fiction" },
+            { "id": 12, "name": "Adventure" },
+            { "id": 28, "name": "Action" }
+        ],
+        "casts": dummyCastsData,
+        "release_date": "2024-05-08",
+        "original_language": "en",
+        "tagline": "No one can stop the reign.",
+        "vote_average": 7.1,
+        "vote_count": 2900,
+        "runtime": 145
+    },
+    {
+        "_id": "786892",
+        "id": 786892,
+        "title": "Furiosa: A Mad Max Saga",
+        "overview": "As the world fell, young Furiosa is snatched from the Green Place of Many Mothers into the hands of a great Biker Horde.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTcgLyTIuzTLxJf10ddVRZC8M3Bo1y9UgR5vbwo4cjU5w&s=10",
+        "backdrop_path": "https://image.tmdb.org/t/p/original/w92384.jpg",
+        "genres": [
+            { "id": 28, "name": "Action" },
+            { "id": 12, "name": "Adventure" },
+            { "id": 878, "name": "Science Fiction" }
+        ],
+        "casts": dummyCastsData,
+        "release_date": "2024-05-22",
+        "original_language": "en",
+        "tagline": "Out of darkness, a warrior rises.",
+        "vote_average": 7.6,
+        "vote_count": 3100,
+        "runtime": 148
+    },
+    {
+        "_id": "573435",
+        "id": 573435,
+        "title": "Bad Boys: Ride or Die",
+        "overview": "After their late former Captain is framed, Mike Lowrey and Marcus Burnett go on the run to clear his name.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrv5pEqhXsyf_6cHGAAHOiZH6wb10uyn_Xp9V1vnwWDQ&s",
+        "backdrop_path": "https://image.tmdb.org/t/p/original/v98234.jpg",
+        "genres": [
+            { "id": 28, "name": "Action" },
+            { "id": 35, "name": "Comedy" },
+            { "id": 80, "name": "Crime" }
+        ],
+        "casts": dummyCastsData,
+        "release_date": "2024-06-05",
+        "original_language": "en",
+        "tagline": "Ride together, die together.",
+        "vote_average": 7.0,
+        "vote_count": 2200,
+        "runtime": 115
+    },
+    {
+        "_id": "748783",
+        "id": 748783,
+        "title": "The Garfield Movie",
+        "overview": "Garfield, the world-famous indoor-loving cat, is about to have a wild outdoor adventure.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSY4Ag1GtW4KICeVCpLt7PyUFY-pQmyZZ-8yPAof-koPQ&s=10",
+        "backdrop_path": "https://image.tmdb.org/t/p/original/k902384.jpg",
+        "genres": [
+            { "id": 16, "name": "Animation" },
+            { "id": 10751, "name": "Family" },
+            { "id": 35, "name": "Comedy" }
+        ],
+        "casts": dummyCastsData,
+        "release_date": "2024-04-30",
+        "original_language": "en",
+        "tagline": "Outdoor cat mode activated.",
+        "vote_average": 6.7,
+        "vote_count": 1400,
+        "runtime": 101
+    },
+    {
+        "_id": "1011985",
+        "id": 1011985,
+        "title": "Kung Fu Panda 4",
+        "overview": "Po is gearing up to become the spiritual leader of his Valley of Peace, but needs someone to take his place as Dragon Warrior.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTVh2GRl-dXTaGGJLpado5E58NBTLqJxCXFq030h6rEPg&s=10",
+        "backdrop_path": "https://image.tmdb.org/t/p/original/p912384.jpg",
+        "genres": [
+            { "id": 16, "name": "Animation" },
+            { "id": 28, "name": "Action" },
+            { "id": 10751, "name": "Family" }
+        ],
+        "casts": dummyCastsData,
+        "release_date": "2024-03-02",
+        "original_language": "en",
+        "tagline": "Hold on to your dumplings.",
+        "vote_average": 7.1,
+        "vote_count": 2600,
+        "runtime": 94
+    },
+    {
+        "_id": "359410",
+        "id": 359410,
+        "title": "Gladiator II",
+        "overview": "Years after witnessing the death of Maximus, Lucius must enter the Colosseum after his home is conquered.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTSJ_fqYtgUPn_k2OrAgFiYWHs5cF7iAzwX0ET68nON1w&s=10",
+        "backdrop_path": "https://image.tmdb.org/t/p/original/h92834.jpg",
+        "genres": [
+            { "id": 28, "name": "Action" },
+            { "id": 12, "name": "Adventure" },
+            { "id": 18, "name": "Drama" }
+        ],
+        "casts": dummyCastsData,
+        "release_date": "2024-11-13",
+        "original_language": "en",
+        "tagline": "Prepare to be entertained.",
+        "vote_average": 6.8,
+        "vote_count": 1900,
+        "runtime": 148
+    },
+    {
+        "_id": "912649",
+        "id": 912649,
+        "title": "Venom: The Last Dance",
+        "overview": "Eddie and Venom are on the run. Hunted by both of their worlds, the duo are forced into a devastating decision.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7RF2qBKFfgKYqOY8VznlabN4epuPZz3D4xKDHhmOWZg&s=10",
+        "backdrop_path": "https://image.tmdb.org/t/p/original/m0192384.jpg",
+        "genres": [
+            { "id": 28, "name": "Action" },
+            { "id": 878, "name": "Science Fiction" },
+            { "id": 12, "name": "Adventure" }
+        ],
+        "casts": dummyCastsData,
+        "release_date": "2024-10-22",
+        "original_language": "en",
+        "tagline": "'Til death do they part.",
+        "vote_average": 6.5,
+        "vote_count": 2100,
+        "runtime": 109
+    },
+    {
+        "_id": "402431",
+        "id": 402431,
+        "title": "Wicked",
+        "overview": "Elphaba, a misunderstood young woman with green skin, and Glinda, a popular young woman gilded by privilege, meet at Shiz University.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQsh5jDI7QgKlHLjpXKgtkQD_DqCHS2KiRAPkBjRcroag&s=10",
+        "backdrop_path": "https://image.tmdb.org/t/p/original/e0192384.jpg",
+        "genres": [
+            { "id": 18, "name": "Drama" },
+            { "id": 14, "name": "Fantasy" },
+            { "id": 10402, "name": "Music" }
+        ],
+        "casts": dummyCastsData,
+        "release_date": "2024-11-20",
+        "original_language": "en",
+        "tagline": "Everyone deserves the chance to fly.",
+        "vote_average": 7.4,
+        "vote_count": 1500,
+        "runtime": 160
+    },
+    {
+        "_id": "845781",
+        "id": 845781,
+        "title": "Red One",
+        "overview": "After a villain kidnaps Santa Claus, an E.L.F. operative must team up with the world's most accomplished tracker to save Christmas.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSRCWHEIoEy44hSVfbpyI6tFehjREnyxHTAT5eHXKKEHw&s=10",
+        "backdrop_path": "https://image.tmdb.org/t/p/original/f0192384.jpg",
+        "genres": [
+            { "id": 28, "name": "Action" },
+            { "id": 35, "name": "Comedy" },
+            { "id": 14, "name": "Fantasy" }
+        ],
+        "casts": dummyCastsData,
+        "release_date": "2024-10-31",
+        "original_language": "en",
+        "tagline": "Christmas is saved... hopefully.",
+        "vote_average": 6.9,
+        "vote_count": 1200,
+        "runtime": 123
+    },
+    {
+        "_id": "1184918",
+        "id": 1184918,
+        "title": "The Wild Robot",
+        "overview": "After a shipwreck, an intelligent robot called Roz is stranded on an uninhabited island and bonds with the island's animals.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRSLF5vWRgK4zOtpbk655Wtl0WovJEHPbv8MCYBjBz95Q&s=10",
+        "backdrop_path": "https://image.tmdb.org/t/p/original/g0192384.jpg",
+        "genres": [
+            { "id": 16, "name": "Animation" },
+            { "id": 878, "name": "Science Fiction" },
+            { "id": 10751, "name": "Family" }
+        ],
+        "casts": dummyCastsData,
+        "release_date": "2024-09-12",
+        "original_language": "en",
+        "tagline": "Sometimes, to survive, we must become more than we were programmed to be.",
+        "vote_average": 8.4,
+        "vote_count": 2800,
+        "runtime": 102
     }
-]
-
-export const dummyDateTimeData = {
-    "2025-07-24": [
-        { "time": "2025-07-24T01:00:00.000Z", "showId": "68395b407f6329be2bb45bd1" },
-        { "time": "2025-07-24T03:00:00.000Z", "showId": "68395b407f6329be2bb45bd2" },
-        { "time": "2025-07-24T05:00:00.000Z", "showId": "68395b407f6329be2bb45bd3" }
-    ],
-    "2025-07-25": [
-        { "time": "2025-07-25T01:00:00.000Z", "showId": "68395b407f6329be2bb45bd4" },
-        { "time": "2025-07-25T03:00:00.000Z", "showId": "68395b407f6329be2bb45bd5" },
-        { "time": "2025-07-25T05:00:00.000Z", "showId": "68395b407f6329be2bb45bd6" }
-    ],
-    "2025-07-26": [
-        { "time": "2025-07-26T01:00:00.000Z", "showId": "68395b407f6329be2bb45bd7" },
-        { "time": "2025-07-26T03:00:00.000Z", "showId": "68395b407f6329be2bb45bd8" },
-        { "time": "2025-07-26T05:00:00.000Z", "showId": "68395b407f6329be2bb45bd9" }
-    ],
-    "2025-07-27": [
-        { "time": "2025-07-27T01:00:00.000Z", "showId": "68395b407f6329be2bb45bda" },
-        { "time": "2025-07-27T03:00:00.000Z", "showId": "68395b407f6329be2bb45bdb" },
-        { "time": "2025-07-27T05:00:00.000Z", "showId": "68395b407f6329be2bb45bdc" }
-    ]
-}
-
-export const dummyDashboardData = {
-    "totalBookings": 14,
-    "totalRevenue": 1517,
-    "totalUser": 5,
-    "activeShows": [
-        {
-            "_id": "68352363e96d99513e4221a4",
-            "movie": dummyShowsData[0],
-            "showDateTime": "2025-06-30T02:30:00.000Z",
-            "showPrice": 59,
-            "occupiedSeats": {
-                "A1": "user_2xO4XPCgWWwWq9EHuQxc5UWqIok",
-                "B1": "user_2xO4XPCgWWwWq9EHuQxc5UWqIok",
-                "C1": "user_2xO4XPCgWWwWq9EHuQxc5UWqIok"
-            },
-        },
-        {
-            "_id": "6835238fe96d99513e4221a8",
-            "movie": dummyShowsData[1],
-            "showDateTime": "2025-06-30T15:30:00.000Z",
-            "showPrice": 81,
-            "occupiedSeats": {},
-        },
-        {
-            "_id": "6835238fe96d99513e4221a9",
-            "movie": dummyShowsData[2],
-            "showDateTime": "2025-06-30T03:30:00.000Z",
-            "showPrice": 81,
-            "occupiedSeats": {},
-        },
-        {
-            "_id": "6835238fe96d99513e4221aa",
-            "movie": dummyShowsData[3],
-            "showDateTime": "2025-07-15T16:30:00.000Z",
-            "showPrice": 81,
-            "occupiedSeats": {
-                "A1": "user_2xO4XPCgWWwWq9EHuQxc5UWqIok",
-                "A2": "user_2xO4XPCgWWwWq9EHuQxc5UWqIok",
-                "A3": "user_2xO4XPCgWWwWq9EHuQxc5UWqIok",
-                "A4": "user_2xO4XPCgWWwWq9EHuQxc5UWqIok"
-            },
-        },
-        {
-            "_id": "683682072b5989c29fc6dc0d",
-            "movie": dummyShowsData[4],
-            "showDateTime": "2025-06-05T15:30:00.000Z",
-            "showPrice": 49,
-            "occupiedSeats": {
-                "A1": "user_2xO4XPCgWWwWq9EHuQxc5UWqIok",
-                "A2": "user_2xO4XPCgWWwWq9EHuQxc5UWqIok",
-                "A3": "user_2xO4XPCgWWwWq9EHuQxc5UWqIok",
-                "B1": "user_2xO4XPCgWWwWq9EHuQxc5UWqIok",
-                "B2": "user_2xO4XPCgWWwWq9EHuQxc5UWqIok",
-                "B3": "user_2xO4XPCgWWwWq9EHuQxc5UWqIok"
-            },
-            "__v": 0
-        },
-        {
-            "_id": "68380044686d454f2116b39a",
-            "movie": dummyShowsData[5],
-            "showDateTime": "2025-06-20T16:00:00.000Z",
-            "showPrice": 79,
-            "occupiedSeats": {
-                "A1": "user_2xl7eCSUHddibk5lRxfOtw9RMwX",
-                "A2": "user_2xl7eCSUHddibk5lRxfOtw9RMwX"
-            }
-        }
-    ]
-}
-
-
-export const dummyBookingData = [
-    {
-        "_id": "68396334fb83252d82e17295",
-        "user": { "name": "GreatStack", },
-        "show": {
-            _id: "68352363e96d99513e4221a4",
-            movie: dummyShowsData[0],
-            showDateTime: "2025-06-30T02:30:00.000Z",
-            showPrice: 59,
-        },
-        "amount": 98,
-        "bookedSeats": ["D1", "D2"],
-        "isPaid": false,
-    },
-    {
-        "_id": "68396334fb83252d82e17295",
-        "user": { "name": "GreatStack", },
-        "show": {
-            _id: "68352363e96d99513e4221a4",
-            movie: dummyShowsData[0],
-            showDateTime: "2025-06-30T02:30:00.000Z",
-            showPrice: 59,
-        },
-        "amount": 49,
-        "bookedSeats": ["A1"],
-        "isPaid": true,
-    },
-    {
-        "_id": "68396334fb83252d82e17295",
-        "user": { "name": "GreatStack", },
-        "show": {
-            _id: "68352363e96d99513e4221a4",
-            movie: dummyShowsData[0],
-            showDateTime: "2025-06-30T02:30:00.000Z",
-            showPrice: 59,
-        },
-        "amount": 147,
-        "bookedSeats": ["A1", "A2","A3"],
-        "isPaid": true,
-    },
 ]

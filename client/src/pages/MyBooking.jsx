@@ -51,8 +51,7 @@ const MyBooking = () => {
     const fetchBookings = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem("token");
-            if (!token) {
+            const token = localStorage.getItem("userToken") || localStorage.getItem("token");          if (!token) {
                 toast.error("Please log in to view your bookings.");
                 setBookings([]);
                 return;
@@ -79,48 +78,80 @@ const MyBooking = () => {
     };
 
     // =====================================================
-    // PAY BOOKING (marks as paid – no external API)
+    // INITIATE KHALTI PAYMENT
     // =====================================================
     const handlePayNow = async (bookingId) => {
         try {
             setPaying(bookingId);
-            const token = localStorage.getItem("token");
+            const token = localStorage.getItem("userToken") || localStorage.getItem("token");
             if (!token) {
                 toast.error("Please log in to proceed.");
+                setPaying(null);
                 return;
             }
 
-            const response = await axios.put(
-                `http://localhost:5000/booking/pay/${bookingId}`,
+            const response = await axios.post(
+                `http://localhost:5000/booking/khalti/initiate/${bookingId}`,
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            if (response.data?.success) {
-                toast.success("Payment successful!");
-                await fetchBookings(); // refresh list
+            if (response.data?.success && response.data?.payment_url) {
+                // Redirect user to Khalti payment gateway
+                window.location.href = response.data.payment_url;
             } else {
-                toast.error(response.data?.message || "Payment failed.");
+                toast.error(response.data?.message || "Failed to initiate payment.");
+                setPaying(null);
             }
         } catch (error) {
-            console.error("Pay booking error:", error);
-            toast.error(error?.response?.data?.message || "Payment failed.");
-        } finally {
+            console.error("Khalti initiate error:", error);
+            toast.error(error?.response?.data?.message || "Failed to initiate payment.");
             setPaying(null);
         }
     };
 
     // =====================================================
-    // CHECK PAYMENT STATUS FROM URL (if redirected back)
+    // VERIFY KHALTI PAYMENT FROM URL (if redirected back)
     // =====================================================
     useEffect(() => {
-        const status = searchParams.get("payment");
-        if (status === "success") {
-            toast.success("Payment confirmed!");
-            fetchBookings();
-            navigate("/my-booking", { replace: true });
-        } else if (status === "failed") {
-            toast.error("Payment was not completed.");
+        const pidx = searchParams.get("pidx");
+
+        if (pidx) {
+            const verifyPayment = async () => {
+                try {
+                    const token = localStorage.getItem("userToken") || localStorage.getItem("token");
+                    if (!token) return;
+
+                    const response = await axios.post(
+                        "http://localhost:5000/booking/khalti/verify",
+                        { pidx },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+
+                    if (response.data?.success) {
+                        toast.success("Payment verified successfully!");
+                        fetchBookings();
+                        navigate("/my-booking", { replace: true });
+                    } else {
+                        toast.error(response.data?.message || "Payment verification failed.");
+                    }
+                } catch (error) {
+                    console.error("Khalti verify error:", error);
+                    toast.error(error?.response?.data?.message || "Payment verification failed.");
+                }
+            };
+
+            verifyPayment();
+        } else {
+            // Fallback for legacy status parameters if any
+            const status = searchParams.get("payment");
+            if (status === "success") {
+                toast.success("Payment confirmed!");
+                fetchBookings();
+                navigate("/my-booking", { replace: true });
+            } else if (status === "failed") {
+                toast.error("Payment was not completed.");
+            }
         }
     }, [searchParams]);
 
@@ -160,7 +191,7 @@ const MyBooking = () => {
                 <h1 className="text-3xl font-bold mb-8">My Bookings</h1>
 
                 {bookings.length === 0 ? (
-                    <div className="border border-primary/20 bg-primary/10 rounded-lg p-10 text-center">
+                    <div className="border border-primary/25 bg-primary/10 rounded-lg p-10 text-center">
                         <h2 className="text-xl font-semibold">No bookings yet</h2>
                         <p className="text-gray-400 mt-3">
                             You haven't made any movie bookings yet.
@@ -203,7 +234,7 @@ const MyBooking = () => {
                                             <span>{formatDate(booking.showDateTime)}</span>
                                         </div>
                                         <div className="mt-3 text-sm text-gray-400">
-                                            <span> Total Tickets: {booking.bookedSeats?.length || 0}</span>
+                                            <span> Total Seats: {booking.bookedSeats?.length || 0}</span>
                                             <span className="ml-4">Seats: {booking.bookedSeats?.join(", ") || "None"}</span>
                                         </div>
                                     </div>
@@ -228,10 +259,10 @@ const MyBooking = () => {
                                                     className="px-6 py-2 bg-primary hover:bg-primary/80 disabled:opacity-50 rounded-lg text-white font-semibold transition flex items-center gap-2"
                                                 >
                                                     {paying === booking._id ? (
-                                                        "Processing..."
+                                                        "Redirecting to Khalti..."
                                                     ) : (
                                                         <>
-                                                            Pay Now
+                                                            Pay 
                                                             <span className="text-xs">→</span>
                                                         </>
                                                     )}

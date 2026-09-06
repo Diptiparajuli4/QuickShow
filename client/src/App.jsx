@@ -1,7 +1,10 @@
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import Profile from "./pages/Profile"; // 👈 Add this line near your top imports
+// App.jsx
+import AdminProfile from "./pages/admin/adminProfile"; // Check the exact path and filename casing!
 
-import Profile from "./pages/Profile";
+// Inside your Routes:
 import Home from "./pages/Home";
 import Movies from "./pages/Movies";
 import MovieDetail from "./pages/MovieDetail";
@@ -15,6 +18,7 @@ import {
     Routes,
     Route,
     useLocation,
+    Navigate,
 } from "react-router-dom";
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -34,6 +38,7 @@ import AddShows from "./pages/admin/AddShows";
 import ListBookings from "./pages/admin/ListBookings";
 import ListShows from "./pages/admin/ListShows";
 import Layout from "./pages/admin/Layout";
+import AdminLogin from "./pages/admin/AdminLogin";
 
 import { useAuth } from "./context/AuthContext";
 
@@ -99,7 +104,7 @@ const App = () => {
         <>
 
             {/* ================================================= */}
-            {/* TOASTER - Add this at the top level */}
+            {/* TOASTER */}
             {/* ================================================= */}
 
             <Toaster 
@@ -157,7 +162,7 @@ const App = () => {
                     path="/home"
                     element={<Home />}
                 />
-
+<Route path="/admin/profile" element={<AdminProfile />} />
 
                 {/* ================================================= */}
                 {/* MOVIES */}
@@ -190,11 +195,7 @@ const App = () => {
 
                 <Route
                     path="/my-booking"
-                    element={
-                      
-                            <MyBooking />
-                      
-                    }
+                    element={<MyBooking />}
                 />
 
 
@@ -205,9 +206,9 @@ const App = () => {
                 <Route
                     path="/favorite"
                     element={
-                        <ProtectedRoute>
+                        
                             <Favorite />
-                        </ProtectedRoute>
+                       
                     }
                 />
 
@@ -247,38 +248,26 @@ const App = () => {
 
 
                 {/* ================================================= */}
+                {/* ADMIN LOGIN */}
+                {/* ================================================= */}
+
+                <Route
+                    path="/admin/login"
+                    element={<AdminLogin />}
+                />
+
+
+                {/* ================================================= */}
                 {/* ADMIN */}
                 {/* ================================================= */}
 
                 <Route
                     path="/admin/*"
                     element={
-
                         isAdmin ? (
-
                             <Layout />
-
                         ) : (
-
-                            <div className="min-h-screen flex flex-col justify-center items-center bg-black text-white px-4">
-
-                                <h1 className="text-2xl font-bold mb-4">
-                                    Admin Access Required
-                                </h1>
-
-                                <p className="text-gray-400 mb-6 text-center">
-                                    Please login with an administrator account.
-                                </p>
-
-                                <a
-                                    href="/login"
-                                    className="px-6 py-3 bg-primary rounded-lg font-semibold hover:bg-primary-dull transition"
-                                >
-                                    Go to Login
-                                </a>
-
-                            </div>
-
+                            <Navigate to="/admin/login" replace />
                         )
                     }
                 >
@@ -328,6 +317,5 @@ const App = () => {
         </>
     );
 };
-
 
 export default App;

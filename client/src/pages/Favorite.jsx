@@ -1,357 +1,184 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
-
+import React, { useEffect, useState } from "react";
 import BlurCircle from "../components/BlurCircle";
 import MovieCard from "../components/MovieCard";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import Loading from "../components/Loading";
+import { useAuth } from "../context/AuthContext";   // ✅ correct import
 
 const Favorite = () => {
+    // ✅ Correctly destructure both user and userToken
+    const { user, userToken } = useAuth();
 
-  const [favoriteMovies, setFavoriteMovies] =
-    useState([]);
+    const [favoriteMovies, setFavoriteMovies] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
-  const [loading, setLoading] =
-    useState(true);
+    useEffect(() => {
+        fetchFavoriteMovies();
+        // eslint-disable-next-line
+    }, [userToken, user]);
 
+    const fetchFavoriteMovies = async () => {
+        try {
+            setLoading(true);
+            setError("");
 
-  // =====================================================
-  // FETCH FAVORITE MOVIES
-  // =====================================================
+            // ✅ use userToken from context
+            if (!userToken || !user) {
+                setError("Please login.");
+                setLoading(false);
+                return;
+            }
 
-  const fetchFavoriteMovies = async () => {
+            // 1. Get user's favourites
+            const userRes = await fetch("http://localhost:5000/user/me", {
+                headers: { Authorization: `Bearer ${userToken}` },
+            });
 
-    try {
+            if (!userRes.ok) {
+                throw new Error(`/user/me failed: ${userRes.status}`);
+            }
 
-      setLoading(true);
+            const userData = await userRes.json();
+            const favouriteIds = userData.user?.favourites || [];
 
-      // =================================================
-      // GET JWT TOKEN
-      // =================================================
+            if (favouriteIds.length === 0) {
+                setError("No favourites yet.");
+                setLoading(false);
+                return;
+            }
 
-      const token =
-        localStorage.getItem("token");
+            // 2. Get all shows to map movie details
+            const moviesRes = await fetch("http://localhost:5000/show/all", {
+                headers: { Authorization: `Bearer ${userToken}` },
+            });
 
-      // =================================================
-      // USER NOT LOGGED IN
-      // =================================================
+            if (!moviesRes.ok) {
+                throw new Error(`/show/all failed: ${moviesRes.status}`);
+            }
 
-      if (!token) {
+            const moviesData = await moviesRes.json();
+            const shows = moviesData.shows || [];
 
-        setFavoriteMovies([]);
+            const movieMap = new Map();
+            shows.forEach((show) => {
+                if (show.movie && show.movie._id) {
+                    const id = String(show.movie._id);
+                    if (!movieMap.has(id)) {
+                        movieMap.set(id, show.movie);
+                    }
+                }
+            });
 
-        return;
-      }
+            const matched = [];
+            favouriteIds.forEach((id) => {
+                const movie = movieMap.get(String(id));
+                if (movie) matched.push(movie);
+            });
 
+            setFavoriteMovies(matched);
+            if (matched.length === 0) {
+                setError("Favourite movies not found in database.");
+            }
+        } catch (err) {
+            console.error("Error:", err);
+            setError(err.message || "Something went wrong.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
-      // =================================================
-      // GET CURRENT USER
-      // =================================================
-
-      const response =
-        await fetch(
-          "http://localhost:5000/user/me",
-          {
-            method: "GET",
-
-            headers: {
-              Authorization:
-                `Bearer ${token}`,
-            },
-          }
+    // -------- Render --------
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-black text-white flex flex-col">
+                <Navbar />
+                <main className="flex-1 flex items-center justify-center">
+                    <Loading />
+                    <p className="text-gray-400 mt-2">Loading favourites...</p>
+                </main>
+                <Footer />
+            </div>
         );
-
-
-      // =================================================
-      // TOKEN EXPIRED
-      // =================================================
-
-      if (
-        response.status === 401
-      ) {
-
-        localStorage.removeItem(
-          "token"
-        );
-
-        setFavoriteMovies([]);
-
-        return;
-      }
-
-
-      // =================================================
-      // OTHER SERVER ERROR
-      // =================================================
-
-      if (!response.ok) {
-
-        throw new Error(
-          `Server error: ${response.status}`
-        );
-      }
-
-
-      // =================================================
-      // READ JSON
-      // =================================================
-
-      const data =
-        await response.json();
-
-
-      console.log(
-        "Current user:",
-        data.user
-      );
-
-
-      // =================================================
-      // GET FAVOURITES
-      // =================================================
-
-      const favourites =
-        Array.isArray(
-          data.user?.favourites
-        )
-          ? data.user.favourites
-          : [];
-
-
-      console.log(
-        "Raw favourites:",
-        favourites
-      );
-
-
-      // =================================================
-      // GET POPULATED MOVIE OBJECTS
-      // =================================================
-      //
-      // Because userController has:
-      //
-      // .populate("favourites")
-      //
-      // favourites should contain complete Movie
-      // documents.
-      //
-      // =================================================
-
-      const movies =
-        favourites.filter(
-          (movie) => {
-
-            return (
-              movie &&
-              typeof movie === "object" &&
-              movie._id !== undefined &&
-              movie._id !== null
-            );
-
-          }
-        );
-
-
-      console.log(
-        "Favourite movie objects:",
-        movies
-      );
-
-
-      // =================================================
-      // SAVE MOVIES
-      // =================================================
-
-      setFavoriteMovies(
-        movies
-      );
-
-    } catch (error) {
-
-      console.error(
-        "Error fetching favourite movies:",
-        error
-      );
-
-      setFavoriteMovies([]);
-
-    } finally {
-
-      setLoading(false);
-
     }
 
-  };
+    if (!userToken || !user) {
+        return (
+            <div className="min-h-screen bg-black text-white flex flex-col">
+                <Navbar />
+                <main className="flex-1 flex flex-col items-center justify-center px-6">
+                    <h1 className="text-3xl font-bold text-center">Please login</h1>
+                    <button
+                        onClick={() => (window.location.href = "/login")}
+                        className="mt-6 px-6 py-2 bg-primary rounded-lg"
+                    >
+                        Login
+                    </button>
+                </main>
+                <Footer />
+            </div>
+        );
+    }
 
+    if (error) {
+        return (
+            <div className="min-h-screen bg-black text-white flex flex-col">
+                <Navbar />
+                <main className="flex-1 flex flex-col items-center justify-center px-6">
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-6 max-w-md w-full">
+                        <h1 className="text-2xl font-bold text-red-400 text-center">Error</h1>
+                        <p className="text-gray-300 mt-3 text-center">{error}</p>
+                        <button
+                            onClick={fetchFavoriteMovies}
+                            className="mt-6 w-full px-6 py-2 bg-primary rounded-lg"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                </main>
+                <Footer />
+            </div>
+        );
+    }
 
-  // =====================================================
-  // FETCH WHEN PAGE OPENS
-  // =====================================================
-
-  useEffect(() => {
-
-    fetchFavoriteMovies();
-
-  }, []);
-
-
-  // =====================================================
-  // LOADING
-  // =====================================================
-
-  if (loading) {
-
-    return (
-
-      <div className="flex items-center justify-center h-screen">
-
-        <h1 className="text-xl font-medium">
-
-          Loading favourite movies...
-
-        </h1>
-
-      </div>
-
-    );
-
-  }
-
-
-  // =====================================================
-  // CHECK LOGIN
-  // =====================================================
-
-  const token =
-    localStorage.getItem("token");
-
-
-  if (!token) {
-
-    return (
-
-      <div className="flex flex-col items-center justify-center h-screen px-6">
-
-        <h1 className="text-3xl font-bold text-center">
-
-          Please login to view your favourite movies
-
-        </h1>
-
-
-        <p className="text-gray-400 mt-3 text-center">
-
-          Login to save and view your favourite movies.
-
-        </p>
-
-      </div>
-
-    );
-
-  }
-
-
-  // =====================================================
-  // NO FAVOURITES
-  // =====================================================
-
-  if (
-    favoriteMovies.length === 0
-  ) {
+    if (favoriteMovies.length === 0) {
+        return (
+            <div className="min-h-screen bg-black text-white flex flex-col">
+                <Navbar />
+                <main className="flex-1 relative overflow-hidden px-4 py-10 md:px-16 lg:px-40">
+                    <BlurCircle top="150px" left="0px" />
+                    <BlurCircle bottom="50px" right="50px" />
+                    <div className="flex flex-col items-center justify-center h-[50vh]">
+                        <h1 className="text-3xl font-bold text-center">No favourite movies</h1>
+                        <p className="text-gray-400 mt-3 text-center">
+                            Movies you add to favourites will appear here.
+                        </p>
+                    </div>
+                </main>
+                <Footer />
+            </div>
+        );
+    }
 
     return (
+        <div className="min-h-screen bg-black text-white flex flex-col">
+            <Navbar />
+            <main className="flex-1 relative overflow-hidden px-4 py-10 md:px-16 lg:px-40">
+                <BlurCircle top="150px" left="0px" />
+                <BlurCircle bottom="50px" right="50px" />
 
-      <div className="relative my-40 mb-60 px-6 md:px-16 lg:px-40 xl:px-44 overflow-hidden min-h-[60vh]">
+                <h1 className="text-2xl font-medium my-8">My Favourite Movies</h1>
 
-        <BlurCircle
-          top="150px"
-          left="0px"
-        />
-
-        <BlurCircle
-          bottom="50px"
-          right="50px"
-        />
-
-
-        <div className="flex flex-col items-center justify-center h-[50vh]">
-
-          <h1 className="text-3xl font-bold text-center">
-
-            No favourite movies
-
-          </h1>
-
-
-          <p className="text-gray-400 mt-3 text-center">
-
-            Movies you add to favourites will appear here.
-
-          </p>
-
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                    {favoriteMovies.map((movie) => (
+                        <MovieCard key={String(movie._id)} movie={movie} />
+                    ))}
+                </div>
+            </main>
+            <Footer />
         </div>
-
-      </div>
-
     );
-
-  }
-
-
-  // =====================================================
-  // DISPLAY FAVOURITES
-  // =====================================================
-
-  return (
-
-    <div className="relative my-40 mb-60 px-6 md:px-16 lg:px-40 xl:px-44 overflow-hidden min-h-[480vh]">
-
-      <BlurCircle
-        top="150px"
-        left="0px"
-      />
-
-      <BlurCircle
-        bottom="50px"
-        right="50px"
-      />
-
-
-      {/* ================================================= */}
-      {/* TITLE */}
-      {/* ================================================= */}
-
-      <h1 className="text-lg font-medium my-4">
-
-        My Favourite Movies
-
-      </h1>
-
-
-      {/* ================================================= */}
-      {/* MOVIE GRID */}
-      {/* ================================================= */}
-
-      <div className="flex flex-wrap max-sm:justify-center gap-8">
-
-        {favoriteMovies.map(
-          (movie) => (
-
-            <MovieCard
-              key={String(movie._id)}
-              movie={movie}
-            />
-
-          )
-        )}
-
-      </div>
-
-    </div>
-
-  );
-
 };
 
 export default Favorite;
