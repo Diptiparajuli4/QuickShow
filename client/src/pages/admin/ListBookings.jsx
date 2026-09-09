@@ -30,7 +30,7 @@ const ListBookings = () => {
     };
 
     // =====================================================
-    // GET ALL BOOKINGS FROM MONGODB
+    // GET ALL BOOKINGS (paid + unpaid, expired removed)
     // =====================================================
     const getAllBookings = async () => {
         try {
@@ -58,18 +58,13 @@ const ListBookings = () => {
 
             const rawBookings = Array.isArray(data.bookings) ? data.bookings : [];
 
-            // ✅ FILTER: only show paid bookings
-            const paidBookings = rawBookings.filter(
-                (booking) => booking.isPaid === true
-            );
+            // ✅ Show ALL bookings – both paid and unpaid
+            setBookings(rawBookings);
 
-            setBookings(paidBookings);
-
-            // Optional: show a message if no paid bookings
-            if (paidBookings.length === 0) {
-                setError("No paid bookings found.");
+            if (rawBookings.length === 0) {
+                setError("No bookings found.");
             } else {
-                setError(""); // clear any previous error
+                setError("");
             }
         } catch (error) {
             console.error("Error loading bookings:", error);
@@ -100,7 +95,7 @@ const ListBookings = () => {
     // =====================================================
     return (
         <>
-            <Title text1="List" text2="Bookings (Paid)" />
+            <Title text1="List" text2="Bookings (All)" />
 
             {error && (
                 <div className="mt-6 max-w-6xl px-4 py-3 rounded-md bg-red-500/10 border border-red-500/20 text-red-400">
@@ -117,7 +112,7 @@ const ListBookings = () => {
                             <th className="p-3 font-medium">Show Time</th>
                             <th className="p-3 font-medium">Seats</th>
                             <th className="p-3 font-medium">Amount</th>
-                            <th className="p-3 font-medium">Payment Status</th> {/* optional */}
+                            <th className="p-3 font-medium">Status</th>
                         </tr>
                     </thead>
 
@@ -161,7 +156,6 @@ const ListBookings = () => {
                                     Number(item.total) ||
                                     0;
 
-                                // Since we already filtered, all these are paid
                                 const isPaid = item.isPaid === true;
 
                                 return (
@@ -180,9 +174,15 @@ const ListBookings = () => {
                                             {amount}
                                         </td>
                                         <td className="p-4">
-                                            <span className="px-2 py-1 text-xs rounded-full bg-green-500/20 text-green-400">
-                                                Paid
-                                            </span>
+                                            {isPaid ? (
+                                                <span className="px-2 py-1 text-xs rounded-full bg-green-500/20 text-green-400">
+                                                    Paid
+                                                </span>
+                                            ) : (
+                                                <span className="px-2 py-1 text-xs rounded-full bg-yellow-500/20 text-yellow-400">
+                                                    Unpaid
+                                                </span>
+                                            )}
                                         </td>
                                     </tr>
                                 );
@@ -190,7 +190,7 @@ const ListBookings = () => {
                         ) : (
                             <tr>
                                 <td colSpan="6" className="text-center py-8 text-gray-400">
-                                    No paid bookings found.
+                                    No bookings found.
                                 </td>
                             </tr>
                         )}

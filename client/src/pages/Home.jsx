@@ -1,14 +1,42 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import axios from "axios";
 import HeroSection from "../components/HeroSection";
 import FeaturedSection from "../components/FeaturedSection";
 import TrailerSection from "../components/TrailerSection";
+import { useAutoRefresh } from "../context/RefreshContext";
 
 const Home = () => {
+    // -------- State for theaters (existing) --------
     const [theaters, setTheaters] = useState([]);
     const [loading, setLoading] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
 
+    // -------- State for movies (new, for auto-refresh) --------
+    const [movies, setMovies] = useState([]);
+
+    // -------- Fetch movies (new, for auto-refresh) --------
+    const fetchMovies = useCallback(async () => {
+        try {
+            const res = await axios.get("http://localhost:5000/show/all");
+            if (res.data?.shows) {
+                // Extract unique movies from shows
+                const movieMap = new Map();
+                res.data.shows.forEach((show) => {
+                    if (show.movie && show.movie._id && !movieMap.has(show.movie._id)) {
+                        movieMap.set(show.movie._id, show.movie);
+                    }
+                });
+                setMovies(Array.from(movieMap.values()));
+            }
+        } catch (err) {
+            console.error("Error fetching movies:", err);
+        }
+    }, []);
+
+    // ✅ Auto‑refresh – re‑runs fetchMovies when refresh() is called globally
+    useAutoRefresh(fetchMovies, []);
+
+    // -------- Existing: find nearby theaters --------
     const findNearbyTheaters = () => {
         if (!navigator.geolocation) {
             alert("Geolocation is not supported by your browser");
@@ -43,7 +71,7 @@ const Home = () => {
             <HeroSection />
             
             {/* ================================================= */}
-            {/* NEARBY CINEMAS FEATURE SECTION */}
+            {/* NEARBY CINEMAS FEATURE SECTION (existing) */}
             {/* ================================================= */}
             <div className="max-w-7xl mx-auto px-4 py-8">
                 <div className="bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-800 rounded-2xl p-6 shadow-xl">
@@ -77,6 +105,9 @@ const Home = () => {
                 </div>
             </div>
 
+            {/* ================================================= */}
+            {/* MOVIE SECTIONS – these will also refresh indirectly */}
+            {/* ================================================= */}
             <FeaturedSection />
             <TrailerSection />
         </div>

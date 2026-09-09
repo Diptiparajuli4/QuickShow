@@ -1,30 +1,25 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import BlurCircle from "../components/BlurCircle";
 import MovieCard from "../components/MovieCard";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Loading from "../components/Loading";
-import { useAuth } from "../context/AuthContext";   // ✅ correct import
+import { useAuth } from "../context/AuthContext";
+import { useAutoRefresh } from "../context/RefreshContext";
 
 const Favorite = () => {
-    // ✅ Correctly destructure both user and userToken
     const { user, userToken } = useAuth();
 
     const [favoriteMovies, setFavoriteMovies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    useEffect(() => {
-        fetchFavoriteMovies();
-        // eslint-disable-next-line
-    }, [userToken, user]);
-
-    const fetchFavoriteMovies = async () => {
+    // -------- fetch function (stable with useCallback) --------
+    const fetchFavoriteMovies = useCallback(async () => {
         try {
             setLoading(true);
             setError("");
 
-            // ✅ use userToken from context
             if (!userToken || !user) {
                 setError("Please login.");
                 setLoading(false);
@@ -44,6 +39,7 @@ const Favorite = () => {
             const favouriteIds = userData.user?.favourites || [];
 
             if (favouriteIds.length === 0) {
+                setFavoriteMovies([]);
                 setError("No favourites yet.");
                 setLoading(false);
                 return;
@@ -80,6 +76,8 @@ const Favorite = () => {
             setFavoriteMovies(matched);
             if (matched.length === 0) {
                 setError("Favourite movies not found in database.");
+            } else {
+                setError("");
             }
         } catch (err) {
             console.error("Error:", err);
@@ -87,7 +85,10 @@ const Favorite = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [userToken, user]);
+
+    // ✅ Auto‑refresh – re‑runs fetch when refresh() is called globally
+    useAutoRefresh(fetchFavoriteMovies, [userToken, user]);
 
     // -------- Render --------
     if (loading) {
@@ -121,7 +122,7 @@ const Favorite = () => {
         );
     }
 
-    if (error) {
+    if (error && error !== "No favourites yet." && error !== "Favourite movies not found in database.") {
         return (
             <div className="min-h-screen bg-black text-white flex flex-col">
                 <Navbar />

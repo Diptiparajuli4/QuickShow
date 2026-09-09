@@ -3,7 +3,7 @@ import Footer from "./components/Footer";
 import Profile from "./pages/Profile";
 import AdminProfile from "./pages/admin/adminProfile";
 import VerifyEmail from "./pages/VerifyEmail";
-import VerifyOtp from "./pages/VerifyOtp";           // ✅ NEW
+import VerifyOtp from "./pages/VerifyOtp";
 import ForgotPassword from "./pages/ForgotPassword";
 // =====================================================
 // USER PAGES
@@ -46,6 +46,7 @@ import AdminLogin from "./pages/admin/AdminLogin";
 import ResultAnalysis from "./pages/admin/ResultAnalysis";
 
 import { useAuth } from "./context/AuthContext";
+import { RefreshProvider } from "./context/RefreshContext";   // <-- ✅ Already imported
 
 // =====================================================
 // APP
@@ -102,7 +103,6 @@ const App = () => {
 
     return (
         <>
-
             {/* ================================================= */}
             {/* TOASTER */}
             {/* ================================================= */}
@@ -143,195 +143,197 @@ const App = () => {
             {!isAdminRoute && <Navbar />}
 
             {/* ================================================= */}
-            {/* ROUTES */}
+            {/* ROUTES – wrapped with RefreshProvider ✅ */}
             {/* ================================================= */}
 
-            <Routes>
-
-                {/* ================================================= */}
-                {/* HOME */}
-                {/* ================================================= */}
-                <Route path="/verify-otp" element={<VerifyOtp />} />
-
-        {/* ✅ Forgot Password (OTP based) */}
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route
-                    path="/"
-                    element={<Home />}
-                />
-
-                <Route
-                    path="/home"
-                    element={<Home />}
-                />
-
-                {/* ================================================= */}
-                {/* ADMIN PROFILE */}
-                {/* ================================================= */}
-
-                <Route
-                    path="/admin/profile"
-                    element={<AdminProfile />}
-                />
-
-                {/* ================================================= */}
-                {/* MOVIES */}
-                {/* ================================================= */}
-
-                <Route
-                    path="/movies"
-                    element={<Movies />}
-                />
-
-                <Route
-                    path="/movies/:id"
-                    element={<MovieDetail />}
-                />
-
-                {/* ================================================= */}
-                {/* SEAT LAYOUT */}
-                {/* ================================================= */}
-
-                <Route
-                    path="/movies/:id/:date"
-                    element={<SeatLayout />}
-                />
-
-                {/* ================================================= */}
-                {/* MY BOOKINGS */}
-                {/* ================================================= */}
-
-                <Route
-                    path="/my-booking"
-                    element={<MyBooking />}
-                />
-
-                {/* ================================================= */}
-                {/* FAVORITES */}
-                {/* ================================================= */}
-
-                <Route
-                    path="/favorite"
-                    element={
-                        <Favorite />
-                    }
-                />
-
-                {/* ================================================= */}
-                {/* PROFILE */}
-                {/* ================================================= */}
-
-                <Route
-                    path="/profile"
-                    element={
-                       
-                            <Profile />
-                        
-                    }
-                />
-
-                {/* ================================================= */}
-                {/* LOGIN */}
-                {/* ================================================= */}
-
-                <Route
-                    path="/login"
-                    element={<Login />}
-                />
-
-                {/* ================================================= */}
-                {/* SIGNUP */}
-                {/* ================================================= */}
-
-                <Route
-                    path="/signup"
-                    element={<Signup />}
-                />
-
-                {/* ================================================= */}
-                {/* EMAIL VERIFICATION – ✅ placed here, outside admin */}
-                {/* ================================================= */}
-
-                <Route
-                    path="/verify/:token"
-                    element={<VerifyEmail />}
-                />
-
-                {/* ================================================= */}
-                {/* ADMIN LOGIN */}
-                {/* ================================================= */}
-
-                <Route
-                    path="/admin/login"
-                    element={<AdminLogin />}
-                />
-
-                {/* ================================================= */}
-                {/* ADMIN ROUTES (nested) */}
-                {/* ================================================= */}
-
-                <Route
-                    path="/admin/*"
-                    element={
-                        isAdmin ? (
-                            <Layout />
-                        ) : (
-                            <Navigate
-                                to="/admin/login"
-                                replace
-                            />
-                        )
-                    }
-                >
+            <RefreshProvider>
+                <Routes>
 
                     {/* ================================================= */}
-                    {/* ADMIN DASHBOARD */}
+                    {/* HOME */}
                     {/* ================================================= */}
+                    <Route path="/verify-otp" element={<VerifyOtp />} />
+
+                    {/* ✅ Forgot Password (OTP based) */}
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route
+                        path="/"
+                        element={<Home />}
+                    />
 
                     <Route
-                        index
-                        element={<Dashboard />}
+                        path="/home"
+                        element={<Home />}
                     />
 
                     {/* ================================================= */}
-                    {/* ADD SHOWS */}
+                    {/* ADMIN PROFILE */}
                     {/* ================================================= */}
 
                     <Route
-                        path="add-shows"
-                        element={<AddShows />}
+                        path="/admin/profile"
+                        element={<AdminProfile />}
                     />
 
                     {/* ================================================= */}
-                    {/* LIST SHOWS */}
+                    {/* MOVIES */}
                     {/* ================================================= */}
 
                     <Route
-                        path="list-shows"
-                        element={<ListShows />}
+                        path="/movies"
+                        element={<Movies />}
+                    />
+
+                    <Route
+                        path="/movies/:id"
+                        element={<MovieDetail />}
                     />
 
                     {/* ================================================= */}
-                    {/* LIST BOOKINGS */}
+                    {/* SEAT LAYOUT */}
                     {/* ================================================= */}
 
                     <Route
-                        path="list-bookings"
-                        element={<ListBookings />}
+                        path="/movies/:id/:date"
+                        element={<SeatLayout />}
                     />
 
                     {/* ================================================= */}
-                    {/* RESULT ANALYSIS */}
+                    {/* MY BOOKINGS */}
                     {/* ================================================= */}
 
                     <Route
-                        path="result-analysis"
-                        element={<ResultAnalysis />}
+                        path="/my-booking"
+                        element={<MyBooking />}
                     />
 
-                </Route>
+                    {/* ================================================= */}
+                    {/* FAVORITES */}
+                    {/* ================================================= */}
 
-            </Routes>
+                    <Route
+                        path="/favorite"
+                        element={
+                            <Favorite />
+                        }
+                    />
+
+                    {/* ================================================= */}
+                    {/* PROFILE */}
+                    {/* ================================================= */}
+
+                    <Route
+                        path="/profile"
+                        element={
+                           
+                                <Profile />
+                            
+                        }
+                    />
+
+                    {/* ================================================= */}
+                    {/* LOGIN */}
+                    {/* ================================================= */}
+
+                    <Route
+                        path="/login"
+                        element={<Login />}
+                    />
+
+                    {/* ================================================= */}
+                    {/* SIGNUP */}
+                    {/* ================================================= */}
+
+                    <Route
+                        path="/signup"
+                        element={<Signup />}
+                    />
+
+                    {/* ================================================= */}
+                    {/* EMAIL VERIFICATION – ✅ placed here, outside admin */}
+                    {/* ================================================= */}
+
+                    <Route
+                        path="/verify/:token"
+                        element={<VerifyEmail />}
+                    />
+
+                    {/* ================================================= */}
+                    {/* ADMIN LOGIN */}
+                    {/* ================================================= */}
+
+                    <Route
+                        path="/admin/login"
+                        element={<AdminLogin />}
+                    />
+
+                    {/* ================================================= */}
+                    {/* ADMIN ROUTES (nested) */}
+                    {/* ================================================= */}
+
+                    <Route
+                        path="/admin/*"
+                        element={
+                            isAdmin ? (
+                                <Layout />
+                            ) : (
+                                <Navigate
+                                    to="/admin/login"
+                                    replace
+                                />
+                            )
+                        }
+                    >
+
+                        {/* ================================================= */}
+                        {/* ADMIN DASHBOARD */}
+                        {/* ================================================= */}
+
+                        <Route
+                            index
+                            element={<Dashboard />}
+                        />
+
+                        {/* ================================================= */}
+                        {/* ADD SHOWS */}
+                        {/* ================================================= */}
+
+                        <Route
+                            path="add-shows"
+                            element={<AddShows />}
+                        />
+
+                        {/* ================================================= */}
+                        {/* LIST SHOWS */}
+                        {/* ================================================= */}
+
+                        <Route
+                            path="list-shows"
+                            element={<ListShows />}
+                        />
+
+                        {/* ================================================= */}
+                        {/* LIST BOOKINGS */}
+                        {/* ================================================= */}
+
+                        <Route
+                            path="list-bookings"
+                            element={<ListBookings />}
+                        />
+
+                        {/* ================================================= */}
+                        {/* RESULT ANALYSIS */}
+                        {/* ================================================= */}
+
+                        <Route
+                            path="result-analysis"
+                            element={<ResultAnalysis />}
+                        />
+
+                    </Route>
+
+                </Routes>
+            </RefreshProvider>
 
             {/* ================================================= */}
             {/* FOOTER */}

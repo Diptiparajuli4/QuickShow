@@ -582,42 +582,31 @@ export const getMyBookings =
     };
 
 // =====================================================
-// GET ALL BOOKINGS
+// GET ALL BOOKINGS (UPDATED: cleans expired before return)
 // GET /booking/all
 // =====================================================
 
-export const getAllBookings =
-    async (req, res) => {
-        try {
-            const bookings =
-                await Booking.find()
-                    .populate(
-                        "user",
-                        "name email"
-                    )
-                    .sort({
-                        createdAt:
-                            -1,
-                    });
+export const getAllBookings = async (req, res) => {
+    try {
+        // ✅ Clean up expired unpaid bookings before returning the list
+        await cleanupExpiredBookings();
 
-            return res.status(200).json({
-                success: true,
-                bookings,
-            });
-        } catch (error) {
-            console.error(
-                "GET ALL BOOKINGS ERROR:",
-                error
-            );
+        const bookings = await Booking.find()
+            .populate("user", "name email")
+            .sort({ createdAt: -1 });
 
-            return res.status(500).json({
-                success: false,
-                message:
-                    error.message ||
-                    "Unable to get all bookings.",
-            });
-        }
-    };
+        return res.status(200).json({
+            success: true,
+            bookings,
+        });
+    } catch (error) {
+        console.error("GET ALL BOOKINGS ERROR:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Unable to get all bookings.",
+        });
+    }
+};
 
 // =====================================================
 // GET ONE BOOKING
@@ -824,7 +813,7 @@ export const payBooking = async (
 };
 
 // =====================================================
-// STRIPE: CREATE CHECKOUT SESSION (FIXED - NO appearance)
+// STRIPE: CREATE CHECKOUT SESSION
 // POST /booking/stripe/create-checkout-session/:bookingId
 // =====================================================
 
@@ -877,7 +866,6 @@ export const createStripeCheckoutSession = async (req, res) => {
             });
         }
 
-        // Stripe requires amount in paisa (1 NPR = 100 paisa) and minimum 0.50 NPR (50 paisa)
         const amountInPaisa = Math.round(nprAmount * 100);
         if (amountInPaisa < 50) {
             return res.status(400).json({
@@ -889,11 +877,10 @@ export const createStripeCheckoutSession = async (req, res) => {
         const movieName = booking.movieName || "Movie Ticket";
         const seats = booking.bookedSeats?.join(", ") || "Selected seats";
 
-        // Create Stripe session (no 'appearance' parameter to avoid compatibility issues)
         const session = await stripe.checkout.sessions.create({
             mode: "payment",
             payment_method_types: ["card"],
-            customer_email: booking.user?.email || undefined,  // Auto-fill email
+            customer_email: booking.user?.email || undefined,
             line_items: [
                 {
                     price_data: {
@@ -933,7 +920,7 @@ export const createStripeCheckoutSession = async (req, res) => {
 };
 
 // =====================================================
-// STRIPE: VERIFY PAYMENT
+// STRIPE: VERIFY PAYMENT (for Checkout)
 // POST /booking/stripe/verify
 // =====================================================
 
@@ -955,7 +942,6 @@ export const verifyStripePayment = async (req, res) => {
             });
         }
 
-        // Retrieve session from Stripe
         const session = await stripe.checkout.sessions.retrieve(sessionId);
         if (!session) {
             return res.status(404).json({
@@ -995,7 +981,6 @@ export const verifyStripePayment = async (req, res) => {
             });
         }
 
-        // Verify payment status
         if (session.payment_status !== "paid") {
             return res.status(400).json({
                 success: false,
@@ -1004,7 +989,6 @@ export const verifyStripePayment = async (req, res) => {
             });
         }
 
-        // Check currency (should be NPR)
         if (session.currency?.toLowerCase() !== "npr") {
             return res.status(400).json({
                 success: false,
@@ -1014,7 +998,6 @@ export const verifyStripePayment = async (req, res) => {
             });
         }
 
-        // Check amount
         const expectedAmountInPaisa = Math.round(Number(booking.amount) * 100);
         const paidAmountInPaisa = Number(session.amount_total);
         if (paidAmountInPaisa !== expectedAmountInPaisa) {
@@ -1026,16 +1009,13 @@ export const verifyStripePayment = async (req, res) => {
             });
         }
 
-        // Mark as paid and save payment details
         booking.isPaid = true;
         booking.paymentMethod = "Stripe";
         booking.paymentId = session.payment_intent || session.id;
         await booking.save();
 
-        // Emit analytics event
         emitAnalyticsUpdated(req, "stripe_payment_completed");
 
-        // Send confirmation email
         const user = await User.findById(userId);
         if (user?.email) {
             const subject = "🎟️ Payment Confirmed - QuickShow Ticket";
@@ -1073,7 +1053,7 @@ export const verifyStripePayment = async (req, res) => {
 };
 
 // =====================================================
-// NEW: STRIPE – CREATE PAYMENT INTENT (for embedded Elements)
+// STRIPE: CREATE PAYMENT INTENT (for embedded Elements)
 // POST /booking/stripe/create-payment-intent/:bookingId
 // =====================================================
 
@@ -1133,7 +1113,6 @@ export const createStripePaymentIntent = async (req, res) => {
             });
         }
 
-        // Create a PaymentIntent
         const paymentIntent = await stripe.paymentIntents.create({
             amount: amountInPaisa,
             currency: "npr",
@@ -1162,7 +1141,7 @@ export const createStripePaymentIntent = async (req, res) => {
 };
 
 // =====================================================
-// NEW: STRIPE – VERIFY PAYMENT INTENT (for embedded Elements)
+// STRIPE: VERIFY PAYMENT INTENT (for embedded Elements)
 // POST /booking/stripe/verify-payment-intent
 // =====================================================
 
@@ -1184,7 +1163,6 @@ export const verifyStripePaymentIntent = async (req, res) => {
             });
         }
 
-        // Retrieve the PaymentIntent from Stripe
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
         if (!paymentIntent) {
             return res.status(404).json({
@@ -1193,7 +1171,6 @@ export const verifyStripePaymentIntent = async (req, res) => {
             });
         }
 
-        // Verify the booking belongs to this user
         const booking = await Booking.findById(bookingId);
         if (!booking) {
             return res.status(404).json({
@@ -1216,7 +1193,6 @@ export const verifyStripePaymentIntent = async (req, res) => {
             });
         }
 
-        // Check if payment was successful
         if (paymentIntent.status !== "succeeded") {
             return res.status(400).json({
                 success: false,
@@ -1225,7 +1201,6 @@ export const verifyStripePaymentIntent = async (req, res) => {
             });
         }
 
-        // Optional: check currency and amount
         if (paymentIntent.currency?.toLowerCase() !== "npr") {
             return res.status(400).json({
                 success: false,
@@ -1240,16 +1215,13 @@ export const verifyStripePaymentIntent = async (req, res) => {
             });
         }
 
-        // Mark as paid
         booking.isPaid = true;
         booking.paymentMethod = "Stripe (Elements)";
         booking.paymentId = paymentIntent.id;
         await booking.save();
 
-        // Emit analytics
         emitAnalyticsUpdated(req, "stripe_payment_completed");
 
-        // Send confirmation email
         const user = await User.findById(userId);
         if (user?.email) {
             const subject = "🎟️ Payment Confirmed - QuickShow Ticket";
@@ -1285,7 +1257,7 @@ export const verifyStripePaymentIntent = async (req, res) => {
 };
 
 // =====================================================
-// GLOBAL CLEANUP
+// GLOBAL CLEANUP (removes unpaid bookings older than 15 min)
 // =====================================================
 
 export const cleanupExpiredBookings =
@@ -1297,9 +1269,7 @@ export const cleanupExpiredBookings =
             const tenMinutesAgo =
                 new Date(
                     now.getTime() -
-                        10 *
-                            60 *
-                            1000
+                        15 * 60 * 1000  // 15 minutes
                 );
 
             const expiredBookings =
