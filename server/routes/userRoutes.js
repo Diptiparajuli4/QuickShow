@@ -1,64 +1,36 @@
 import express from "express";
-
 import {
-    loginUser,
-    signupUser,
-    getCurrentUser,
-    toggleFavourite,
-    createBooking,
-    getMyBookings,
+  login,
+  signup,
+  verifyOtpAndSetPassword,
+  resendVerificationOtp,
+  sendResetOtp,
+  resetPasswordWithOtp,
+  googleAuth,
+  getCurrentUser,
+  toggleFavourite,
+  createBooking,
+  getMyBookings,
+  updateUser,
 } from "../controllers/userController.js";
-
 import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// =====================================================
-// SIGNUP
-// =====================================================
+// ----- AUTH ROUTES -----
+router.post("/signup", signup);
+router.post("/login", login);
+router.post("/verify-otp", verifyOtpAndSetPassword);
+router.post("/resend-otp", resendVerificationOtp);
+router.post("/send-reset-otp", sendResetOtp);
+router.post("/reset-password-otp", resetPasswordWithOtp);
+router.post("/google-auth", googleAuth);
 
-router.post("/signup", signupUser);
-
-// =====================================================
-// LOGIN
-// =====================================================
-
-router.post("/login", loginUser);
-
-// =====================================================
-// CURRENT LOGGED-IN USER
-// =====================================================
-
+// ----- PROTECTED USER ROUTES -----
 router.get("/me", protect, getCurrentUser);
-
-// =====================================================
-// ADD / REMOVE FAVOURITE
-// =====================================================
-
-router.post(
-    "/favourite/:movieId",
-    protect,
-    toggleFavourite
-);
-
-// =====================================================
-// CREATE BOOKING
-// =====================================================
-
-router.post(
-    "/booking",
-    protect,
-    createBooking
-);
-
-// =====================================================
-// GET USER BOOKINGS
-// =====================================================
-
-router.get(
-    "/bookings",
-    protect,
-    getMyBookings
-);
+router.put("/update", protect, updateUser);
+router.post("/favourite/:movieId", protect, toggleFavourite);
+router.post("/booking", protect, createBooking);
+router.get("/bookings", protect, getMyBookings);
 
 export default router;

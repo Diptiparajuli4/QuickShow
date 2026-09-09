@@ -5,54 +5,89 @@ import {
     getOccupiedSeats,
     getAllBookings,
     getBookingById,
+    getMyBookings,
+    payBooking,
+    createStripeCheckoutSession,
+    verifyStripePayment,
+    createStripePaymentIntent,
+    verifyStripePaymentIntent,   // <-- NEW
 } from "../controllers/bookingController.js";
 
-const bookingRouter =
-    express.Router();
+import { protect } from "../middleware/auth.js";
 
+const bookingRouter = express.Router();
 
 // =====================================================
-// CREATE BOOKING
-// POST /booking/create
+// BOOKING CRUD
 // =====================================================
 
 bookingRouter.post(
     "/create",
+    protect,
     createBooking
 );
 
-
-// =====================================================
-// GET OCCUPIED SEATS
-// GET /booking/seats/:showId
-// =====================================================
-
 bookingRouter.get(
-    "/seats/:showId",
-    getOccupiedSeats
+    "/my",
+    protect,
+    getMyBookings
 );
 
-
-// =====================================================
-// GET ALL BOOKINGS
-// GET /booking/all
-// =====================================================
+bookingRouter.get(
+    "/occupied-seats/:showId",
+    getOccupiedSeats
+);
 
 bookingRouter.get(
     "/all",
     getAllBookings
 );
 
+bookingRouter.put(
+    "/pay/:bookingId",
+    protect,
+    payBooking
+);
 
 // =====================================================
-// GET ONE BOOKING
-// GET /booking/:bookingId
+// STRIPE PAYMENT ROUTES
+// =====================================================
+
+// Redirect Checkout (legacy – kept for backward compatibility)
+bookingRouter.post(
+    "/stripe/create-checkout-session/:bookingId",
+    protect,
+    createStripeCheckoutSession
+);
+
+// Embedded Elements – create PaymentIntent
+bookingRouter.post(
+    "/stripe/create-payment-intent/:bookingId",
+    protect,
+    createStripePaymentIntent
+);
+
+// Verify PaymentIntent (for embedded Elements)
+bookingRouter.post(
+    "/stripe/verify-payment-intent",
+    protect,
+    verifyStripePaymentIntent   // <-- NEW ROUTE
+);
+
+// Verify payment (works for both Checkout and Elements)
+bookingRouter.post(
+    "/stripe/verify",
+    protect,
+    verifyStripePayment
+);
+
+// =====================================================
+// GET SINGLE BOOKING (must be last to avoid route conflicts)
 // =====================================================
 
 bookingRouter.get(
     "/:bookingId",
     getBookingById
 );
-
 
 export default bookingRouter;

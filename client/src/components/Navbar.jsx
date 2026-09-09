@@ -312,6 +312,8 @@ const Navbar = () => {
                                                                 Now Showing
                                                             </span>
                                                         </div>
+
+                                                        
                                                     </button>
                                                 ))}
                                             </div>
@@ -325,6 +327,7 @@ const Navbar = () => {
                             </div>
                         )}
                     </div>
+
 
                     {/* PROFILE */}
                     <div className="relative" ref={menuRef}>

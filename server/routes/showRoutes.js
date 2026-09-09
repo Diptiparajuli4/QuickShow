@@ -1,66 +1,51 @@
 import express from "express";
-
 import {
     addShow,
     getAllShows,
     getShow,
     getUniqueShows,
     getNowShowingMovies,
+    getMovieById,
+    searchMovies,
+    deleteShow, // Import delete function
 } from "../controllers/showController.js";
 
-
-const router =
-    express.Router();
-
+const router = express.Router();
 
 // =====================================================
+// STATIC ROUTES (must be before dynamic routes)
+// =====================================================
+
 // NOW SHOWING MOVIES
-// =====================================================
+router.get("/now-playing", getNowShowingMovies);
 
-router.get(
-    "/now-playing",
-    getNowShowingMovies
-);
-
-
-// =====================================================
 // ALL SHOWS
-// =====================================================
+router.get("/all", getAllShows);
 
-router.get(
-    "/all",
-    getAllShows
-);
-
-
-// =====================================================
 // UNIQUE SHOW MOVIES
-// =====================================================
+router.get("/unique", getUniqueShows);
 
-router.get(
-    "/unique",
-    getUniqueShows
-);
-
+// SEARCH MOVIES (for navbar)
+router.get("/search", searchMovies);
 
 // =====================================================
-// ADD SHOW
+// PROTECTED ROUTE (Admin only)
 // =====================================================
-
-router.post(
-    "/add",
-    addShow
-);
-
+router.post("/add", addShow);
 
 // =====================================================
-// GET SHOW FOR MOVIE
+// GET SINGLE MOVIE BY ID (for favourites fallback)
 // =====================================================
+router.get("/movie/:id", getMovieById);
 
-router.get(
-    "/:movieId",
-    getShow
-);
+// =====================================================
+// DELETE SHOW ROUTE
+// =====================================================
+router.delete("/:id", deleteShow);
 
+// =====================================================
+// DYNAMIC ROUTE – MUST BE LAST
+// =====================================================
+router.get("/:movieId", getShow);
 
 export default router;

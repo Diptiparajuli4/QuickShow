@@ -1,10 +1,9 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import timeFormat from "../lib/timeFormat";
 import { Star } from "lucide-react";
 
-const MovieCard = ({ movie }) => {
+const MovieCard = ({ movie, badge }) => {
 
     const navigate = useNavigate();
 
@@ -70,6 +69,7 @@ const MovieCard = ({ movie }) => {
 
         <div
             className="
+                relative
                 flex
                 flex-col
                 bg-gray-800
@@ -82,6 +82,16 @@ const MovieCard = ({ movie }) => {
                 shadow-lg
             "
         >
+
+            {/* ================================================= */}
+            {/* UPCOMING DAYS LEFT BADGE */}
+            {/* ================================================= */}
+
+            {badge && (
+                <div className="absolute top-3 left-0 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-r-md shadow-md z-10">
+                    {badge}
+                </div>
+            )}
 
             {/* ================================================= */}
             {/* MOVIE POSTER */}

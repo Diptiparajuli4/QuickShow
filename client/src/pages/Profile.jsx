@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 
@@ -6,15 +6,23 @@ const Profile = () => {
   const { user, setUser, loading } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(user?.name || "");
-  const [email, setEmail] = useState(user?.email || "");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Sync state when user data updates
+  useEffect(() => {
+    if (user) {
+      setName(user.name || "");
+      setEmail(user.email || "");
+    }
+  }, [user]);
+
   if (loading) {
-    return <div className="text-white p-10">Loading...</div>;
+    return <div className="text-white p-10">Loading profile...</div>;
   }
 
   if (!user) {
@@ -69,7 +77,6 @@ const Profile = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Update failed");
 
-      // Update context
       const updatedUser = data.user || { ...user, name: payload.name, email: payload.email };
       if (setUser) setUser(updatedUser);
 
@@ -90,7 +97,7 @@ const Profile = () => {
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">My Account</h1>
 
-        <div className="bg-primary/10 border border-primary/20 rounded-xl p-6">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
           {/* Avatar */}
           <div className="flex items-center gap-5 mb-8">
             <div className="w-20 h-20 rounded-full bg-white text-black flex items-center justify-center text-3xl font-bold overflow-hidden">
@@ -107,7 +114,6 @@ const Profile = () => {
           </div>
 
           {!isEditing ? (
-            // View mode
             <>
               <div className="space-y-5">
                 <div>
@@ -125,13 +131,12 @@ const Profile = () => {
               </div>
               <button
                 onClick={toggleEdit}
-                className="mt-6 px-6 py-2 bg-primary hover:bg-primary/80 rounded-lg text-white font-semibold transition"
+                className="mt-6 px-6 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-white font-semibold transition"
               >
                 Edit Profile
               </button>
             </>
           ) : (
-            // Edit form
             <form onSubmit={handleSave} className="space-y-5">
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Full Name</label>
@@ -139,7 +144,7 @@ const Profile = () => {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-black/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                  className="w-full bg-black/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-red-500"
                   required
                 />
               </div>
@@ -149,7 +154,7 @@ const Profile = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-black/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                  className="w-full bg-black/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-red-500"
                   required
                 />
               </div>
@@ -165,7 +170,7 @@ const Profile = () => {
                       type="password"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="w-full bg-black/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                      className="w-full bg-black/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-red-500"
                     />
                   </div>
                   <div>
@@ -174,7 +179,7 @@ const Profile = () => {
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full bg-black/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                      className="w-full bg-black/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-red-500"
                     />
                   </div>
                   <div>
@@ -183,7 +188,7 @@ const Profile = () => {
                       type="password"
                       value={confirmNewPassword}
                       onChange={(e) => setConfirmNewPassword(e.target.value)}
-                      className="w-full bg-black/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                      className="w-full bg-black/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-red-500"
                     />
                   </div>
                 </div>
@@ -193,7 +198,7 @@ const Profile = () => {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-6 py-2 bg-primary hover:bg-primary/80 disabled:opacity-50 rounded-lg text-white font-semibold transition"
+                  className="px-6 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 rounded-lg text-white font-semibold transition"
                 >
                   {saving ? "Saving..." : "Save Changes"}
                 </button>

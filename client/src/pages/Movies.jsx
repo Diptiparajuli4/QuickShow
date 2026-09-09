@@ -315,7 +315,11 @@ const Movies = () => {
 
             </h1>
 
+            <h1 className="text-lg font-medium my-4 text-white">
 
+                Upcoming Movies
+
+            </h1>
             {/* ================================================= */}
             {/* MOVIE GRID */}
             {/* ================================================= */}

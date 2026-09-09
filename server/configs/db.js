@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+import { seedTheaters } from "../controllers/theaterController.js";
 
 // ========================================
 // CONNECT TO MONGODB
@@ -28,6 +28,11 @@ const connectDB = async () => {
     console.log(
       `MongoDB Connected Successfully: ${conn.connection.host}`
     );
+
+    // ========================================
+    // SEED DEFAULT THEATERS
+    // ========================================
+    await seedTheaters();
 
   } catch (error) {
 

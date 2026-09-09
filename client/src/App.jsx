@@ -1,10 +1,14 @@
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import Profile from "./pages/Profile"; // 👈 Add this line near your top imports
-// App.jsx
-import AdminProfile from "./pages/admin/adminProfile"; // Check the exact path and filename casing!
+import Profile from "./pages/Profile";
+import AdminProfile from "./pages/admin/adminProfile";
+import VerifyEmail from "./pages/VerifyEmail";
+import VerifyOtp from "./pages/VerifyOtp";           // ✅ NEW
+import ForgotPassword from "./pages/ForgotPassword";
+// =====================================================
+// USER PAGES
+// =====================================================
 
-// Inside your Routes:
 import Home from "./pages/Home";
 import Movies from "./pages/Movies";
 import MovieDetail from "./pages/MovieDetail";
@@ -27,7 +31,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 // IMPORT TOASTER
 // =====================================================
 
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from "react-hot-toast";
 
 // =====================================================
 // ADMIN PAGES
@@ -39,9 +43,9 @@ import ListBookings from "./pages/admin/ListBookings";
 import ListShows from "./pages/admin/ListShows";
 import Layout from "./pages/admin/Layout";
 import AdminLogin from "./pages/admin/AdminLogin";
+import ResultAnalysis from "./pages/admin/ResultAnalysis";
 
 import { useAuth } from "./context/AuthContext";
-
 
 // =====================================================
 // APP
@@ -58,7 +62,6 @@ const App = () => {
     const isAdminRoute =
         pathname.startsWith("/admin");
 
-
     // =================================================
     // AUTH DATA
     // =================================================
@@ -69,14 +72,12 @@ const App = () => {
         loading,
     } = useAuth();
 
-
     // =================================================
     // ADMIN CHECK
     // =================================================
 
     const isAdmin =
         admin?.role === "admin";
-
 
     // =================================================
     // WAIT FOR AUTH
@@ -95,7 +96,6 @@ const App = () => {
         );
     }
 
-
     // =================================================
     // PAGE
     // =================================================
@@ -107,30 +107,30 @@ const App = () => {
             {/* TOASTER */}
             {/* ================================================= */}
 
-            <Toaster 
+            <Toaster
                 position="top-center"
                 reverseOrder={false}
                 toastOptions={{
                     duration: 3000,
                     style: {
-                        background: '#363636',
-                        color: '#fff',
-                        border: '1px solid #444',
-                        padding: '16px',
-                        borderRadius: '8px',
+                        background: "#363636",
+                        color: "#fff",
+                        border: "1px solid #444",
+                        padding: "16px",
+                        borderRadius: "8px",
                     },
                     success: {
                         duration: 3000,
                         iconTheme: {
-                            primary: '#4ade80',
-                            secondary: '#fff',
+                            primary: "#4ade80",
+                            secondary: "#fff",
                         },
                     },
                     error: {
                         duration: 4000,
                         iconTheme: {
-                            primary: '#ef4444',
-                            secondary: '#fff',
+                            primary: "#ef4444",
+                            secondary: "#fff",
                         },
                     },
                 }}
@@ -142,7 +142,6 @@ const App = () => {
 
             {!isAdminRoute && <Navbar />}
 
-
             {/* ================================================= */}
             {/* ROUTES */}
             {/* ================================================= */}
@@ -152,7 +151,10 @@ const App = () => {
                 {/* ================================================= */}
                 {/* HOME */}
                 {/* ================================================= */}
+                <Route path="/verify-otp" element={<VerifyOtp />} />
 
+        {/* ✅ Forgot Password (OTP based) */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route
                     path="/"
                     element={<Home />}
@@ -162,7 +164,15 @@ const App = () => {
                     path="/home"
                     element={<Home />}
                 />
-<Route path="/admin/profile" element={<AdminProfile />} />
+
+                {/* ================================================= */}
+                {/* ADMIN PROFILE */}
+                {/* ================================================= */}
+
+                <Route
+                    path="/admin/profile"
+                    element={<AdminProfile />}
+                />
 
                 {/* ================================================= */}
                 {/* MOVIES */}
@@ -178,16 +188,14 @@ const App = () => {
                     element={<MovieDetail />}
                 />
 
-
                 {/* ================================================= */}
                 {/* SEAT LAYOUT */}
                 {/* ================================================= */}
 
-                <Route 
-                    path="/movies/:id/:date" 
-                    element={<SeatLayout />} 
+                <Route
+                    path="/movies/:id/:date"
+                    element={<SeatLayout />}
                 />
-
 
                 {/* ================================================= */}
                 {/* MY BOOKINGS */}
@@ -198,7 +206,6 @@ const App = () => {
                     element={<MyBooking />}
                 />
 
-
                 {/* ================================================= */}
                 {/* FAVORITES */}
                 {/* ================================================= */}
@@ -206,12 +213,9 @@ const App = () => {
                 <Route
                     path="/favorite"
                     element={
-                        
-                            <Favorite />
-                       
+                        <Favorite />
                     }
                 />
-
 
                 {/* ================================================= */}
                 {/* PROFILE */}
@@ -220,12 +224,11 @@ const App = () => {
                 <Route
                     path="/profile"
                     element={
-                        <ProtectedRoute>
+                       
                             <Profile />
-                        </ProtectedRoute>
+                        
                     }
                 />
-
 
                 {/* ================================================= */}
                 {/* LOGIN */}
@@ -236,7 +239,6 @@ const App = () => {
                     element={<Login />}
                 />
 
-
                 {/* ================================================= */}
                 {/* SIGNUP */}
                 {/* ================================================= */}
@@ -246,6 +248,14 @@ const App = () => {
                     element={<Signup />}
                 />
 
+                {/* ================================================= */}
+                {/* EMAIL VERIFICATION – ✅ placed here, outside admin */}
+                {/* ================================================= */}
+
+                <Route
+                    path="/verify/:token"
+                    element={<VerifyEmail />}
+                />
 
                 {/* ================================================= */}
                 {/* ADMIN LOGIN */}
@@ -256,9 +266,8 @@ const App = () => {
                     element={<AdminLogin />}
                 />
 
-
                 {/* ================================================= */}
-                {/* ADMIN */}
+                {/* ADMIN ROUTES (nested) */}
                 {/* ================================================= */}
 
                 <Route
@@ -267,46 +276,62 @@ const App = () => {
                         isAdmin ? (
                             <Layout />
                         ) : (
-                            <Navigate to="/admin/login" replace />
+                            <Navigate
+                                to="/admin/login"
+                                replace
+                            />
                         )
                     }
                 >
 
+                    {/* ================================================= */}
                     {/* ADMIN DASHBOARD */}
+                    {/* ================================================= */}
 
                     <Route
                         index
                         element={<Dashboard />}
                     />
 
-
+                    {/* ================================================= */}
                     {/* ADD SHOWS */}
+                    {/* ================================================= */}
 
                     <Route
                         path="add-shows"
                         element={<AddShows />}
                     />
 
-
+                    {/* ================================================= */}
                     {/* LIST SHOWS */}
+                    {/* ================================================= */}
 
                     <Route
                         path="list-shows"
                         element={<ListShows />}
                     />
 
-
+                    {/* ================================================= */}
                     {/* LIST BOOKINGS */}
+                    {/* ================================================= */}
 
                     <Route
                         path="list-bookings"
                         element={<ListBookings />}
                     />
 
+                    {/* ================================================= */}
+                    {/* RESULT ANALYSIS */}
+                    {/* ================================================= */}
+
+                    <Route
+                        path="result-analysis"
+                        element={<ResultAnalysis />}
+                    />
+
                 </Route>
 
             </Routes>
-
 
             {/* ================================================= */}
             {/* FOOTER */}
