@@ -1,5 +1,6 @@
 import Show from "../models/Show.js";
 import Movie from "../models/Movie.js";
+import Theater from "../models/Theater.js";
 
 // =====================================================
 // GET ALL MOVIES
@@ -80,16 +81,33 @@ export const addMovie = async (req, res) => {
 };
 
 // =====================================================
-// ADD SHOW
+// ADD SHOW (UPDATED: handles theater creation)
 // =====================================================
 export const addShow = async (req, res) => {
     try {
-        const { movie, price, dateTimes } = req.body;
+        const { 
+            movie, 
+            price, 
+            dateTimes, 
+            theaterId, 
+            theaterName, 
+            theaterLat, 
+            theaterLng,
+            theaterCity,
+            theaterAddress 
+        } = req.body;
+
         console.log("======================================");
         console.log("ADD SHOW REQUEST RECEIVED");
         console.log("Movie:", movie);
         console.log("Price:", price);
         console.log("Date Times:", dateTimes);
+        console.log("Theater ID:", theaterId);
+        console.log("Theater Name:", theaterName);
+        console.log("Theater Lat:", theaterLat);
+        console.log("Theater Lng:", theaterLng);
+        console.log("Theater City:", theaterCity);
+        console.log("Theater Address:", theaterAddress);
         console.log("======================================");
 
         if (!movie || typeof movie !== "object") {
@@ -132,6 +150,7 @@ export const addShow = async (req, res) => {
             });
         }
 
+        // -------- Create or update the movie document --------
         let movieDocument = await Movie.findById(movieId);
 
         if (!movieDocument) {
@@ -156,6 +175,40 @@ export const addShow = async (req, res) => {
         }
 
         const savedMovieId = String(movieDocument._id);
+
+        // =====================================================
+        // -------- NEW: ENSURE THEATER EXISTS --------
+        // =====================================================
+        let theaterDoc = null;
+        if (theaterId) {
+            theaterDoc = await Theater.findById(theaterId);
+            if (!theaterDoc) {
+                console.log("Theater not found. Creating theater from show data...");
+                try {
+                    theaterDoc = await Theater.create({
+                        _id: theaterId,
+                        name: theaterName || "Unknown Theater",
+                        city: theaterCity || "",
+                        address: theaterAddress || "",
+                        latitude: theaterLat || 0,
+                        longitude: theaterLng || 0,
+                        location: {
+                            type: "Point",
+                            coordinates: [theaterLng || 0, theaterLat || 0],
+                        },
+                        isActive: true,
+                    });
+                    console.log("Theater created:", theaterDoc);
+                } catch (createError) {
+                    console.error("Failed to create theater:", createError);
+                    // Continue anyway, but log the error
+                }
+            } else {
+                console.log("Theater already exists:", theaterDoc._id);
+            }
+        }
+
+        // -------- Build show documents (one per date/time) --------
         const showsToCreate = [];
 
         for (const [date, times] of Object.entries(dateTimes)) {
@@ -180,11 +233,16 @@ export const addShow = async (req, res) => {
                     });
                 }
 
+                // -------- Include theater fields --------
                 showsToCreate.push({
                     movie: savedMovieId,
                     showDateTime: showDateTime,
                     showPrice: showPrice,
                     occupiedSeats: {},
+                    theaterId: theaterId || "",
+                    theaterName: theaterName || "",
+                    theaterLat: theaterLat || 0,
+                    theaterLng: theaterLng || 0,
                 });
             }
         }
@@ -196,7 +254,9 @@ export const addShow = async (req, res) => {
             });
         }
 
+        // -------- Insert all shows --------
         const createdShows = await Show.insertMany(showsToCreate);
+
         console.log("======================================");
         console.log("SHOWS INSERTED SUCCESSFULLY");
         console.log(createdShows);

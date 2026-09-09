@@ -1,9 +1,9 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import timeFormat from "../lib/timeFormat";
-import { Star } from "lucide-react";
+import { Star, MapPin } from "lucide-react";   // <-- added MapPin
 
-const MovieCard = ({ movie, badge }) => {
+const MovieCard = ({ movie, badge, theater }) => {   // <-- added theater prop
 
     const navigate = useNavigate();
 
@@ -186,6 +186,21 @@ const MovieCard = ({ movie, badge }) => {
                         : "N/A"}
 
                 </p>
+
+
+                {/* ================================================= */}
+                {/* THEATER INFORMATION (NEW) */}
+                {/* ================================================= */}
+                {theater && (
+                    <div className="mt-2 flex items-start gap-1 text-xs text-gray-300">
+                        <MapPin size={14} className="text-primary flex-shrink-0 mt-0.5" />
+                        <span className="truncate">
+                            {theater.name}
+                            {theater.city && `, ${theater.city}`}
+                            {theater.address && ` (${theater.address})`}
+                        </span>
+                    </div>
+                )}
 
 
                 {/* ================================================= */}

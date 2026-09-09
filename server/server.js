@@ -13,6 +13,9 @@ import adminRouter from "./routes/adminRoutes.js";
 import analyticsRouter from "./routes/analyticsRoutes.js";
 import theaterRouter from "./routes/theaterRoutes.js";
 
+// -------- NEW: import seedTheaters from theater controller --------
+import { seedTheaters } from "./controllers/theaterController.js";
+
 dotenv.config();
 
 const app = express();
@@ -80,6 +83,9 @@ connectDB()
         console.log(
             "MongoDB connected successfully"
         );
+
+        // -------- NEW: seed sample theaters if the collection is empty --------
+        seedTheaters();
     })
     .catch((error) => {
         console.error(

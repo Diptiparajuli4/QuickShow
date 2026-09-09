@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";   // ✅ import
+import { useAuth } from "../context/AuthContext";
 
 import BlurCircle from "../components/BlurCircle";
 import {
@@ -16,7 +16,7 @@ import MovieCard from "../components/MovieCard";
 const MovieDetail = () => {
     const navigate = useNavigate();
     const { id } = useParams();
-    const { user, userToken } = useAuth();   // ✅ get token from context
+    const { user, userToken } = useAuth();
 
     // =====================================================
     // STATE
@@ -46,7 +46,7 @@ const MovieDetail = () => {
                 {
                     method: "GET",
                     headers: {
-                        Authorization: `Bearer ${userToken}`,   // ✅ use userToken
+                        Authorization: `Bearer ${userToken}`,
                     },
                 }
             );
@@ -152,17 +152,41 @@ const MovieDetail = () => {
             console.log("Movie found:", movie);
             console.log("MongoDB Movie _id:", movie._id);
 
-            // Combine date/time data
+            // Combine date/time data and also collect theater info per show
             const combinedDateTimes = {};
+            const showDetails = {}; // store theater info per date+time
+
             movieShows.forEach((showItem) => {
+                // Build theater object
+                let theater = null;
+                if (showItem.theaterId || showItem.theaterName) {
+                    theater = {
+                        id: showItem.theaterId || null,
+                        name: showItem.theaterName || "Unknown Theater",
+                        address: showItem.theaterAddress || "",
+                        city: showItem.theaterCity || "",
+                    };
+                } else if (showItem.theater) {
+                    theater = showItem.theater;
+                }
+
+                // Process dateTimes object
                 if (showItem.dateTimes && typeof showItem.dateTimes === "object") {
                     Object.entries(showItem.dateTimes).forEach(([date, times]) => {
                         if (!combinedDateTimes[date]) combinedDateTimes[date] = [];
                         if (Array.isArray(times)) {
-                            combinedDateTimes[date].push(...times);
+                            times.forEach(time => {
+                                combinedDateTimes[date].push(time);
+                                // Store theater for this specific date+time
+                                const key = `${date}|${time}`;
+                                if (theater) {
+                                    showDetails[key] = theater;
+                                }
+                            });
                         }
                     });
                 }
+                // Also handle single showDateTime field (legacy)
                 if (showItem.showDateTime) {
                     const dateObject = new Date(showItem.showDateTime);
                     if (!isNaN(dateObject.getTime())) {
@@ -171,6 +195,10 @@ const MovieDetail = () => {
                         if (!combinedDateTimes[date]) combinedDateTimes[date] = [];
                         if (!combinedDateTimes[date].includes(time)) {
                             combinedDateTimes[date].push(time);
+                            const key = `${date}|${time}`;
+                            if (theater) {
+                                showDetails[key] = theater;
+                            }
                         }
                     }
                 }
@@ -182,6 +210,7 @@ const MovieDetail = () => {
             });
 
             console.log("Combined Date/Time:", combinedDateTimes);
+            console.log("Theater details per show:", showDetails);
 
             // Trailer
             let trailer = null;
@@ -198,6 +227,7 @@ const MovieDetail = () => {
                 showData: movieShows[0],
                 allShows: movieShows,
                 dateTime: combinedDateTimes,
+                showDetails: showDetails,   // <-- store theater info
                 trailer: trailer,
             });
 
@@ -255,7 +285,7 @@ const MovieDetail = () => {
                 {
                     method: "POST",
                     headers: {
-                        Authorization: `Bearer ${userToken}`,   // ✅ use userToken
+                        Authorization: `Bearer ${userToken}`,
                         "Content-Type": "application/json",
                     },
                 }
@@ -457,6 +487,31 @@ const MovieDetail = () => {
             <div id="dateSelect">
                 <DateSelect dateTime={show.dateTime} id={id} />
             </div>
+
+            {/* ================================================= */}
+            {/* THEATER INFORMATION (NEW) */}
+            {/* ================================================= */}
+            {show.showDetails && Object.keys(show.showDetails).length > 0 && (
+                <div className="mt-8 max-w-4xl">
+                    <h3 className="text-lg font-medium mb-3">Showing at these cinemas</h3>
+                    <div className="space-y-2">
+                        {Object.entries(show.showDetails).map(([key, theater]) => {
+                            // key format: "date|time"
+                            const [date, time] = key.split('|');
+                            return (
+                                <div key={key} className="flex flex-wrap items-center gap-2 text-sm text-gray-300 bg-gray-800/50 p-3 rounded-lg">
+                                    <span className="font-medium">{date}</span>
+                                    <span>•</span>
+                                    <span>{time}</span>
+                                    <span>•</span>
+                                    <span className="text-primary">{theater.name}</span>
+                                    {theater.city && <span className="text-gray-500">({theater.city})</span>}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             {/* RECOMMENDATIONS */}
             {allMovies.length > 1 && (

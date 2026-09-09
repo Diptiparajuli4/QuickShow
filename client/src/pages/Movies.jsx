@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import BlurCircle from "../components/BlurCircle";
 import MovieCard from "../components/MovieCard";
@@ -27,24 +26,11 @@ const Movies = () => {
             // =================================================
             // GET ALL SHOWS
             // =================================================
-            //
-            // The backend returns:
-            //
-            // Show.find()
-            //     .populate("movie")
-            //
-            // Therefore each show contains its movie data.
-            //
-            // =================================================
 
             const response = await fetch(
                 "http://localhost:5000/show/all"
             );
 
-
-            // =================================================
-            // CHECK HTTP RESPONSE
-            // =================================================
 
             if (!response.ok) {
 
@@ -55,10 +41,6 @@ const Movies = () => {
             }
 
 
-            // =================================================
-            // READ JSON
-            // =================================================
-
             const data = await response.json();
 
 
@@ -67,10 +49,6 @@ const Movies = () => {
                 data
             );
 
-
-            // =================================================
-            // CHECK BACKEND RESPONSE
-            // =================================================
 
             if (
                 !data.success ||
@@ -89,98 +67,84 @@ const Movies = () => {
 
 
             // =================================================
-            // GET MOVIES FROM SHOWS
+            // GROUP MOVIES WITH THEATER INFO
             // =================================================
 
-            const adminMovies = data.shows
+            // We'll create a map: movieId -> { movie, theaters: Set }
+            const movieMap = new Map();
 
-                .map((show) => {
+            data.shows.forEach((show) => {
 
-                    // Because backend uses:
-                    //
-                    // .populate("movie")
-                    //
-                    // show.movie should contain
-                    // the complete movie document.
+                const movie = show.movie;
+                if (!movie) return;
 
-                    if (!show.movie) {
+                const movieId = movie._id || movie.id;
+                if (!movieId) return;
 
-                        console.warn(
-                            "Show does not contain movie:",
-                            show
-                        );
+                const id = String(movieId);
 
-                        return null;
-                    }
+                // Build theater object (if available)
+                let theater = null;
+                if (show.theaterId || show.theaterName) {
+                    theater = {
+                        _id: show.theaterId || null,
+                        name: show.theaterName || "Unknown Theater",
+                        address: show.theaterAddress || "",
+                        city: show.theaterCity || "",
+                        latitude: show.theaterLat || null,
+                        longitude: show.theaterLng || null,
+                    };
+                } else if (show.theater) {
+                    // If the show has a populated theater object
+                    theater = show.theater;
+                }
 
+                if (!movieMap.has(id)) {
+                    movieMap.set(id, {
+                        movie: movie,
+                        theaters: new Set(),
+                    });
+                }
 
-                    return show.movie;
-
-                })
-
-                .filter(Boolean);
-
-
-            console.log(
-                "Movies from admin shows:",
-                adminMovies
-            );
+                if (theater && theater.name) {
+                    // Use a unique key for the set (e.g., theater._id or name)
+                    const key = theater._id || theater.name;
+                    movieMap.get(id).theaters.add(key);
+                }
+            });
 
 
             // =================================================
-            // REMOVE DUPLICATE MOVIES
-            // =================================================
-            //
-            // Example:
-            //
-            // Batman - 10:00
-            // Batman - 14:00
-            // Batman - 18:00
-            //
-            // Batman should appear only once.
-            //
+            // BUILD FINAL MOVIES LIST WITH THEATER INFO
             // =================================================
 
             const uniqueMovies = [];
+            movieMap.forEach((value, key) => {
+                const movie = value.movie;
+                const theaterCount = value.theaters.size;
 
-            const movieIds = new Set();
-
-
-            adminMovies.forEach((movie) => {
-
-                const movieId =
-                    movie._id ||
-                    movie.id;
-
-
-                if (!movieId) {
-
-                    console.warn(
-                        "Movie does not have an ID:",
-                        movie
-                    );
-
-                    return;
+                // Determine theater display: if one theater, pass that; else pass null or a placeholder
+                let theaterToPass = null;
+                if (theaterCount === 1) {
+                    // Find the actual theater object from the first show that has it (simplified)
+                    // We'll just pass the first theater name from the set (but we need the name)
+                    // Instead, we can store the first theater object during mapping.
+                    // For simplicity, we'll just pass a string.
+                    const theaterNames = Array.from(value.theaters);
+                    theaterToPass = { name: theaterNames[0], city: "" };
+                } else if (theaterCount > 1) {
+                    theaterToPass = { name: `${theaterCount} theaters`, city: "" };
                 }
 
-
-                const id =
-                    String(movieId);
-
-
-                if (!movieIds.has(id)) {
-
-                    movieIds.add(id);
-
-                    uniqueMovies.push(movie);
-
-                }
-
+                uniqueMovies.push({
+                    ...movie,
+                    theater: theaterToPass,
+                });
             });
 
 
             console.log(
-                "Unique movies to display:",
+                "Unique movies with theater info:",
                 uniqueMovies
             );
 
@@ -347,6 +311,7 @@ const Movies = () => {
                         <MovieCard
                             key={String(movieId)}
                             movie={movie}
+                            theater={movie.theater}   // <-- pass theater info
                         />
 
                     );
