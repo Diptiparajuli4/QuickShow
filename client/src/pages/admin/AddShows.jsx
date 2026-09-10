@@ -7,7 +7,7 @@ import React, {
 import Title from "../../components/admin/Title";
 import Loading from "../../components/Loading";
 
-import { dummyShowsData, dummyTheaters } from "../../assets/assets";
+import { dummyTheaters } from "../../assets/assets";
 
 import {
     StarIcon,
@@ -104,17 +104,45 @@ const AddShows = () => {
     }, []);
 
     // =====================================================
-    // LOAD MOVIES
+    // LOAD MOVIES (FROM DATABASE)
     // =====================================================
+    const fetchMovies = useCallback(async () => {
+        try {
+            const token =
+                localStorage.getItem("userToken") ||
+                localStorage.getItem("token");
 
+            const response = await fetch("http://localhost:5000/movie/all", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch movies: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.success && Array.isArray(data.movies)) {
+                setNowPlayingMovies(data.movies);
+            } else {
+                setNowPlayingMovies([]);
+            }
+        } catch (error) {
+            console.error("Error fetching movies from database:", error);
+            setNowPlayingMovies([]);
+        }
+    }, []);
+
+    // =====================================================
+    // INITIAL LOAD
+    // =====================================================
     useEffect(() => {
-        setNowPlayingMovies(
-            dummyShowsData || []
-        );
-        setLoading(false);
-
+        fetchMovies();
         fetchTheaters();
-    }, [fetchTheaters]);
+        setLoading(false);
+    }, [fetchMovies, fetchTheaters]);
 
 
     // =====================================================
@@ -241,7 +269,7 @@ const AddShows = () => {
 
 
     // =====================================================
-    // ADD SHOW (UPDATED: includes theaterCity & theaterAddress)
+    // ADD SHOW
     // =====================================================
 
     const handleAddShow =
@@ -321,7 +349,7 @@ const AddShows = () => {
                 const theaterAddress = theater?.address || "";
 
                 // =============================================
-                // SHOW DATA (updated with city and address)
+                // SHOW DATA
                 // =============================================
 
                 const showData = {
@@ -340,8 +368,8 @@ const AddShows = () => {
                     theaterName: theaterName,
                     theaterLat: theaterLat,
                     theaterLng: theaterLng,
-                    theaterCity: theaterCity,      // <-- NEW
-                    theaterAddress: theaterAddress, // <-- NEW
+                    theaterCity: theaterCity,
+                    theaterAddress: theaterAddress,
 
                 };
 
@@ -414,7 +442,7 @@ const AddShows = () => {
                 // =============================================
 
                 alert(
-                    "Movie and show added successfully!"
+                    "Show added successfully!"
                 );
 
                 // -------- trigger global refresh --------
@@ -432,6 +460,9 @@ const AddShows = () => {
                 setDateTimeInput("");
 
                 setDateTimeSelection({});
+
+                // -------- refresh movies to ensure fresh list --------
+                fetchMovies();
 
 
             } catch (error) {
@@ -495,222 +526,244 @@ const AddShows = () => {
                 </p>
 
 
-                <div className="
-                    mt-4
-                    overflow-x-auto
-                    pb-5
-                    scrollbar-thin
-                ">
+                {nowPlayingMovies.length === 0 ? (
 
                     <div className="
-                        flex
-                        gap-5
-                        w-max
+                        mt-4
+                        p-6
+                        border
+                        border-yellow-500/30
+                        bg-yellow-500/10
+                        rounded-lg
+                        text-yellow-300
+                        text-sm
                     ">
 
-                        {nowPlayingMovies.map(
-                            (movie) => {
+                        No movies found in the database. Please add a movie first
+                        from the <strong>Add Movie</strong> page.
 
-                                const movieId =
-                                    movie.id ||
-                                    movie._id;
+                    </div>
+
+                ) : (
+
+                    <div className="
+                        mt-4
+                        overflow-x-auto
+                        pb-5
+                        scrollbar-thin
+                    ">
+
+                        <div className="
+                            flex
+                            gap-5
+                            w-max
+                        ">
+
+                            {nowPlayingMovies.map(
+                                (movie) => {
+
+                                    const movieId =
+                                        movie._id ||
+                                        movie.id;
 
 
-                                const isSelected =
-                                    String(
-                                        selectedMovie?.id ||
-                                        selectedMovie?._id
-                                    ) ===
-                                    String(
-                                        movieId
-                                    );
+                                    const isSelected =
+                                        String(
+                                            selectedMovie?._id ||
+                                            selectedMovie?.id
+                                        ) ===
+                                        String(
+                                            movieId
+                                        );
 
 
-                                return (
-
-                                    <div
-                                        key={movieId}
-                                        onClick={() =>
-                                            setSelectedMovie(
-                                                movie
-                                            )
-                                        }
-                                        className="
-                                            w-40
-                                            flex-shrink-0
-                                            cursor-pointer
-                                            group
-                                        "
-                                    >
+                                    return (
 
                                         <div
-                                            className={`
-                                                relative
+                                            key={movieId}
+                                            onClick={() =>
+                                                setSelectedMovie(
+                                                    movie
+                                                )
+                                            }
+                                            className="
                                                 w-40
-                                                h-60
-                                                overflow-hidden
-                                                rounded-lg
-                                                shadow-md
-                                                border-2
-                                                transition-all
-                                                ${
-                                                    isSelected
-                                                        ? "border-primary"
-                                                        : "border-transparent"
-                                                }
-                                            `}
+                                                flex-shrink-0
+                                                cursor-pointer
+                                                group
+                                            "
                                         >
 
-                                            <img
-                                                src={
-                                                    movie.poster_path ||
-                                                    movie.poster ||
-                                                    movie.image
-                                                }
-                                                alt={
-                                                    movie.title ||
-                                                    movie.name ||
-                                                    "Movie"
-                                                }
-                                                className="
-                                                    w-full
-                                                    h-full
-                                                    object-cover
-                                                    brightness-90
-                                                    group-hover:brightness-100
-                                                    group-hover:scale-105
-                                                    transition
-                                                    duration-300
-                                                "
-                                            />
+                                            <div
+                                                className={`
+                                                    relative
+                                                    w-40
+                                                    h-60
+                                                    overflow-hidden
+                                                    rounded-lg
+                                                    shadow-md
+                                                    border-2
+                                                    transition-all
+                                                    ${
+                                                        isSelected
+                                                            ? "border-primary"
+                                                            : "border-transparent"
+                                                    }
+                                                `}
+                                            >
+
+                                                <img
+                                                    src={
+                                                        movie.poster_path ||
+                                                        movie.poster ||
+                                                        movie.image
+                                                    }
+                                                    alt={
+                                                        movie.title ||
+                                                        movie.name ||
+                                                        "Movie"
+                                                    }
+                                                    className="
+                                                        w-full
+                                                        h-full
+                                                        object-cover
+                                                        brightness-90
+                                                        group-hover:brightness-100
+                                                        group-hover:scale-105
+                                                        transition
+                                                        duration-300
+                                                    "
+                                                />
+
+
+                                                <div className="
+                                                    absolute
+                                                    bottom-0
+                                                    left-2
+                                                    right-2
+                                                    bg-black/75
+                                                    px-2
+                                                    py-1
+                                                    rounded-md
+                                                    text-xs
+                                                    flex
+                                                    justify-between
+                                                    items-center
+                                                ">
+
+                                                    <p className="
+                                                        flex
+                                                        items-center
+                                                        gap-1
+                                                        text-gray-200
+                                                    ">
+
+                                                        <StarIcon
+                                                            className="
+                                                                w-3.5
+                                                                h-3.5
+                                                                text-primary
+                                                                fill-primary
+                                                            "
+                                                        />
+
+                                                        {movie.vote_average
+                                                            ? Number(
+                                                                movie.vote_average
+                                                            ).toFixed(1)
+                                                            : "N/A"}
+
+                                                    </p>
+
+
+                                                    <p className="
+                                                        text-gray-300
+                                                    ">
+
+                                                        {kConverter(
+                                                            movie.vote_count ||
+                                                            0
+                                                        )}{" "}
+                                                        Votes
+
+                                                    </p>
+
+                                                </div>
+
+
+                                                {isSelected && (
+
+                                                    <div className="
+                                                        absolute
+                                                        top-2
+                                                        right-2
+                                                        bg-primary
+                                                        h-7
+                                                        w-7
+                                                        flex
+                                                        items-center
+                                                        justify-center
+                                                        rounded-full
+                                                    ">
+
+                                                        <CheckIcon
+                                                            className="
+                                                                w-4
+                                                                h-4
+                                                                text-white
+                                                            "
+                                                        />
+
+                                                    </div>
+
+                                                )}
+
+                                            </div>
 
 
                                             <div className="
-                                                absolute
-                                                bottom-0
-                                                left-2
-                                                right-2
-                                                bg-black/75
-                                                px-2
-                                                py-1
-                                                rounded-md
-                                                text-xs
-                                                flex
-                                                justify-between
-                                                items-center
+                                                mt-2
+                                                px-1
                                             ">
 
                                                 <p className="
-                                                    flex
-                                                    items-center
-                                                    gap-1
-                                                    text-gray-200
+                                                    font-medium
+                                                    text-sm
+                                                    truncate
                                                 ">
 
-                                                    <StarIcon
-                                                        className="
-                                                            w-3.5
-                                                            h-3.5
-                                                            text-primary
-                                                            fill-primary
-                                                        "
-                                                    />
-
-                                                    {movie.vote_average
-                                                        ? Number(
-                                                            movie.vote_average
-                                                        ).toFixed(1)
-                                                        : "N/A"}
+                                                    {movie.title ||
+                                                        movie.name ||
+                                                        "Untitled Movie"}
 
                                                 </p>
 
 
                                                 <p className="
-                                                    text-gray-300
+                                                    text-xs
+                                                    text-gray-400
                                                 ">
 
-                                                    {kConverter(
-                                                        movie.vote_count ||
-                                                        0
-                                                    )}{" "}
-                                                    Votes
+                                                    {movie.release_date ||
+                                                        movie.releaseDate ||
+                                                        "Release date unavailable"}
 
                                                 </p>
 
                                             </div>
 
-
-                                            {isSelected && (
-
-                                                <div className="
-                                                    absolute
-                                                    top-2
-                                                    right-2
-                                                    bg-primary
-                                                    h-7
-                                                    w-7
-                                                    flex
-                                                    items-center
-                                                    justify-center
-                                                    rounded-full
-                                                ">
-
-                                                    <CheckIcon
-                                                        className="
-                                                            w-4
-                                                            h-4
-                                                            text-white
-                                                        "
-                                                    />
-
-                                                </div>
-
-                                            )}
-
                                         </div>
 
+                                    );
 
-                                        <div className="
-                                            mt-2
-                                            px-1
-                                        ">
+                                }
+                            )}
 
-                                            <p className="
-                                                font-medium
-                                                text-sm
-                                                truncate
-                                            ">
-
-                                                {movie.title ||
-                                                    movie.name ||
-                                                    "Untitled Movie"}
-
-                                            </p>
-
-
-                                            <p className="
-                                                text-xs
-                                                text-gray-400
-                                            ">
-
-                                                {movie.release_date ||
-                                                    movie.releaseDate ||
-                                                    "Release date unavailable"}
-
-                                            </p>
-
-                                        </div>
-
-                                    </div>
-
-                                );
-
-                            }
-                        )}
+                        </div>
 
                     </div>
 
-                </div>
+                )}
 
             </div>
 

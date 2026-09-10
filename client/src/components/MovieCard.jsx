@@ -96,7 +96,6 @@ const getNearestShow = (showDateTimes, showDateTime) => {
 
 // =====================================================
 // NORMALIZE theaters into a unique array of { name, city, address }
-// (kept even though we don't render it — available if needed)
 // =====================================================
 const buildTheaterList = (theaters, theater) => {
     const source = Array.isArray(theaters)
@@ -129,21 +128,16 @@ const buildTheaterList = (theaters, theater) => {
 const MovieCard = ({
     movie,
     badge,
-    theater,        // single theater (backward compat)
-    theaters,       // array of theaters (preferred)
-    showDateTime,   // single show timestamp (optional)
-    showDateTimes,  // array of shows (optional)
+    theater,
+    theaters,
+    showDateTime,
+    showDateTimes,
 }) => {
     const navigate = useNavigate();
 
     const movieId = String(movie?._id || movie?.id || "");
 
     const nearestShow = getNearestShow(showDateTimes, showDateTime);
-
-    // Theater list is resolved but intentionally NOT rendered.
-    // It stays available here if you want to use it later —
-    // e.g. in a tooltip, on the movie detail page, in analytics,
-    // or by passing it down via a data attribute.
     const theaterList = buildTheaterList(theaters, theater);
 
     // =====================================================
@@ -175,8 +169,6 @@ const MovieCard = ({
                 w-full
                 shadow-lg
             "
-            // Theater count is stashed here as a data attribute
-            // so it's still present in the DOM without being visible.
             data-theaters={theaterList.length}
         >
             {/* BADGE */}
@@ -186,18 +178,34 @@ const MovieCard = ({
                 </div>
             )}
 
-            {/* POSTER */}
-            <img
-                src={
-                    movie?.poster_path
-                        ? movie.poster_path.startsWith("http")
-                            ? movie.poster_path
-                            : `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                        : "/fallback.jpg"
-                }
-                alt={movie?.title || "Movie"}
-                className="w-full h-64 object-fill"
-            />
+            {/* ================================================= */}
+            {/* POSTER — fixed height, object-cover for uniform    */}
+            {/* ================================================= */}
+            <div className="w-full h-80 bg-gray-900 relative overflow-hidden">
+                <img
+                    src={
+                        movie?.poster_path
+                            ? movie.poster_path.startsWith("http")
+                                ? movie.poster_path
+                                : `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+                            : "/fallback.jpg"
+                    }
+                    alt={movie?.title || "Movie"}
+                    className="
+                        absolute
+                        inset-0
+                        w-full
+                        h-full
+                        object-cover
+                        object-center
+                    "
+                    loading="lazy"
+                    onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = "/fallback.jpg";
+                    }}
+                />
+            </div>
 
             {/* INFO */}
             <div className="p-4 flex flex-col flex-grow">
@@ -221,11 +229,6 @@ const MovieCard = ({
                     {" • "}
                     {movie?.runtime ? timeFormat(movie.runtime) : "N/A"}
                 </p>
-
-                {/* ================================================= */}
-                {/* THEATER BLOCK — hidden on purpose                  */}
-                {/* theaterList is computed and available above.       */}
-                {/* ================================================= */}
 
                 {/* NEAREST SHOW */}
                 {nearestShow && (

@@ -81,7 +81,9 @@ export const addMovie = async (req, res) => {
 };
 
 // =====================================================
-// ADD SHOW (UPDATED: also updates Theater.movies)
+// ADD SHOW
+// UPDATED: no longer creates a movie — only validates that it exists
+// UPDATED: now saves theaterCity and theaterAddress
 // =====================================================
 export const addShow = async (req, res) => {
     try {
@@ -150,29 +152,21 @@ export const addShow = async (req, res) => {
             });
         }
 
-        // -------- Create or update the movie document --------
-        let movieDocument = await Movie.findById(movieId);
+        // =====================================================
+        // -------- VALIDATE MOVIE EXISTS (do NOT create it) --------
+        // =====================================================
+        const movieDocument = await Movie.findById(movieId);
 
         if (!movieDocument) {
-            console.log("Movie not found. Creating movie in MongoDB...");
-            movieDocument = await Movie.create({
-                _id: movieId,
-                title: movieTitle,
-                overview: movie.overview || "",
-                poster_path: movie.poster_path || movie.poster || movie.image || "",
-                backdrop_path: movie.backdrop_path || movie.backdrop || "",
-                release_date: movie.release_date || movie.releaseDate || "",
-                original_language: movie.original_language || "",
-                tagline: movie.tagline || "",
-                genres: movie.genres || movie.genre_ids || [],
-                casts: movie.casts || movie.cast || [],
-                vote_average: Number(movie.vote_average) || 0,
-                runtime: Number(movie.runtime) || 0,
+            console.log("Movie not found in movies collection:", movieId);
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Movie not found. Please add the movie first from the Add Movie page.",
             });
-            console.log("Movie created:", movieDocument);
-        } else {
-            console.log("Movie already exists:", movieDocument._id);
         }
+
+        console.log("Movie already exists:", movieDocument._id);
 
         const savedMovieId = String(movieDocument._id);
 
@@ -243,6 +237,8 @@ export const addShow = async (req, res) => {
                     theaterName: theaterName || "",
                     theaterLat: theaterLat || 0,
                     theaterLng: theaterLng || 0,
+                    theaterCity: theaterCity || "",
+                    theaterAddress: theaterAddress || "",
                 });
             }
         }
@@ -278,7 +274,7 @@ export const addShow = async (req, res) => {
 
         return res.status(201).json({
             success: true,
-            message: "Movie and shows added successfully",
+            message: "Shows added successfully",
             movie: movieDocument,
             shows: createdShows,
         });

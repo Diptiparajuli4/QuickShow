@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import http from "http";
 import { Server } from "socket.io";
+import movieRoutes from "./routes/movieRoutes.js";
 
 import connectDB from "./configs/db.js";
 
@@ -109,7 +110,7 @@ app.use("/booking", bookingRouter);
 app.use("/admin", adminRouter);
 
 app.use("/theater", theaterRouter);
-
+app.use("/", movieRoutes);
 app.use(
     "/api/analytics",
     analyticsRouter

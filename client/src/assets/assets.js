@@ -16,490 +16,822 @@ export const assets = {
 
 export const dummyTrailers = [
     {
-        image: "https://img.youtube.com/vi/WpW36ldAqnM/maxresdefault.jpg",
-        videoUrl: 'https://www.youtube.com/watch?v=WpW36ldAqnM'
+        image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQBZHk2vwaMe_bzxqLTC5SshUEOzfoMt_SbAeXHNJ8iBO8rFGf_DP5vIfA_xXP7BBQYeffiznegDLV7gN6F5A80Q9wzFuS2z6SK5cbZdhmu&s=10",
+        videoUrl: 'https://youtu.be/5zbtEmxEyGk'
     },
     {
-        image: "https://img.youtube.com/vi/-sAOWhvheK8/maxresdefault.jpg",
-        videoUrl: 'https://www.youtube.com/watch?v=-sAOWhvheK8'
+        image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTf1F0Wtgg4tQ7aE9C_zHN0Pb-Jk4jlHgGnxrYip39eWg&s",
+        videoUrl: 'https://www.youtube.com/watch?v=_hBsVHlNOtA'
     },
     {
-        image: "https://img.youtube.com/vi/1pHDWnXmK7Y/maxresdefault.jpg",
-        videoUrl: 'https://www.youtube.com/watch?v=1pHDWnXmK7Y'
+        image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2tdvTg8AfyNDKxUL_0Qi9QccGDjIczYEwPtlJpi3GMA&s=10",
+        videoUrl: 'https://www.youtube.com/watch?v=Tc0ZtDdNkX8'
     },
     {
-        image: "https://img.youtube.com/vi/umiKiW4En9g/maxresdefault.jpg",
-        videoUrl: 'https://www.youtube.com/watch?v=umiKiW4En9g'
+        image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRqB2Hqy47xNmTFpfU7JmRK_gWKXJuoOjZXOyzyI_p1Uw&s=10",
+        videoUrl: 'https://www.youtube.com/watch?v=QcbIDqe9Nkk'
     },
 ]
 
-const dummyCastsData = [
-    { "name": "Milla Jovovich", "profile_path": "https://image.tmdb.org/t/p/original/usWnHCzbADijULREZYSJ0qfM00y.jpg" },
-    { "name": "Dave Bautista", "profile_path": "https://image.tmdb.org/t/p/original/snk6JiXOOoRjPtHU5VMoy6qbd32.jpg" },
-    { "name": "Arly Jover", "profile_path": "https://image.tmdb.org/t/p/original/zmznPrQ9GSZwcOIUT0c3GyETwrP.jpg" },
-    { "name": "Amara Okereke", "profile_path": "https://image.tmdb.org/t/p/original/nTSPtzWu6deZTJtWXHUpACVznY4.jpg" },
-    { "name": "Fraser James", "profile_path": "https://image.tmdb.org/t/p/original/mGAPQG2OKTgdKFkp9YpvCSqcbgY.jpg" },
-    { "name": "Deirdre Mullins", "profile_path": "https://image.tmdb.org/t/p/original/lJm89neuiVlYISEqNpGZA5kTAnP.jpg" },
-    { "name": "Sebastian Stankiewicz", "profile_path": "https://image.tmdb.org/t/p/original/hLN0Ca09KwQOFLZLPIEzgTIbqqg.jpg" },
-    { "name": "Tue Lunding", "profile_path": "https://image.tmdb.org/t/p/original/qY4W0zfGBYzlCyCC0QDJS1Muoa0.jpg" },
-    { "name": "Jacek Dzisiewicz", "profile_path": "https://image.tmdb.org/t/p/original/6Ksb8ANhhoWWGnlM6O1qrySd7e1.jpg" },
-    { "name": "Ian Hanmore", "profile_path": "https://image.tmdb.org/t/p/original/yhI4MK5atavKBD9wiJtaO1say1p.jpg" },
-    { "name": "Eveline Hall", "profile_path": "https://image.tmdb.org/t/p/original/uPq4xUPiJIMW5rXF9AT0GrRqgJY.jpg" },
-    { "name": "Kamila Klamut", "profile_path": "https://image.tmdb.org/t/p/original/usWnHCzbADijULREZYSJ0qfM00y.jpg" },
-    { "name": "Caoilinn Springall", "profile_path": "https://image.tmdb.org/t/p/original/uZNtbPHowlBYo74U1qlTaRlrdiY.jpg" },
-    { "name": "Jan Kowalewski", "profile_path": "https://image.tmdb.org/t/p/original/snk6JiXOOoRjPtHU5VMoy6qbd32.jpg" },
-    { "name": "Pawel Wysocki", "profile_path": "https://image.tmdb.org/t/p/original/zmznPrQ9GSZwcOIUT0c3GyETwrP.jpg" },
-    { "name": "Simon Lööf", "profile_path": "https://image.tmdb.org/t/p/original/cbZrB8crWlLEDjVUoak8Liak6s.jpg" },
-    { "name": "Tomasz Cymerman", "profile_path": "https://image.tmdb.org/t/p/original/nTSPtzWu6deZTJtWXHUpACVznY4.jpg" }
-]
+// =====================================================
+// CAST PHOTO LOOKUP
+// Real photo URLs for actors we have images for.
+// Anyone not in this list gets an avatar placeholder.
+// Add more here later as you find photos.
+// =====================================================
+const castPhotoLookup = {
+    // "name (lowercase)": "photo URL"
+    "rajesh hamal": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTeeMvBm0wjqDU2eyWkcT98dVk8HU4HgUJvJxPUbEtHew&s=10",
+    "bhuwan k.c.": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQBV0U8oSMSW1wT7nw2ceNm2ojcG8jaRLLdyFh8x_s2_Q&s=10",
+    "nikhil upreti": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTtlBfqk5aQxbCnbHtS6AiKnmjzPT9ZqGcS7OqunVLwAQ&s=10",
+    "biraj bhatta": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ2WmaTfVxByKDmnaYs0vrq6VlRZsvnfuVONmbzIwKuzQ&s=10",
+    "dayahang rai": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTEQ9FhTiASpICqw421csKY10w60TBSfqv4-7uipJ6cbA&s=10",
+    "saugat malla": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-W7K8OntL4EyKCdgl0wUY6DDStbKM_qDPVa6YaNtw8Q&s=10",
+    "nischal basnet": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS6kKAn71jVKOSLmR3wcfzIEyOxVx5B1UmegcHWCeQSqw&s=10",
+    "aryan sigdel": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSmZy64mImYi2iMelv7x7PKTi-RS4u78OCSRtNP52HHQg&s=10",
+    "aaryan sigdel": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSmZy64mImYi2iMelv7x7PKTi-RS4u78OCSRtNP52HHQg&s=10",
+    "deepak raj giri": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTM2yrf0FH0xPHa2n-_rjle7yuEa9g-x1g_k8Pz9ur1Ug&s=10",
+    "sitaram kattel": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSXdQV3XZg_HfodenLuCm4wIx8QULgQsbjGxiWhLKe6Qw&s=10",
+    "kedar ghimire": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRvs7YUk5XxSwwoiursTfB48kL0GsTnQ3ToaJNZN_in0w&s=10",
+    "karishma manandhar": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS4H2nlr8vOwHQ6TApbKEMTv0lhd0MfNSKSQjvXiqdbiQ&s=10",
+    "richa sharma": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRqahr7zUDTNfi-pAdNvpz12cHZARyJhUO6DwrsG7c_jg&s=10",
+    "reecha sharma": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRqahr7zUDTNfi-pAdNvpz12cHZARyJhUO6DwrsG7c_jg&s=10",
+    "priyanka karki": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTV0uypJK61MIeiOlik6FXlr-H5hPkFUG8pZwMXRUtZfg&s=10",
+    "namrata shrestha": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQbFWe-zuDm0w-nmL6vp46WifrOINkW-TqHO-e5Rry99Q&s=10",
+    "rekha thapa": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTTlNQ1h00UhfBx3-MqPYGP_7lDX7OYZxAKPUu3A16yDw&s=10",
+    "keki adhikari": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQMxY5hfzG_X2WGPBxrmQFRhZaXNIr8qQ8yJWwkaqXnrQ&s=10",
+};
+
+// Helper: looks up the real photo by name; falls back to an avatar
+const createCastMember = (name) => {
+    const trimmed = name.trim();
+    const key = trimmed.toLowerCase();
+
+    const realPhoto = castPhotoLookup[key];
+
+    return {
+        name: trimmed,
+        profile_path:
+            realPhoto ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                trimmed
+            )}&size=200&background=1e40af&color=fff`,
+    };
+};
+
+// Public list of cast members with photos (for reference / fallback)
+export const dummyCastsData = [
+    "Rajesh Hamal",
+    "Bhuwan K.C.",
+    "Nikhil Upreti",
+    "Biraj Bhatta",
+    "Dayahang Rai",
+    "Saugat Malla",
+    "Nischal Basnet",
+    "Aryan Sigdel",
+    "Deepak Raj Giri",
+    "Sitaram Kattel",
+    "Kedar Ghimire",
+    "Karishma Manandhar",
+    "Richa Sharma",
+    "Priyanka Karki",
+    "Namrata Shrestha",
+    "Rekha Thapa",
+    "Keki Adhikari",
+].map(createCastMember);
+
 
 export const dummyShowsData = [
     {
-        "_id": "324544",
-        "id": 324544,
-        "title": "In the Lost Lands",
-        "overview": "A queen sends the powerful and feared sorceress Gray Alys to the ghostly wilderness of the Lost Lands in search of a magical power, where she and her guide, the drifter Boyce, must outwit and outfight both man and demon.",
-        "poster_path": "https://image.tmdb.org/t/p/original/dDlfjR7gllmr8HTeN6rfrYhTdwX.jpg",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/op3qmNhvwEvyT7UFyPbIfQmKriB.jpg",
+        "_id": "1383481",
+        "id": 1383481,
+        "title": "Sarangi: A Journey of Purna Bahadur",
+        "overview": "In the heart of a remote village, Purna Bahadur Ko Sarangi weaves a poignant drama about the unbreakable bond between a struggling father and his son. Purna Bahadur, a humble and impoverished musician, clings to the hope of a better life through his beloved sarangi, an instrument that carries the echoes of his dreams and sacrifices.",
+        "poster_path":"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQTgjALU6HsKMiC_VGey6MdHGTBtqqAQxl9RDLZb5STdg&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTN2zyRd8OSecoocHiNvgOzuIBMW2wvCOpomyDbGXxY4w&s=10",
         "genres": [
-            { "id": 28, "name": "Action" },
-            { "id": 14, "name": "Fantasy" },
-            { "id": 12, "name": "Adventure" }
+            { "id": 18, "name": "Drama" },
+            { "id": 10751, "name": "Family" }
         ],
-        "casts": dummyCastsData,
-        "release_date": "2025-02-27",
-        "original_language": "en",
-        "tagline": "She seeks the power to free her people.",
-        "vote_average": 6.4,
-        "vote_count": 15000,
-        "runtime": 102
+        "casts": [
+            createCastMember("Bijay Baral"),
+            createCastMember("Anjana Baraili"),
+            createCastMember("Prakash Saput"),
+            createCastMember("Mukun Bhusal"),
+            createCastMember("Buddhi Tamang"),
+            createCastMember("Maotse Gurung"),
+            createCastMember("Desh Bhakta Khanal"),
+            createCastMember("Bhola Raj Sapkota"),
+            createCastMember("Binod Neupane"),
+            createCastMember("Alisha Bastola"),
+            createCastMember("Swayam KC"),
+            createCastMember("Jaanbi Poudel")
+        ],
+        "release_date": "2024-10-31",
+        "original_language": "ne",
+        "tagline": "A father's dream, a son's journey.",
+        "vote_average": 8.5,
+        "vote_count": 1200,
+        "runtime": 143,
+        "theaters": ["QFX Civil Mall", "QFX Labim Mall", "FCube Cinemas", "One Cinemas"]
     },
     {
-        "_id": "1232546",
-        "id": 1232546,
-        "title": "Until Dawn",
-        "overview": "One year after her sister Melanie mysteriously disappeared, Clover and her friends head into the remote valley where she vanished in search of answers.",
-        "poster_path": "https://image.tmdb.org/t/p/original/juA4IWO52Fecx8lhAsxmDgy3M3.jpg",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/icFWIk1KfkWLZnugZAJEDauNZ94.jpg",
+        "_id": "1407012",
+        "id": 1407012,
+        "title": "Khusma",
+        "overview": "Set in the backdrop and the aftermath of Maoist Insurgency— Khusma endures separation from her husband and awaits his return, only to resign herself to her fate.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSWgThKlEueXByylbamItBy6f4mxSzsyt_dG2gtUWuJsA&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTH9BU9_O-wytGMFc5BJmCP7kLwsqDYWcVF6ZMVFLnEAQ&s=10",
         "genres": [
-            { "id": 27, "name": "Horror" },
-            { "id": 9648, "name": "Mystery" }
+            { "id": 18, "name": "Drama" },
+            { "id": 10749, "name": "Romance" }
         ],
-        "casts": dummyCastsData,
-        "release_date": "2025-04-23",
-        "original_language": "en",
-        "tagline": "Every night a different nightmare.",
-        "vote_average": 6.405,
-        "vote_count": 18000,
-        "runtime": 103
+        "casts": [
+            createCastMember("Dhiraj Magar"),
+            createCastMember("Upasana Singh Thakuri"),
+            createCastMember("Maotse Gurung"),
+            createCastMember("Khadka Bahadur Pun"),
+            createCastMember("Sujata Rai"),
+            createCastMember("Bijay Sanjog Subba"),
+            createCastMember("Raju Resmi Magar"),
+            createCastMember("Raj Thapa Kauchha"),
+            createCastMember("Astitwa Bhattachan"),
+            createCastMember("Sangeeta Thapa Magar"),
+            createCastMember("Arun Pun Magar"),
+            createCastMember("Sara Rai"),
+            createCastMember("Shweta Mishra")
+        ],
+        "release_date": "2024-09-19",
+        "original_language": "ne",
+        "tagline": "Love and loss in the time of war.",
+        "vote_average": 7.8,
+        "vote_count": 800,
+        "runtime": 130,
+        "theaters": ["QFX Chhaya Center", "QFX Durbar Cinemax", "Jai Nepal Cinemas"]
     },
     {
-        "_id": "552524",
-        "id": 552524,
-        "title": "Lilo & Stitch",
-        "overview": "The wildly funny and touching story of a lonely Hawaiian girl and the fugitive alien who helps to mend her broken family.",
-        "poster_path": "https://image.tmdb.org/t/p/original/mKKqV23MQ0uakJS8OCE2TfV5jNS.jpg",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/7Zx3wDG5bBtcfk8lcnCWDOLM4Y4.jpg",
+        "_id": "1368894",
+        "id": 1368894,
+        "title": "Chhakka Panja 5",
+        "overview": "The king is happily living in his country with his family. The ups and downs in his marital life will increase and he will have to leave the country. He will not give his dreams to his desires. He is ready to go abroad. On the other hand, when he tries to find happiness, the emotional boundaries between him and his relatives stop, which makes him hurt. What will the King decide next?",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSP9Bt2w_zd59ve5fpgf84bZQxxQb9ps8ifbC8yO8BKwA&s",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRCPOG7NsARXB1maA_Bnqj2b5K3tVwCVk-vMRHx5g7oPQ&s=10",
         "genres": [
-            { "id": 10751, "name": "Family" },
             { "id": 35, "name": "Comedy" },
-            { "id": 878, "name": "Science Fiction" }
+            { "id": 18, "name": "Drama" }
         ],
-        "casts": dummyCastsData,
-        "release_date": "2025-05-17",
-        "original_language": "en",
-        "tagline": "Hold on to your coconuts.",
-        "vote_average": 7.117,
-        "vote_count": 27500,
-        "runtime": 108
+        "casts": [
+            createCastMember("Deepak Raj Giri"),
+            createCastMember("Kedar Ghimire"),
+            createCastMember("Barsha Siwakoti"),
+            createCastMember("Dipaa Shree Niroula"),
+            createCastMember("Ramesh Budathoki"),
+            createCastMember("Prakash Ghimire"),
+            createCastMember("Buddhi Tamang")
+        ],
+        "release_date": "2024-10-09",
+        "original_language": "ne",
+        "tagline": "The king is back with more laughter.",
+        "vote_average": 6.5,
+        "vote_count": 600,
+        "runtime": 167,
+        "theaters": ["QFX Civil Mall", "QFX Rising Mall", "Ranjana Cineplex", "Bishwojyoti Cineplex"]
     },
     {
-        "_id": "668489",
-        "id": 668489,
-        "title": "Havoc",
-        "overview": "When a drug heist swerves lethally out of control, a jaded cop fights his way through a corrupt city's criminal underworld to save a politician's son.",
-        "poster_path": "https://image.tmdb.org/t/p/original/ubP2OsF3GlfqYPvXyLw9d78djGX.jpg",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/65MVgDa6YjSdqzh7YOA04mYkioo.jpg",
+        "_id": "1289134",
+        "id": 1289134,
+        "title": "Boksi Ko Ghar",
+        "overview": "A journalist uncovers a tale of abuse whilst investigating witchcraft accusations in a remote village.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS-jIgexn2BRScnuBvig0qb7sV0aZ4rTrBPnnOom2Syyg&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSnKYbWONtNd1GvjHCZOWMXlqGmTNXkgIgCfi5nAI7uUQ&s=10",
+        "genres": [
+            { "id": 53, "name": "Thriller" },
+            { "id": 18, "name": "Drama" }
+        ],
+        "casts": [
+            createCastMember("Keki Adhikari"),
+            createCastMember("Shupala Sapkota"),
+            createCastMember("Swechchha Raut"),
+            createCastMember("Sulakshyan Bharati"),
+            createCastMember("Rama Thapaliya"),
+            createCastMember("Sushma Niraula"),
+            createCastMember("Jiwan Baral"),
+            createCastMember("Sabin Bastola")
+        ],
+        "release_date": "2024-04-26",
+        "original_language": "ne",
+        "tagline": "The truth hides in the shadows.",
+        "vote_average": 7.7,
+        "vote_count": 400,
+        "runtime": 120,
+        "theaters": ["QFX Labim Mall", "One Cinemas", "Guna Cinema"]
+    },
+    {
+        "_id": "1390713",
+        "id": 1390713,
+        "title": "12 Gaun",
+        "overview": "A son's quest for vengeance against a tyrannical village chief who murdered his parents. The chief rules through fear, oppressing villagers with his gang, forbidding escape. The son must confront the chief's ruthless reign to seek justice.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSfrP7LTuaxIdq5sXbmXlKAeXFDi4AT9yaIDVqcAKhTZg&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSsu48AN5y-vy_aRgdVSFSLkZsYn4W0IJk5rK29a5uVoQ&s=10",
         "genres": [
             { "id": 28, "name": "Action" },
+            { "id": 18, "name": "Drama" }
+        ],
+        "casts": [
+            createCastMember("Biraj Bhatta"),
+            createCastMember("Samir Bhatt"),
+            createCastMember("Sonu Chandrapal"),
+            createCastMember("Deeya Maskey"),
+            createCastMember("Murali Dhar"),
+            createCastMember("Sanisha Bhattarai"),
+            createCastMember("Nancy Khadka"),
+            createCastMember("Kanij Koirala"),
+            createCastMember("Naren Khadka"),
+            createCastMember("Krishna Bhatta"),
+            createCastMember("Kalu Rana"),
+            createCastMember("Arjun Jung Shahi"),
+            createCastMember("Bhisham Joshi"),
+            createCastMember("Shuleman Shankar"),
+            createCastMember("Tara Sharma"),
+            createCastMember("Kishore Bhatta")
+        ],
+        "release_date": "2024-10-10",
+        "original_language": "ne",
+        "tagline": "Vengeance knows no bounds.",
+        "vote_average": 6.5,
+        "vote_count": 300,
+        "runtime": 147,
+        "theaters": ["QFX Civil Mall", "FCube Cinemas", "INI Screenplay Cinemas"]
+    },
+    {
+        "_id": "1383894",
+        "id": 1383894,
+        "title": "Pooja, Sir",
+        "overview": "When two boys are kidnapped in a border town in Nepal, Detective Inspector Pooja is sent from Kathmandu to solve the case. But when she arrives, the brewing political unrest and violent protests throw her off course, and she is forced to seek help from Mamata, a local Madhesi policewoman.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSqPoxNjzq3QpXakL37cgX1hE7npYeZJsGBmwDTF9H9zQ&s=10",
+        "backdrop_path": "https://image.tmdb.org/t/p/original/poojaSirBackdrop.jpg",
+        "genres": [
             { "id": 80, "name": "Crime" },
             { "id": 53, "name": "Thriller" }
         ],
-        "casts": dummyCastsData,
-        "release_date": "2025-04-25",
-        "original_language": "en",
-        "tagline": "No law. Only disorder.",
-        "vote_average": 6.537,
-        "vote_count": 35960,
-        "runtime": 107
-    },
-    {
-        "_id": "950387",
-        "id": 950387,
-        "title": "A Minecraft Movie",
-        "overview": "Four misfits find themselves struggling with ordinary problems when they are suddenly pulled through a mysterious portal into the Overworld.",
-        "poster_path": "https://image.tmdb.org/t/p/original/yFHHfHcUgGAxziP1C3lLt0q2T4s.jpg",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/2Nti3gYAX513wvhp8IiLL6ZDyOm.jpg",
-        "genres": [
-            { "id": 10751, "name": "Family" },
-            { "id": 35, "name": "Comedy" },
-            { "id": 12, "name": "Adventure" },
-            { "id": 14, "name": "Fantasy" }
+        "casts": [
+            createCastMember("Asha Magrati"),
+            createCastMember("Nikita Chandak"),
+            createCastMember("Dayahang Rai"),
+            createCastMember("Reecha Sharma"),
+            createCastMember("Bijay Baral"),
+            createCastMember("Gaumaya Gurung"),
+            createCastMember("Aarti Mandal"),
+            createCastMember("Ghanashyam Mishra"),
+            createCastMember("Prameshwar Kumar Jha"),
+            createCastMember("Pashupati Rai"),
+            createCastMember("Niraj Shrestha")
         ],
-        "casts": dummyCastsData,
-        "release_date": "2025-03-31",
-        "original_language": "en",
-        "tagline": "Be there and be square.",
-        "vote_average": 6.516,
-        "vote_count": 15225,
-        "runtime": 101
+        "release_date": "2024-09-01",
+        "original_language": "ne",
+        "tagline": "Justice has a new face.",
+        "vote_average": 6.3,
+        "vote_count": 200,
+        "runtime": 120,
+        "theaters": ["QFX Chhaya Center", "One Cinemas"]
     },
     {
-        "_id": "575265",
-        "id": 575265,
-        "title": "Mission: Impossible - The Final Reckoning",
-        "overview": "Ethan Hunt and team continue their search for the terrifying AI known as the Entity.",
-        "poster_path": "https://image.tmdb.org/t/p/original/z53D72EAOxGRqdr7KXXWp9dJiDe.jpg",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/1p5aI299YBnqrEEvVGJERk2MXXb.jpg",
-        "genres": [
-            { "id": 28, "name": "Action" },
-            { "id": 12, "name": "Adventure" },
-            { "id": 53, "name": "Thriller" }
-        ],
-        "casts": dummyCastsData,
-        "release_date": "2025-05-17",
-        "original_language": "en",
-        "tagline": "Our lives are the sum of our choices.",
-        "vote_average": 7.042,
-        "vote_count": 19885,
-        "runtime": 170
-    },
-    {
-        "_id": "986056",
-        "id": 986056,
-        "title": "Thunderbolts*",
-        "overview": "After finding themselves ensnared in a death trap, seven disillusioned castoffs must embark on a dangerous mission.",
-        "poster_path": "https://image.tmdb.org/t/p/original/m9EtP1Yrzv6v7dMaC9mRaGhd1um.jpg",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/rthMuZfFv4fqEU4JVbgSW9wQ8rs.jpg",
-        "genres": [
-            { "id": 28, "name": "Action" },
-            { "id": 878, "name": "Science Fiction" },
-            { "id": 12, "name": "Adventure" }
-        ],
-        "casts": dummyCastsData,
-        "release_date": "2025-04-30",
-        "original_language": "en",
-        "tagline": "Everyone deserves a second shot.",
-        "vote_average": 7.443,
-        "vote_count": 23569,
-        "runtime": 127
-    },
-    {
-        "_id": "1022789",
-        "id": 1022789,
-        "title": "Inside Out 2",
-        "overview": "Teenager Riley's mind headquarters is undergoing a sudden demolition to make room for something entirely unexpected: new Emotions!",
-        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJlvfA3g9NiVxSM5LUAxSeOFNzhGp0zjNVunBWwG-41g&s=10",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/xg27Iio1522P2m23.jpg",
-        "genres": [
-            { "id": 16, "name": "Animation" },
-            { "id": 10751, "name": "Family" },
-            { "id": 35, "name": "Comedy" }
-        ],
-        "casts": dummyCastsData,
-        "release_date": "2024-06-12",
-        "original_language": "en",
-        "tagline": "Make room for new emotions.",
-        "vote_average": 7.6,
-        "vote_count": 4800,
-        "runtime": 96
-    },
-    {
-        "_id": "533535",
-        "id": 533535,
-        "title": "Deadpool & Wolverine",
-        "overview": "A listless Wade Wilson toils away in civilian life with his days as the morally flexible mercenary, Deadpool, behind him.",
-        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRx6z7XSeCJ2l_j2yqLPRI-lFroHotHHebO2ECLaCaeew&s=10",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/yD4122.jpg",
-        "genres": [
-            { "id": 28, "name": "Action" },
-            { "id": 35, "name": "Comedy" },
-            { "id": 878, "name": "Science Fiction" }
-        ],
-        "casts": dummyCastsData,
-        "release_date": "2024-07-24",
-        "original_language": "en",
-        "tagline": "Everyone deserves a happy ending.",
-        "vote_average": 7.7,
-        "vote_count": 5200,
-        "runtime": 128
-    },
-    {
-        "_id": "519182",
-        "id": 519182,
-        "title": "Despicable Me 4",
-        "overview": "Gru and Lucy and their girls welcome a new member to the Gru family, Gru Jr., who is intent on tormenting his dad.",
-        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcScjnWl9-a6LO454CY3A4JivV95u2gsV9CsBObKSUwb5w&s=10",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/lg0234.jpg",
-        "genres": [
-            { "id": 16, "name": "Animation" },
-            { "id": 10751, "name": "Family" },
-            { "id": 35, "name": "Comedy" }
-        ],
-        "casts": dummyCastsData,
-        "release_date": "2024-06-20",
-        "original_language": "en",
-        "tagline": "Things just got a little more despicable.",
-        "vote_average": 7.1,
-        "vote_count": 2100,
-        "runtime": 94
-    },
-    {
-        "_id": "693134",
-        "id": 693134,
-        "title": "Dune: Part Two",
-        "overview": "Follow the mythic journey of Paul Atreides as he unites with Chani and the Fremen while on a path of revenge.",
-        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSn35r4NtzZbFMYAYE4hjmZaPV34wjT_49V8FM6oJaRMQ&s=10",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/xOMo8BRK7PfcJv9R22f3.jpg",
-        "genres": [
-            { "id": 878, "name": "Science Fiction" },
-            { "id": 12, "name": "Adventure" }
-        ],
-        "casts": dummyCastsData,
-        "release_date": "2024-02-27",
-        "original_language": "en",
-        "tagline": "Long live the fighters.",
-        "vote_average": 8.2,
-        "vote_count": 5100,
-        "runtime": 166
-    },
-    {
-        "_id": "823464",
-        "id": 823464,
-        "title": "Godzilla x Kong: The New Empire",
-        "overview": "Godzilla and Kong must reunite against a colossal undiscovered threat hidden within our world.",
-        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRTJbXhZcIU3mJi1K8ZG7L3Um0h4kwTRrJBIjnrnmC1rA&s=10",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/b0019283.jpg",
-        "genres": [
-            { "id": 28, "name": "Action" },
-            { "id": 878, "name": "Science Fiction" },
-            { "id": 12, "name": "Adventure" }
-        ],
-        "casts": dummyCastsData,
-        "release_date": "2024-03-27",
-        "original_language": "en",
-        "tagline": "Rise together or fall alone.",
-        "vote_average": 7.2,
-        "vote_count": 3800,
-        "runtime": 115
-    },
-    {
-        "_id": "653346",
-        "id": 653346,
-        "title": "Kingdom of the Planet of the Apes",
-        "overview": "Many years after the reign of Caesar, a young ape undertakes a journey that will lead him to question everything.",
-        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcStMCHyVlrgBGxJeRRYYQyU8nZ3ETt3cywDY-dH0ZS2Rg&s=10",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/p092384.jpg",
-        "genres": [
-            { "id": 878, "name": "Science Fiction" },
-            { "id": 12, "name": "Adventure" },
-            { "id": 28, "name": "Action" }
-        ],
-        "casts": dummyCastsData,
-        "release_date": "2024-05-08",
-        "original_language": "en",
-        "tagline": "No one can stop the reign.",
-        "vote_average": 7.1,
-        "vote_count": 2900,
-        "runtime": 145
-    },
-    {
-        "_id": "786892",
-        "id": 786892,
-        "title": "Furiosa: A Mad Max Saga",
-        "overview": "As the world fell, young Furiosa is snatched from the Green Place of Many Mothers into the hands of a great Biker Horde.",
-        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTcgLyTIuzTLxJf10ddVRZC8M3Bo1y9UgR5vbwo4cjU5w&s=10",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/w92384.jpg",
-        "genres": [
-            { "id": 28, "name": "Action" },
-            { "id": 12, "name": "Adventure" },
-            { "id": 878, "name": "Science Fiction" }
-        ],
-        "casts": dummyCastsData,
-        "release_date": "2024-05-22",
-        "original_language": "en",
-        "tagline": "Out of darkness, a warrior rises.",
-        "vote_average": 7.6,
-        "vote_count": 3100,
-        "runtime": 148
-    },
-    {
-        "_id": "573435",
-        "id": 573435,
-        "title": "Bad Boys: Ride or Die",
-        "overview": "After their late former Captain is framed, Mike Lowrey and Marcus Burnett go on the run to clear his name.",
-        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrv5pEqhXsyf_6cHGAAHOiZH6wb10uyn_Xp9V1vnwWDQ&s",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/v98234.jpg",
-        "genres": [
-            { "id": 28, "name": "Action" },
-            { "id": 35, "name": "Comedy" },
-            { "id": 80, "name": "Crime" }
-        ],
-        "casts": dummyCastsData,
-        "release_date": "2024-06-05",
-        "original_language": "en",
-        "tagline": "Ride together, die together.",
-        "vote_average": 7.0,
-        "vote_count": 2200,
-        "runtime": 115
-    },
-    {
-        "_id": "748783",
-        "id": 748783,
-        "title": "The Garfield Movie",
-        "overview": "Garfield, the world-famous indoor-loving cat, is about to have a wild outdoor adventure.",
-        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSY4Ag1GtW4KICeVCpLt7PyUFY-pQmyZZ-8yPAof-koPQ&s=10",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/k902384.jpg",
-        "genres": [
-            { "id": 16, "name": "Animation" },
-            { "id": 10751, "name": "Family" },
-            { "id": 35, "name": "Comedy" }
-        ],
-        "casts": dummyCastsData,
-        "release_date": "2024-04-30",
-        "original_language": "en",
-        "tagline": "Outdoor cat mode activated.",
-        "vote_average": 6.7,
-        "vote_count": 1400,
-        "runtime": 101
-    },
-    {
-        "_id": "1011985",
-        "id": 1011985,
-        "title": "Kung Fu Panda 4",
-        "overview": "Po is gearing up to become the spiritual leader of his Valley of Peace, but needs someone to take his place as Dragon Warrior.",
-        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTVh2GRl-dXTaGGJLpado5E58NBTLqJxCXFq030h6rEPg&s=10",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/p912384.jpg",
-        "genres": [
-            { "id": 16, "name": "Animation" },
-            { "id": 28, "name": "Action" },
-            { "id": 10751, "name": "Family" }
-        ],
-        "casts": dummyCastsData,
-        "release_date": "2024-03-02",
-        "original_language": "en",
-        "tagline": "Hold on to your dumplings.",
-        "vote_average": 7.1,
-        "vote_count": 2600,
-        "runtime": 94
-    },
-    {
-        "_id": "359410",
-        "id": 359410,
-        "title": "Gladiator II",
-        "overview": "Years after witnessing the death of Maximus, Lucius must enter the Colosseum after his home is conquered.",
-        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTSJ_fqYtgUPn_k2OrAgFiYWHs5cF7iAzwX0ET68nON1w&s=10",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/h92834.jpg",
-        "genres": [
-            { "id": 28, "name": "Action" },
-            { "id": 12, "name": "Adventure" },
-            { "id": 18, "name": "Drama" }
-        ],
-        "casts": dummyCastsData,
-        "release_date": "2024-11-13",
-        "original_language": "en",
-        "tagline": "Prepare to be entertained.",
-        "vote_average": 6.8,
-        "vote_count": 1900,
-        "runtime": 148
-    },
-    {
-        "_id": "912649",
-        "id": 912649,
-        "title": "Venom: The Last Dance",
-        "overview": "Eddie and Venom are on the run. Hunted by both of their worlds, the duo are forced into a devastating decision.",
-        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7RF2qBKFfgKYqOY8VznlabN4epuPZz3D4xKDHhmOWZg&s=10",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/m0192384.jpg",
-        "genres": [
-            { "id": 28, "name": "Action" },
-            { "id": 878, "name": "Science Fiction" },
-            { "id": 12, "name": "Adventure" }
-        ],
-        "casts": dummyCastsData,
-        "release_date": "2024-10-22",
-        "original_language": "en",
-        "tagline": "'Til death do they part.",
-        "vote_average": 6.5,
-        "vote_count": 2100,
-        "runtime": 109
-    },
-    {
-        "_id": "402431",
-        "id": 402431,
-        "title": "Wicked",
-        "overview": "Elphaba, a misunderstood young woman with green skin, and Glinda, a popular young woman gilded by privilege, meet at Shiz University.",
-        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQsh5jDI7QgKlHLjpXKgtkQD_DqCHS2KiRAPkBjRcroag&s=10",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/e0192384.jpg",
+        "_id": "1385265",
+        "id": 1385265,
+        "title": "Gharjwai",
+        "overview": "\"Gharjwai\" revolves around the intertwined lives of three main characters: a seasoned farmer, a spirited young woman, and a mysterious stranger. As secrets unravel and emotions collide, the film explores themes of love, sacrifice, and redemption.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSDjAHq8RyX8EG4Eh8EU_k6txFOiZNk3CDo5Z6hQNj4aQ&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQHLTmu2qJzG7fA-z9cyK2WghMcjnkHFQyrzF98p-KdRw&s=10",
         "genres": [
             { "id": 18, "name": "Drama" },
-            { "id": 14, "name": "Fantasy" },
-            { "id": 10402, "name": "Music" }
+            { "id": 10749, "name": "Romance" }
         ],
-        "casts": dummyCastsData,
-        "release_date": "2024-11-20",
-        "original_language": "en",
-        "tagline": "Everyone deserves the chance to fly.",
-        "vote_average": 7.4,
-        "vote_count": 1500,
-        "runtime": 160
+        "casts": [
+            createCastMember("Dayahang Rai"),
+            createCastMember("Miruna Magar"),
+            createCastMember("Shishir Bangdel"),
+            createCastMember("Raj Thapa Magar"),
+            createCastMember("Kabita Ale Magar"),
+            createCastMember("Buddhi Tamang"),
+            createCastMember("Pushkar Gurung"),
+            createCastMember("Anu Thapa"),
+            createCastMember("Sunil Magar"),
+            createCastMember("Bhola Raj Sapkota"),
+            createCastMember("Khadga Bahadur Pun")
+        ],
+        "release_date": "2024-07-12",
+        "original_language": "ne",
+        "tagline": "Love, sacrifice, and redemption.",
+        "vote_average": 7.6,
+        "vote_count": 150,
+        "runtime": 135,
+        "theaters": ["QFX Durbar Cinemax", "Jai Nepal Cinemas"]
     },
     {
-        "_id": "845781",
-        "id": 845781,
-        "title": "Red One",
-        "overview": "After a villain kidnaps Santa Claus, an E.L.F. operative must team up with the world's most accomplished tracker to save Christmas.",
-        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSRCWHEIoEy44hSVfbpyI6tFehjREnyxHTAT5eHXKKEHw&s=10",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/f0192384.jpg",
+        "_id": "1408707",
+        "id": 1408707,
+        "title": "Pujar Sarki",
+        "overview": "Three individuals unite against societal norms perpetuating caste discrimination, facing challenges in their collective struggle to defy the existing caste-based social order.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwR3SPZsF7_YaK-JAWBqfOoT7BalfMddbo6tzUbAuR0w&s",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcStJHb7h31a-ls9J802akr61r26aq6AbSnegsZygteE0A&s=10",
+        "genres": [
+            { "id": 18, "name": "Drama" }
+        ],
+        "casts": [
+            createCastMember("Aryan Sigdel"),
+            createCastMember("Pradeep Khadka"),
+            createCastMember("Paul Shah"),
+            createCastMember("Anjana Baraili"),
+            createCastMember("Parikshya Limbu"),
+            createCastMember("Prem Subba"),
+            createCastMember("Lokendra Lekhak"),
+            createCastMember("Mohan Niroula"),
+            createCastMember("Subash Gajurel"),
+            createCastMember("Tara Sharma"),
+            createCastMember("Bidhya Karki"),
+            createCastMember("Shankar Acharaya"),
+            createCastMember("Basant Bhatt"),
+            createCastMember("Govinda Parajuli")
+        ],
+        "release_date": "2024-05-16",
+        "original_language": "ne",
+        "tagline": "Fighting for a better tomorrow.",
+        "vote_average": 8.1,
+        "vote_count": 100,
+        "runtime": 138,
+        "theaters": ["QFX Labim Mall", "Kirtipur Cineplex", "Metro Plaza Cinema Complex"]
+    },
+    {
+        "_id": "1383898",
+        "id": 1383898,
+        "title": "Mummy",
+        "overview": "After the tragic loss of their beloved family dog, a daughter adopts a mysterious black cat, unwittingly inviting dark forces that threaten to tear her family apart.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTq3h40dy7V3nOJ6Wvhkyh4UcS2X7k9XI-TJ1co-N18TA&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ6THT2ZrPVNWNpc07Jd_5xBbHmlJ2jdn80WMyAyPPGXw&s=10",
+        "genres": [
+            { "id": 27, "name": "Horror" }
+        ],
+        "casts": [
+            createCastMember("Priyanka Karki"),
+            createCastMember("Sulakshyan Bharati"),
+            createCastMember("Deeya Maskey"),
+            createCastMember("Shri Krishna Niraula"),
+            createCastMember("Aayushi Dhakal"),
+            createCastMember("Jvis Shrestha"),
+            createCastMember("Ghanashyam Joshi"),
+            createCastMember("Geet Bista"),
+            createCastMember("Gurans Dhakal"),
+            createCastMember("Hari Kuma Bhandari"),
+            createCastMember("Mahendra Mainali"),
+            createCastMember("Prakash Ban")
+        ],
+        "release_date": "2025-02-07",
+        "original_language": "ne",
+        "tagline": "Some secrets should stay buried.",
+        "vote_average": 5.8,
+        "vote_count": 80,
+        "runtime": 124,
+        "theaters": ["QFX Civil Mall", "QFX Thimi", "City Square Mall (QFX)"]
+    },
+    {
+        "_id": "1383488",
+        "id": 1383488,
+        "title": "Eternal Kinship",
+        "overview": "After unforeseeably running away with her lover, 10 year old Suresh must deal with the ordeal of life without a sister figure.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTdUySXMbRm0q_mMgzc0XbCT8jbaPrkNz0be-8JUbbFUw&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHuBUZ7zW0yjQGx9N8X4tG4YQX2SPp_OO-C6Be7yIMo45btS4H8HmCI7s&s=10",
+        "genres": [
+            { "id": 18, "name": "Drama" }
+        ],
+        "casts": [
+            createCastMember("Gauranga Banjara"),
+            createCastMember("Anjasha Rijal")
+        ],
+        "release_date": "2025-07-21",
+        "original_language": "ne",
+        "tagline": "Family ties never break.",
+        "vote_average": 7.0,
+        "vote_count": 50,
+        "runtime": 110,
+        "theaters": ["Mandala Theatre", "MidTown Cinemas"]
+    },
+    {
+        "_id": "1345678",
+        "id": 1345678,
+        "title": "Jwai Saab",
+        "overview": "Disheartened by his home life, Gobardhan's fate takes a turn when he hears an advertisement on the radio offering the chance to become a live-in son-in-law. After winning several competitions with great effort, Gobardhan embarks on the unpredictable journey of becoming a husband in a traditional Nepali setting.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTt-X06cEehjvXk41QF-QKRzlMGyMLm50X1xJ8o-vq1vw&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSkBHnPhhMq_NLjVREptQRjfLcn_srxsQriXsDRq6udrg&s=10",
+        "genres": [
+            { "id": 35, "name": "Comedy" },
+            { "id": 18, "name": "Drama" }
+        ],
+        "casts": [
+            createCastMember("Jitu Nepal"),
+            createCastMember("Niti Shah"),
+            createCastMember("Buddhi Tamang"),
+            createCastMember("Himesh Pant"),
+            createCastMember("Kamalmani Nepal"),
+            createCastMember("Prakash Ghimire"),
+            createCastMember("Shishir Bangdel"),
+            createCastMember("Ramesh Budhathoki"),
+            createCastMember("Kavita Ale"),
+            createCastMember("Wilson Bikram Rai"),
+            createCastMember("Shivu Pandey")
+        ],
+        "release_date": "2024-10-10",
+        "original_language": "ne",
+        "tagline": "A journey of love and responsibility.",
+        "vote_average": 7.0,
+        "vote_count": 120,
+        "runtime": 155,
+        "theaters": ["QFX Rising Mall", "Ranjana Cineplex", "INI Lotse Cinemas"]
+    },
+    {
+        "_id": "1413287",
+        "id": 1413287,
+        "title": "Gunyo Cholo: A Girl Coming of Age Story",
+        "overview": "Gulabi is a transwoman groomed by her patriarchal father to join the military. When her father disowns her, Gulabi ends up living a life of prostitution in Kathmandu.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRBJ6jqD312ZJRDZEL7tNRTgICaz-qZGeoRANb4n0X1Dw&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2QZFn-bftnlzxahQLh7D9ADkYQ9IYo1FNWYgbDlyvHg&s=10",
+        "genres": [
+            { "id": 18, "name": "Drama" }
+        ],
+        "casts": [
+            createCastMember("Nazir Hussain"),
+            createCastMember("Sanchita Luitel"),
+            createCastMember("Sushil Sitaula"),
+            createCastMember("Raj Kumar Ghosh"),
+            createCastMember("Shishir Rana"),
+            createCastMember("Anupam Shrestha"),
+            createCastMember("Bishal Pahari")
+        ],
+        "release_date": "2024-10-25",
+        "original_language": "ne",
+        "tagline": "A story of identity and survival.",
+        "vote_average": 6.8,
+        "vote_count": 90,
+        "runtime": 120,
+        "theaters": ["QFX Labim Mall", "Mandala Theatre"]
+    },
+    {
+        "_id": "1408443",
+        "id": 1408443,
+        "title": "Maijharo",
+        "overview": "A man's desperate fight to save his father's graveyard from a powerful businessman is complicated by the return of his former lover.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRJmQVaHChMc-5ZIMo_SPk91VtyoUTgVAnB83-bL0jX-g&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQTakgAQ2x2rr8KCXrWM6hBa6651QWqkCarcpWhk2GSmw&s",
+        "genres": [
+            { "id": 18, "name": "Drama" },
+            { "id": 10749, "name": "Romance" }
+        ],
+        "casts": [
+            createCastMember("Dhiraj Magar"),
+            createCastMember("Miruna Magar"),
+            createCastMember("Deeya Pun"),
+            createCastMember("Wilson Bikram Rai"),
+            createCastMember("Maotse Gurung"),
+            createCastMember("Buddhi Tamang"),
+            createCastMember("Puskar Gurung"),
+            createCastMember("Sunil Thapa"),
+            createCastMember("Kabita Ale"),
+            createCastMember("Abhayraj Baral"),
+            createCastMember("Uday Subba"),
+            createCastMember("Rajani Gurung"),
+            createCastMember("Bishal Limbu"),
+            createCastMember("Subhash Singh Thakuri"),
+            createCastMember("Dayahang Rai")
+        ],
+        "release_date": "2025-10-24",
+        "original_language": "ne",
+        "tagline": "Love, land, and the weight of the past.",
+        "vote_average": 7.2,
+        "vote_count": 70,
+        "runtime": 139,
+        "theaters": ["QFX Civil Mall", "QFX Durbar Cinemax"]
+    },
+    {
+        "_id": "1418956",
+        "id": 1418956,
+        "title": "Balidan",
+        "overview": "In the remote corner of the country lies Bhilmaghat, a village that looks like paradise from the outside. Beneath its beauty hides a kingdom of exploitation and fear ruled by a hypocritical priest 'Baba'. A boy named Abhay survives a horrific ritual sacrifice with the help of Bhavani, who plants the seed of revolt—only to lose her husband in a direct clash with Baba. Years later, Abhay returns to seek vengeance.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRhCYhPf7TZeGiwy2Tsqvsa1ldxSffScZ4IPLp5FicJyg&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQrIKaVZyNny5A2BqTb5K9r4I4aS12Zdj2r6-iEYNZIcA&s=10",
         "genres": [
             { "id": 28, "name": "Action" },
-            { "id": 35, "name": "Comedy" },
-            { "id": 14, "name": "Fantasy" }
+            { "id": 18, "name": "Drama" }
         ],
-        "casts": dummyCastsData,
-        "release_date": "2024-10-31",
-        "original_language": "en",
-        "tagline": "Christmas is saved... hopefully.",
-        "vote_average": 6.9,
-        "vote_count": 1200,
-        "runtime": 123
+        "casts": [
+            createCastMember("Samir Bhatt"),
+            createCastMember("Saugat Malla"),
+            createCastMember("Reecha Sharma"),
+            createCastMember("Arpan Thapa"),
+            createCastMember("Hemanta Budathoki"),
+            createCastMember("Kavita Raya"),
+            createCastMember("Kameshor Chaurasiya"),
+            createCastMember("Prajal Dulal"),
+            createCastMember("Jeevan Baral"),
+            createCastMember("Ritesh Jung Poudel"),
+            createCastMember("Sunil Chhettri")
+        ],
+        "release_date": "2025-09-29",
+        "original_language": "ne",
+        "tagline": "When faith becomes fear, one man must rise.",
+        "vote_average": 4.7,
+        "vote_count": 60,
+        "runtime": 135,
+        "theaters": ["QFX Civil Mall", "FCube Cinemas", "One Cinemas"]
     },
     {
-        "_id": "1184918",
-        "id": 1184918,
-        "title": "The Wild Robot",
-        "overview": "After a shipwreck, an intelligent robot called Roz is stranded on an uninhabited island and bonds with the island's animals.",
-        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRSLF5vWRgK4zOtpbk655Wtl0WovJEHPbv8MCYBjBz95Q&s=10",
-        "backdrop_path": "https://image.tmdb.org/t/p/original/g0192384.jpg",
+        "_id": "1416319",
+        "id": 1416319,
+        "title": "Maitighar",
+        "overview": "Maitighar follows Maya, a widow struggling to raise her son after her husband's death. Facing societal judgment and hardships, she battles to rebuild her life, highlighting themes of love, loss, and resilience in a conservative society.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTVc-cVmvC8Esph2HctK2-4rY7ODb7PeQL_3y6-bEE_jA&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSuZ3p6rWoHW64uSjXM4hYetY4pBZQG7oNwvwUf20QP5A&s=10",
         "genres": [
-            { "id": 16, "name": "Animation" },
-            { "id": 878, "name": "Science Fiction" },
+            { "id": 18, "name": "Drama" },
+            { "id": 10749, "name": "Romance" }
+        ],
+        "casts": [
+            createCastMember("Kedar Prasad Ghimire"),
+            createCastMember("Dhiraj Magar"),
+            createCastMember("Prakash Saput"),
+            createCastMember("Upasana Singh Thakuri"),
+            createCastMember("Shyamashree Sherpa"),
+            createCastMember("Yubaraj Lama"),
+            createCastMember("Buddhi Tamang")
+        ],
+        "release_date": "2025-09-29",
+        "original_language": "ne",
+        "tagline": "A mother's journey of resilience.",
+        "vote_average": 7.0,
+        "vote_count": 50,
+        "runtime": 127,
+        "theaters": ["QFX Chhaya Center", "Jai Nepal Cinemas", "Bishwojyoti Cineplex"]
+    },
+    {
+        "_id": "1419904",
+        "id": 1419904,
+        "title": "Jerry on Top",
+        "overview": "Jerry On Top is a Nepali romantic drama that continues the emotional journey of Jerry, a charming yet introspective young man. Returning to Nepal after years abroad, Jerry seeks to reconnect with his roots and rediscover meaning in life beyond fleeting fame and relationships. His path crosses with Aanchal, a passionate and grounded woman who challenges his worldview and inspires him to grow emotionally.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRW9HH43yO6Zf8cubElhc8fKnqvZuIevMVAog5OTNZ6YA&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR1XoExE27lMTTNIfuCb31lGSF0otKiQ5IQrOHZm8R3ug&s=10s",
+        "genres": [
+            { "id": 18, "name": "Drama" },
+            { "id": 10749, "name": "Romance" }
+        ],
+        "casts": [
+            createCastMember("Anmol KC"),
+            createCastMember("Bhuwan KC"),
+            createCastMember("Aanchal Sharma"),
+            createCastMember("Jassita Gurung"),
+            createCastMember("Kedar Ghimire"),
+            createCastMember("Usha Khadgi")
+        ],
+        "release_date": "2025-10-17",
+        "original_language": "ne",
+        "tagline": "Redemption, love, and starting anew.",
+        "vote_average": 8.0,
+        "vote_count": 150,
+        "runtime": 180,
+        "theaters": ["QFX Civil Mall", "QFX Labim Mall", "One Cinemas", "FCube Cinemas"]
+    },
+    {
+        "_id": "1422453",
+        "id": 1422453,
+        "title": "Aa Bata Aama",
+        "overview": "Aa Bata Aama is a heartfelt story set in a serene Nepali village, following a loving couple who are blessed with a son, Krishna, after years of hope and prayer. The film explores the deep bond between a mother and her son as he prepares to travel abroad for a better future.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcToE-CQV0l912Ll2r6ZhdhW9ElvZJNu_NQN8tHvReC73Q&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT43MoLZVWpJkbJ-dfSVSUFtgDhqAO_7Wo6sP2IiSeqIw&s=10",
+        "genres": [
+            { "id": 18, "name": "Drama" },
             { "id": 10751, "name": "Family" }
         ],
-        "casts": dummyCastsData,
-        "release_date": "2024-09-12",
-        "original_language": "en",
-        "tagline": "Sometimes, to survive, we must become more than we were programmed to be.",
-        "vote_average": 8.4,
-        "vote_count": 2800,
-        "runtime": 102
+        "casts": [
+            createCastMember("Paul Shah"),
+            createCastMember("Bipana Thapa"),
+            createCastMember("Pradeep Rawat"),
+            createCastMember("Simran Pant"),
+            createCastMember("Saigrace Pokharel"),
+            createCastMember("Usha Uppreti"),
+            createCastMember("Rabindra Jha"),
+            createCastMember("Gajit Bista"),
+            createCastMember("Begam Nepali"),
+            createCastMember("Prakash SJB Kunwar"),
+            createCastMember("Samaira Thapa"),
+            createCastMember("Shan Adhikari")
+        ],
+        "release_date": "2026-01-30",
+        "original_language": "ne",
+        "tagline": "A mother's love knows no distance.",
+        "vote_average": 7.6,
+        "vote_count": 80,
+        "runtime": 160,
+        "theaters": ["QFX Durbar Cinemax", "MidTown Cinemas", "City Square Mall (QFX)"]
+    },
+    {
+        "_id": "1425581",
+        "id": 1425581,
+        "title": "Unko Sweater",
+        "overview": "A tender romantic drama set in the serene hills of eastern Nepal. The film explores the quiet bond between Dharanidhar Kafle, a reserved young man from a traditional Brahmin family, and Phool, a spirited girl from the Gurung community, as they navigate love, culture, and family expectations.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRLiepWzIqusSece65I1g8XHuYfVmtpJhjSwaC22qywVA&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTISGdyLOaUBRmkBiLFgQxnNhkUenk4rbBQFI55nTkAog&s=10",
+        "genres": [
+            { "id": 18, "name": "Drama" },
+            { "id": 10749, "name": "Romance" }
+        ],
+        "casts": [
+            createCastMember("Bipin Karki"),
+            createCastMember("Miruna Magar"),
+            createCastMember("Parikshya Limbu"),
+            createCastMember("Alex Paras"),
+            createCastMember("Sunil Pokharel"),
+            createCastMember("Maotse Gurung"),
+            createCastMember("Wilson Bikram Rai"),
+            createCastMember("Prem Subba"),
+            createCastMember("Suraj Tamu"),
+            createCastMember("Bhawana Khapangi Magar")
+        ],
+        "release_date": "2025-05-09",
+        "original_language": "ne",
+        "tagline": "A journey of warmth and human connections.",
+        "vote_average": 8.5,
+        "vote_count": 110,
+        "runtime": 132,
+        "theaters": ["QFX Civil Mall", "QFX Labim Mall", "INI Screenplay Cinemas"]
+    },
+    {
+        "_id": "1428712",
+        "id": 1428712,
+        "title": "Jaari 2: Song of Chyabrung",
+        "overview": "Continuing the story of the first film, Jaari 2 follows the journey of Namsang and his wife Hangma as they embark on a new chapter of their married life. The film's narrative is deeply rooted in the culture of the Limbu community and revolves around the Chyabrung, a traditional drum that symbolizes love, identity and resilience.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ05z33zJnpz6FJuTz2YTpbGGmyx3LxDfFB5L3DWBOcwA&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTDzAgJw-qxpBKxVMyXg1gnfhTkSDqh6uWnd9gyWOyCeA&s=10",
+        "genres": [
+            { "id": 18, "name": "Drama" }
+        ],
+        "casts": [
+            createCastMember("Dayahang Rai"),
+            createCastMember("Miruna Magar"),
+            createCastMember("Bijay Baral"),
+            createCastMember("Buddhi Tamang"),
+            createCastMember("Reecha Sharma"),
+            createCastMember("Pushkar Gurung"),
+            createCastMember("Prem Subba"),
+            createCastMember("Maotse Gurung"),
+            createCastMember("Kamalmani Nepal"),
+            createCastMember("Manhang Lawati"),
+            createCastMember("Bishnu Moktan"),
+            createCastMember("Anil Subba")
+        ],
+        "release_date": "2025-11-07",
+        "original_language": "ne",
+        "tagline": "Tradition, love, and resilience.",
+        "vote_average": 7.1,
+        "vote_count": 70,
+        "runtime": 127,
+        "theaters": ["QFX Chhaya Center", "One Cinemas", "Kirtipur Cineplex"]
+    },
+    {
+        "_id": "1429905",
+        "id": 1429905,
+        "title": "Lalibazar",
+        "overview": "LALIBAZAR is a powerful social drama that explores the harsh socioeconomic realities and generational struggles of Nepal's marginalized Badi community. The story follows a mother's unwavering sacrifice to protect and educate her daughter, fighting against systemic exploitation while striving to secure a better future.",
+        "poster_path": "https://m.media-amazon.com/images/M/MV5BMWI3NzFiOTgtMTFiMi00NTAxLTg0NGUtNDEzNTc5Yjc0NTM5XkEyXkFqcGc@._V1_.jpg",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSsKHwwfy48qcX_cjKP76mg_E6J70pM4D65SjvgnBOUuiCqAaNtZxRsFWsc&s=10",
+        "genres": [
+            { "id": 18, "name": "Drama" }
+        ],
+        "casts": [
+            createCastMember("Swastima Khadka"),
+            createCastMember("Rabindra Singh Baniya"),
+            createCastMember("Samaira Thapa"),
+            createCastMember("Mukunda Kumar Shrestha"),
+            createCastMember("Abhay Baral"),
+            createCastMember("Prem Pandey"),
+            createCastMember("Asha Poudel"),
+            createCastMember("Govinda Sunar"),
+            createCastMember("Abha Aryal"),
+            createCastMember("Tara Sharma"),
+            createCastMember("Saraswati Adhikari"),
+            createCastMember("Janaki Kathayat"),
+            createCastMember("Nischal Panthi"),
+            createCastMember("Birbal Chaudhary"),
+            createCastMember("Bishal Devkota"),
+            createCastMember("Prashansa Subedi")
+        ],
+        "release_date": "2026-05-08",
+        "original_language": "ne",
+        "tagline": "A mother's fight for a better tomorrow.",
+        "vote_average": 8.0,
+        "vote_count": 50,
+        "runtime": 137,
+        "theaters": ["QFX Civil Mall", "Mandala Theatre", "Asta Narayan Pictures"]
+    },
+    {
+        "_id": "1431123",
+        "id": 1431123,
+        "title": "Roll No. 1",
+        "overview": "A story of a boy struggling to fulfill his father's dream of winning a scholarship from the government. Set against the backdrop of rural Nepal, the film dives deep into student life, the education system, and the psychological pressure faced by children.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRgJH9Lp2Y9pnP5gc2kgGdGs7FChkkTv6W6ZqZhWv2vEPr5AfA7A2TyT90&s=10",
+        "backdrop_path": "https:https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRRkshPk0sSX2OBR-i_ItFbxwBNis9k7atla7g5QFlaGg&s=10",
+        "genres": [
+            { "id": 18, "name": "Drama" },
+            { "id": 10751, "name": "Family" }
+        ],
+        "casts": [
+            createCastMember("Mukun Bhusal"),
+            createCastMember("Renu Yogi"),
+            createCastMember("Nirbhik Regmi"),
+            createCastMember("Sushank Mainali"),
+            createCastMember("Lokendra Lekhak"),
+            createCastMember("Avon Raj Upreti"),
+            createCastMember("Subash Pd Gajurel"),
+            createCastMember("Srijana Adhikari"),
+            createCastMember("Rinchen Lama"),
+            createCastMember("Sanyam Katuwal"),
+            createCastMember("Sijal Shrestha")
+        ],
+        "release_date": "2026-05-29",
+        "original_language": "ne",
+        "tagline": "A father's dream, a son's struggle.",
+        "vote_average": 7.5,
+        "vote_count": 40,
+        "runtime": 130,
+        "theaters": ["QFX Labim Mall", "MidTown Cinemas"]
+    },
+    {
+        "_id": "1433584",
+        "id": 1433584,
+        "title": "Anjila",
+        "overview": "Based on the real-life story of Anjila Tumbapo Subba, the captain and number one goalkeeper of Nepal's national women's football team. The film traces her rise from a restrictive home life to leading the squad, highlighting her struggles against social expectations.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6YslyjO-vGh-HemItmUKBgXFTo4n7FPA93XZvTvJAMA&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT1VbHsqC3990ZziUNkFqXTTHiNQEgNI24TuW_Wr2TZ9Q&s=10",
+        "genres": [
+            { "id": 18, "name": "Drama" },
+            { "id": 10751, "name": "Family" }
+        ],
+        "casts": [
+            createCastMember("Anjila Tumbapo Subba"),
+            createCastMember("Dayahang Rai"),
+            createCastMember("Srijana Subba"),
+            createCastMember("Maotse Gurung"),
+            createCastMember("Bijay Baral"),
+            createCastMember("Buddhi Tamang"),
+            createCastMember("Prem Kumar Shrestha"),
+            createCastMember("Sunil Thapa"),
+            createCastMember("Manju Shrestha"),
+            createCastMember("Suraj Tamu"),
+            createCastMember("Birup Ghale"),
+            createCastMember("Baldip Rai"),
+            createCastMember("Bedana Rai")
+        ],
+        "release_date": "2025-03-13",
+        "original_language": "ne",
+        "tagline": "The inspiring journey of a goalkeeper.",
+        "vote_average": 7.4,
+        "vote_count": 60,
+        "runtime": 135,
+        "theaters": ["QFX Durbar Cinemax", "FCube Cinemas", "One Cinemas"]
+    },
+    {
+        "_id": "1435718",
+        "id": 1435718,
+        "title": "Paran",
+        "overview": "Paran is a heartfelt family drama about Dharmanath, who treasures his children as his 'essence of life' and dreams of growing old in their love. Set in Dhankuta, the film beautifully portrays love, legacy, and the true meaning of family, focusing on emotional relationships and companionship rather than physical existence.",
+        "poster_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRPGmlcgjFt91Fm-J_Jd41TFKC1jpGczfkOvpDLvuSlMg&s=10",
+        "backdrop_path": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQQpxPyGBCv6n5JduWHR5iGaomLnk1DeHwmzB9t-bbmpA&s=10",
+        "genres": [
+            { "id": 18, "name": "Drama" }
+        ],
+        "casts": [
+            createCastMember("Neer Bikram Shah"),
+            createCastMember("Madan Krishna Shrestha"),
+            createCastMember("Keki Adhikari"),
+            createCastMember("Prabin Khatiwada"),
+            createCastMember("Buddhi Tamang"),
+            createCastMember("Mahesh Tripathi"),
+            createCastMember("Anjana Baraily"),
+            createCastMember("Puja Chand"),
+            createCastMember("Subash Gajurel"),
+            createCastMember("Yaman Shrestha"),
+            createCastMember("Yaseli Yonghang"),
+            createCastMember("Babin Rai"),
+            createCastMember("Pushparaj Ojha")
+        ],
+        "release_date": "2025-10-31",
+        "original_language": "ne",
+        "tagline": "Driven not by breath, but by togetherness.",
+        "vote_average": 7.8,
+        "vote_count": 90,
+        "runtime": 167,
+        "theaters": ["QFX Civil Mall", "QFX Chhaya Center", "QFX Labim Mall", "INI Lotse Cinemas"]
     }
 ]
 
-
-
-
 // =====================================================
-// DUMMY THEATERS (Kathmandu Valley) – ✅ Now at top level
+// DUMMY THEATERS (Kathmandu Valley)
 // =====================================================
 
 export const dummyTheaters = [
@@ -684,7 +1016,7 @@ export const dummyTheaters = [
         name: "City Square Mall (QFX)",
         address: "Samakhusi, Kathmandu",
         city: "Kathmandu",
-        latitude: 27.7292,
+        latitude: 27.7290,
         longitude: 85.3181,
     },
 ];

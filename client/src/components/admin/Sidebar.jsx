@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -7,13 +6,14 @@ import {
     Ticket,
     Users,
     PlusCircle,
+    Film,
     List,
     UserCog,
     LogOut,
     BarChart3,
 } from "lucide-react";
 
-import { useAuth } from "../../context/AuthContext"; // ✅ Fixed import path
+import { useAuth } from "../../context/AuthContext";
 
 const Sidebar = () => {
 
@@ -60,6 +60,26 @@ const Sidebar = () => {
 
                     <span>
                         Dashboard
+                    </span>
+                </Link>
+
+
+                {/* ================================================= */}
+                {/* ADD MOVIE (NEW) */}
+                {/* ================================================= */}
+
+                <Link
+                    to="/admin/add-movie"
+                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition text-sm font-medium ${
+                        isActive("/admin/add-movie")
+                            ? "bg-primary text-white shadow-md"
+                            : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                    }`}
+                >
+                    <Film size={18} />
+
+                    <span>
+                        Add Movie
                     </span>
                 </Link>
 
@@ -115,10 +135,7 @@ const Sidebar = () => {
                 </Link>
 
 
-                {/* ================================================= */}
-                {/* RESULT ANALYSIS */}
-                {/* ================================================= */}
-
+                {/* Result Analysis */}
                 <Link
                     to="/admin/result-analysis"
                     className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition text-sm font-medium ${

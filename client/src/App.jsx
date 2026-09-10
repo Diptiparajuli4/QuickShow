@@ -6,9 +6,10 @@ import VerifyEmail from "./pages/VerifyEmail";
 import VerifyOtp from "./pages/VerifyOtp";
 import ForgotPassword from "./pages/ForgotPassword";
 import Theaters from "./pages/Theaters";
+import AddMovie from "./pages/admin/AddMovie.jsx";   // ← यो छ?
 // =====================================================
 // USER PAGES
-// =====================================================
+// ====================================================
 
 import Home from "./pages/Home";
 import Movies from "./pages/Movies";
@@ -295,6 +296,9 @@ const App = () => {
                             index
                             element={<Dashboard />}
                         />
+                        <Route path="add-movie" element={<AddMovie />} />   
+
+
 
                         {/* ================================================= */}
                         {/* ADD SHOWS */}
