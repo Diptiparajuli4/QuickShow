@@ -16,6 +16,7 @@ import {
     LogOut,
     Plus,
     X,
+    Menu,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -28,6 +29,7 @@ const Navbar = () => {
 
     // ---- States ----
     const [showMenu, setShowMenu] = useState(false);
+    const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchText, setSearchText] = useState("");
     const [searchResults, setSearchResults] = useState([]);
@@ -187,6 +189,7 @@ const Navbar = () => {
     // =====================================================
     const handleLogout = () => {
         setShowMenu(false);
+        setShowMobileMenu(false);
         if (logout) logout();
         else {
             localStorage.removeItem("userUser");
@@ -231,6 +234,23 @@ const Navbar = () => {
     const userInitial = userName ? userName.charAt(0).toUpperCase() : "?";
 
     // =====================================================
+    // MOBILE NAV LINKS HELPER
+    // =====================================================
+    const mobileLinks = [
+        { name: "Home", path: "/" },
+        { name: "Movies", path: "/movies" },
+        { name: "Theaters", path: "/theaters" },
+        { name: "Releases", path: "/releases" },
+        ...(hasFavorites ? [{ name: "Favorites", path: "/favorite" }] : []),
+    ];
+
+    const handleMobileNav = (path) => {
+        setShowMobileMenu(false);
+        navigate(path);
+        window.scrollTo(0, 0);
+    };
+
+    // =====================================================
     // RENDER
     // =====================================================
     return (
@@ -242,7 +262,7 @@ const Navbar = () => {
                     Quick<span className="text-primary">Show</span>
                 </Link>
 
-                {/* NAV LINKS */}
+                {/* NAV LINKS (DESKTOP) */}
                 <div className="hidden md:flex items-center gap-8 text-sm text-gray-200">
                     <Link to="/" className="hover:text-primary transition">Home</Link>
                     <Link to="/movies" className="hover:text-primary transition">Movies</Link>
@@ -312,8 +332,6 @@ const Navbar = () => {
                                                                 Now Showing
                                                             </span>
                                                         </div>
-
-                                                        
                                                     </button>
                                                 ))}
                                             </div>
@@ -327,7 +345,6 @@ const Navbar = () => {
                             </div>
                         )}
                     </div>
-
 
                     {/* PROFILE */}
                     <div className="relative" ref={menuRef}>
@@ -398,10 +415,39 @@ const Navbar = () => {
                         )}
                     </div>
 
+                    {/* MOBILE MENU TOGGLE */}
+                    <button
+                        onClick={() => setShowMobileMenu((prev) => !prev)}
+                        className="md:hidden text-white hover:text-primary transition cursor-pointer"
+                        aria-label="Toggle menu"
+                    >
+                        {showMobileMenu ? <X size={24} /> : <Menu size={24} />}
+                    </button>
+
                 </div>
             </div>
+
+            {/* ================================================= */}
+            {/* MOBILE MENU DROPDOWN */}
+            {/* ================================================= */}
+            {showMobileMenu && (
+                <div className="md:hidden border-t border-white/10 bg-black/95 backdrop-blur-md">
+                    <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-1">
+                        {mobileLinks.map((link) => (
+                            <button
+                                key={link.path}
+                                onClick={() => handleMobileNav(link.path)}
+                                className="w-full text-left py-3 px-2 text-sm text-gray-200 hover:text-primary hover:bg-white/5 rounded-lg transition"
+                            >
+                                {link.name}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
         </nav>
     );
 };
 
 export default Navbar;
+

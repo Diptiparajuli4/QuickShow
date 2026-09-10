@@ -4,17 +4,47 @@ import { useNavigate } from "react-router-dom";
 import BlurCircle from "./BlurCircle";
 import MovieCard from "./MovieCard";
 
+// =====================================================
+// HELPER: resolve theater info from a show
+// =====================================================
+const resolveTheater = (show) => {
+  if (show.theaterId && typeof show.theaterId === "object") {
+    return {
+      name: show.theaterId.name || "",
+      city: show.theaterId.city || "",
+      address: show.theaterId.address || "",
+    };
+  }
+  if (show.theaterName) {
+    return {
+      name: show.theaterName,
+      city: show.theaterCity || "",
+      address: show.theaterAddress || "",
+    };
+  }
+  if (show.theater && typeof show.theater === "object") {
+    return {
+      name: show.theater.name || "",
+      city: show.theater.city || "",
+      address: show.theater.address || "",
+    };
+  }
+  return null;
+};
+
+const NOW_SHOWING_LIMIT = 4;
+const UPCOMING_LIMIT = 10;
+
 const FeaturedSection = () => {
   const navigate = useNavigate();
 
   const [featuredMovies, setFeaturedMovies] = useState([]);
   const [upcomingMovies, setUpcomingMovies] = useState([]);
-  const [activeTab, setActiveTab] = useState("nowShowing"); // "nowShowing" | "upcoming"
+  const [activeTab, setActiveTab] = useState("nowShowing");
 
   // ============================================
   // LOAD SHOWS FROM DATABASE
   // ============================================
-
   useEffect(() => {
     const fetchFeaturedMovies = async () => {
       try {
@@ -26,49 +56,92 @@ const FeaturedSection = () => {
         }
 
         const currentTime = new Date();
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
 
-        // 1. NOW SHOWING: Exactly like it used to work before
-        const movies = data.shows
-          .map((show) => show.movie)
-          .filter(Boolean);
+        const shows = Array.isArray(data.shows) ? data.shows : [];
 
-        const uniqueMovies = movies.filter(
-          (movie, index, self) =>
-            index ===
-            self.findIndex(
-              (item) =>
-                String(item._id) ===
-                String(movie._id)
-            )
-        );
+        // ============================================
+        // 1. NOW SHOWING — active shows only
+        // ============================================
+        const activeShows = shows.filter((show) => {
+          const t = new Date(show.showDateTime || show.date);
+          if (isNaN(t.getTime())) return false;
+          return t >= startOfToday;
+        });
 
-        const nowShowingList = [...uniqueMovies];
-        nowShowingList.reverse(); // Latest added first
-        setFeaturedMovies(nowShowingList.slice(0, 4));
+        const nowShowingMap = new Map();
 
-        // 2. UPCOMING MOVIES: Filter future shows, calculate days left, and sort ascending by date
-        const upcomingShows = data.shows.filter((show) => {
-          const showTime = new Date(show.showDateTime || show.date || currentTime);
-          return showTime > currentTime;
+        activeShows.forEach((show) => {
+          const movie = show.movie;
+          if (!movie) return;
+
+          if (typeof movie === "object" && movie._id) {
+            const id = String(movie._id);
+            const theater = resolveTheater(show);
+            const t = new Date(show.showDateTime || show.date);
+
+            if (!nowShowingMap.has(id)) {
+              nowShowingMap.set(id, {
+                ...movie,
+                _theater: theater,
+                _showDateTime: t.getTime(),
+              });
+            } else {
+              const existing = nowShowingMap.get(id);
+              if (t.getTime() < existing._showDateTime) {
+                nowShowingMap.set(id, {
+                  ...existing,
+                  _theater: theater,
+                  _showDateTime: t.getTime(),
+                });
+              }
+            }
+          }
+        });
+
+        const nowShowingList = Array.from(nowShowingMap.values());
+        nowShowingList.reverse();
+        setFeaturedMovies(nowShowingList.slice(0, NOW_SHOWING_LIMIT));
+
+        // ============================================
+        // 2. UPCOMING — future shows only
+        // ============================================
+        const upcomingShows = shows.filter((show) => {
+          const t = new Date(show.showDateTime || show.date || currentTime);
+          return t > currentTime;
         });
 
         const upcomingMapped = upcomingShows
           .map((show) => {
-            const showTime = new Date(show.showDateTime || show.date || currentTime);
+            const showTime = new Date(
+              show.showDateTime || show.date || currentTime
+            );
             const diffTime = showTime - currentTime;
-            const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const daysLeft = Math.ceil(
+              diffTime / (1000 * 60 * 60 * 24)
+            );
+            const theater = resolveTheater(show);
+
+            const movieObj =
+              typeof show.movie === "object" && show.movie
+                ? show.movie
+                : {
+                    _id: show.movie,
+                    title: show.movieTitle || "Movie",
+                  };
+
             return {
-              ...show.movie,
+              ...movieObj,
               showTime: showTime.getTime(),
               daysLeft: daysLeft > 0 ? daysLeft : 1,
+              _theater: theater,
             };
           })
           .filter((movie) => movie && movie._id);
 
-        // Sort ascending by date (soonest upcoming first)
         upcomingMapped.sort((a, b) => a.showTime - b.showTime);
 
-        // Remove duplicate movies keeping the earliest upcoming date
         const uniqueUpcoming = [];
         const seenIds = new Set();
         for (const movie of upcomingMapped) {
@@ -78,8 +151,7 @@ const FeaturedSection = () => {
           }
         }
 
-        setUpcomingMovies(uniqueUpcoming.slice(0, 4));
-
+        setUpcomingMovies(uniqueUpcoming.slice(0, UPCOMING_LIMIT));
       } catch (error) {
         console.error("Error loading featured movies:", error);
         setFeaturedMovies([]);
@@ -90,24 +162,16 @@ const FeaturedSection = () => {
     fetchFeaturedMovies();
   }, []);
 
-  // Determine which movies to display based on the active tab
-  const displayedMovies = activeTab === "nowShowing" ? featuredMovies : upcomingMovies;
+  const displayedMovies =
+    activeTab === "nowShowing" ? featuredMovies : upcomingMovies;
 
   return (
     <div className="px-6 md:px-16 lg:px-24 xl:px-44 pt-0 pb-12 overflow-hidden">
 
-      {/* ========================================= */}
-      {/* SECTION HEADER WITH TABS */}
-      {/* ========================================= */}
-
+      {/* SECTION HEADER */}
       <div className="relative flex items-center justify-between pt-16 pb-6">
+        <BlurCircle top="0" right="-80px" />
 
-        <BlurCircle
-          top="0"
-          right="-80px"
-        />
-
-        {/* Tabs for Now Showing & Upcoming Movies */}
         <div className="flex items-center gap-8">
           <button
             onClick={() => setActiveTab("nowShowing")}
@@ -132,7 +196,6 @@ const FeaturedSection = () => {
           </button>
         </div>
 
-        {/* View All button only shows when Now Showing tab is active */}
         {activeTab === "nowShowing" && (
           <button
             onClick={() => navigate("/movies")}
@@ -142,21 +205,21 @@ const FeaturedSection = () => {
             <ArrowRight className="group-hover:translate-x-0.5 transition w-4.5 h-4.5" />
           </button>
         )}
-
       </div>
 
-      {/* ========================================= */}
       {/* MOVIES */}
-      {/* ========================================= */}
-
       {displayedMovies.length > 0 ? (
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-8">
-
           {displayedMovies.map((movie) => (
             <MovieCard
               key={movie._id}
               movie={movie}
+              theater={movie._theater}
+              showDateTime={
+                activeTab === "nowShowing"
+                  ? movie._showDateTime
+                  : movie.showTime
+              }
               badge={
                 activeTab === "upcoming" && movie.daysLeft
                   ? `${movie.daysLeft} days left`
@@ -164,32 +227,27 @@ const FeaturedSection = () => {
               }
             />
           ))}
-
         </div>
-
       ) : (
-
         <div className="flex justify-center items-center py-20">
-
           <p className="text-gray-500">
-            {activeTab === "nowShowing" ? "No shows available" : "No upcoming movies available"}
+            {activeTab === "nowShowing"
+              ? "No shows available"
+              : "No upcoming movies available"}
           </p>
-
         </div>
-
       )}
 
-      {/* ========================================= */}
       {/* SHOW MORE */}
-      {/* ========================================= */}
-
       {displayedMovies.length > 0 && (
-
         <div className="flex justify-center mt-8 mb-0">
-
           <button
             onClick={() => {
-              navigate(activeTab === "nowShowing" ? "/movies" : "/upcoming-movies");
+              navigate(
+                activeTab === "nowShowing"
+                  ? "/movies"
+                  : "/movies"
+              );
               window.scrollTo(0, 0);
             }}
             className="px-10 py-3 text-sm bg-primary 
@@ -198,11 +256,8 @@ const FeaturedSection = () => {
           >
             Show more
           </button>
-
         </div>
-
       )}
-
     </div>
   );
 };

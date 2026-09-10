@@ -2,6 +2,34 @@ import React, { useEffect, useState } from "react";
 import BlurCircle from "../components/BlurCircle";
 import MovieCard from "../components/MovieCard";
 
+// =====================================================
+// HELPER: resolve theater info from a show
+// =====================================================
+const resolveTheater = (show) => {
+    if (show.theaterId && typeof show.theaterId === "object") {
+        return {
+            name: show.theaterId.name || "",
+            city: show.theaterId.city || "",
+            address: show.theaterId.address || "",
+        };
+    }
+    if (show.theaterName) {
+        return {
+            name: show.theaterName,
+            city: show.theaterCity || "",
+            address: show.theaterAddress || "",
+        };
+    }
+    if (show.theater && typeof show.theater === "object") {
+        return {
+            name: show.theater.name || "",
+            city: show.theater.city || "",
+            address: show.theater.address || "",
+        };
+    }
+    return null;
+};
+
 const Movies = () => {
 
     const [movies, setMovies] = useState([]);
@@ -67,13 +95,26 @@ const Movies = () => {
 
 
             // =================================================
-            // GROUP MOVIES WITH THEATER INFO
+            // FILTER: ONLY ACTIVE SHOWS (today onwards)
             // =================================================
 
-            // We'll create a map: movieId -> { movie, theaters: Set }
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
+
+            const activeShows = data.shows.filter((show) => {
+                const t = new Date(show.showDateTime || show.date);
+                if (isNaN(t.getTime())) return false;
+                return t >= startOfToday;
+            });
+
+
+            // =================================================
+            // GROUP MOVIES WITH THEATER + SHOWTIME INFO
+            // =================================================
+
             const movieMap = new Map();
 
-            data.shows.forEach((show) => {
+            activeShows.forEach((show) => {
 
                 const movie = show.movie;
                 if (!movie) return;
@@ -84,63 +125,74 @@ const Movies = () => {
                 const id = String(movieId);
 
                 // Build theater object (if available)
-                let theater = null;
-                if (show.theaterId || show.theaterName) {
-                    theater = {
-                        _id: show.theaterId || null,
-                        name: show.theaterName || "Unknown Theater",
-                        address: show.theaterAddress || "",
-                        city: show.theaterCity || "",
-                        latitude: show.theaterLat || null,
-                        longitude: show.theaterLng || null,
-                    };
-                } else if (show.theater) {
-                    // If the show has a populated theater object
-                    theater = show.theater;
-                }
+                const theater = resolveTheater(show);
+
+                const showTime = new Date(show.showDateTime);
+                const showTs = showTime.getTime();
 
                 if (!movieMap.has(id)) {
                     movieMap.set(id, {
                         movie: movie,
-                        theaters: new Set(),
+                        theaters: [],
+                        theaterKeys: new Set(),
+                        showDateTimes: [],
+                        earliest: showTs,
                     });
                 }
 
+                const entry = movieMap.get(id);
+
+                // Add theater if new
                 if (theater && theater.name) {
-                    // Use a unique key for the set (e.g., theater._id or name)
-                    const key = theater._id || theater.name;
-                    movieMap.get(id).theaters.add(key);
+                    const key = `${theater.name}|${theater.city || ""}`;
+                    if (!entry.theaterKeys.has(key)) {
+                        entry.theaterKeys.add(key);
+                        entry.theaters.push(theater);
+                    }
+                }
+
+                // Add showtime
+                entry.showDateTimes.push(showTs);
+
+                // Track earliest show
+                if (showTs < entry.earliest) {
+                    entry.earliest = showTs;
                 }
             });
 
 
             // =================================================
-            // BUILD FINAL MOVIES LIST WITH THEATER INFO
+            // BUILD FINAL MOVIES LIST
             // =================================================
 
             const uniqueMovies = [];
-            movieMap.forEach((value, key) => {
-                const movie = value.movie;
-                const theaterCount = value.theaters.size;
 
-                // Determine theater display: if one theater, pass that; else pass null or a placeholder
-                let theaterToPass = null;
-                if (theaterCount === 1) {
-                    // Find the actual theater object from the first show that has it (simplified)
-                    // We'll just pass the first theater name from the set (but we need the name)
-                    // Instead, we can store the first theater object during mapping.
-                    // For simplicity, we'll just pass a string.
-                    const theaterNames = Array.from(value.theaters);
-                    theaterToPass = { name: theaterNames[0], city: "" };
-                } else if (theaterCount > 1) {
-                    theaterToPass = { name: `${theaterCount} theaters`, city: "" };
-                }
+            movieMap.forEach((value) => {
+
+                const movie = value.movie;
+
+                // Sort theaters + showtimes
+                const sortedTheaters = [...value.theaters].sort(
+                    (a, b) => a.name.localeCompare(b.name)
+                );
+
+                const sortedShowDateTimes = [
+                    ...value.showDateTimes,
+                ].sort((a, b) => a - b);
 
                 uniqueMovies.push({
                     ...movie,
-                    theater: theaterToPass,
+                    _theaters: sortedTheaters,
+                    _showDateTimes: sortedShowDateTimes,
                 });
             });
+
+            // Sort movies by earliest upcoming show
+            uniqueMovies.sort(
+                (a, b) =>
+                    (a._showDateTimes[0] || 0) -
+                    (b._showDateTimes[0] || 0)
+            );
 
 
             console.log(
@@ -281,7 +333,7 @@ const Movies = () => {
 
             <h1 className="text-lg font-medium my-4 text-white">
 
-                Upcoming Movies
+                
 
             </h1>
             {/* ================================================= */}
@@ -311,7 +363,8 @@ const Movies = () => {
                         <MovieCard
                             key={String(movieId)}
                             movie={movie}
-                            theater={movie.theater}   // <-- pass theater info
+                            theaters={movie._theaters}
+                            showDateTimes={movie._showDateTimes}
                         />
 
                     );

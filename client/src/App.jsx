@@ -5,6 +5,7 @@ import AdminProfile from "./pages/admin/adminProfile";
 import VerifyEmail from "./pages/VerifyEmail";
 import VerifyOtp from "./pages/VerifyOtp";
 import ForgotPassword from "./pages/ForgotPassword";
+import Theaters from "./pages/Theaters";
 // =====================================================
 // USER PAGES
 // =====================================================
@@ -44,7 +45,7 @@ import ListShows from "./pages/admin/ListShows";
 import Layout from "./pages/admin/Layout";
 import AdminLogin from "./pages/admin/AdminLogin";
 import ResultAnalysis from "./pages/admin/ResultAnalysis";
-
+import Releases from "./pages/Releases.jsx";
 import { useAuth } from "./context/AuthContext";
 import { RefreshProvider } from "./context/RefreshContext";   // <-- ✅ Already imported
 
@@ -210,7 +211,8 @@ const App = () => {
                     {/* ================================================= */}
                     {/* FAVORITES */}
                     {/* ================================================= */}
-
+<Route path="/theaters" element={<Theaters />} />
+<Route path="/releases" element={<Releases />} />
                     <Route
                         path="/favorite"
                         element={

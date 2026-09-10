@@ -15,8 +15,91 @@ import {
     TrashIcon,
     UserPlusIcon,
     XIcon,
+    MapPin,
 } from "lucide-react";
 import { dateFormat } from "../../lib/dateFormat";
+
+// =====================================================
+// HELPER: extract genre names from various shapes
+// Accepts: ["Action","Drama"]  OR  [{id,name}, ...]  OR  "Action, Drama"
+// =====================================================
+const getGenreNames = (movie) => {
+    const g = movie?.genres;
+    if (!g) return [];
+
+    if (Array.isArray(g)) {
+        return g
+            .map((item) => {
+                if (typeof item === "string") return item;
+                if (item && typeof item === "object") return item.name || "";
+                return "";
+            })
+            .filter(Boolean);
+    }
+
+    if (typeof g === "string") {
+        return g
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+    }
+
+    return [];
+};
+
+// =====================================================
+// HELPER: format year + genres + runtime
+// Output: "2024 • Animation | Family • 1h 36m"
+// =====================================================
+const formatMovieMeta = (movie) => {
+    const parts = [];
+
+    // Year from release_date
+    const release = movie?.release_date || movie?.releaseDate;
+    if (release) {
+        const year = String(release).slice(0, 4);
+        if (year) parts.push(year);
+    }
+
+    // Genres joined by " | "
+    const genres = getGenreNames(movie);
+    if (genres.length > 0) {
+        parts.push(genres.join(" | "));
+    }
+
+    // Runtime from minutes -> "1h 36m"
+    const rt = Number(movie?.runtime || 0);
+    if (rt > 0) {
+        const h = Math.floor(rt / 60);
+        const m = rt % 60;
+        if (h > 0 && m > 0) parts.push(`${h}h ${m}m`);
+        else if (h > 0) parts.push(`${h}h`);
+        else parts.push(`${m}m`);
+    }
+
+    return parts.join(" • ");
+};
+
+// =====================================================
+// HELPER: resolve theater info (kept for future use)
+// =====================================================
+const resolveTheater = (show) => {
+    if (show.theaterId && typeof show.theaterId === "object") {
+        return {
+            name: show.theaterId.name || "",
+            city: show.theaterId.city || "",
+            address: show.theaterId.address || "",
+        };
+    }
+    if (show.theaterName) {
+        return {
+            name: show.theaterName,
+            city: show.theaterCity || "",
+            address: show.theaterAddress || "",
+        };
+    }
+    return null;
+};
 
 const Dashboard = () => {
     const currency = import.meta.env.VITE_CURRENCY || "Rs.";
@@ -30,7 +113,7 @@ const Dashboard = () => {
         totalUser: 0,
         totalAdmin: 0,
     });
-    
+
     const [usersList, setUsersList] = useState([]);
     const [adminsList, setAdminsList] = useState([]);
     const [activeTab, setActiveTab] = useState(null); // 'users' or 'admins' or null
@@ -71,7 +154,7 @@ const Dashboard = () => {
 
             const dashboardResult = await dashboardResponse.json();
 
-            // 2. Active shows
+            // 2. Active shows (today onwards, sorted nearest first)
             const showsResponse = await fetch("http://localhost:5000/show/all", {
                 headers: { Authorization: `Bearer ${adminToken}` },
             });
@@ -80,10 +163,26 @@ const Dashboard = () => {
             if (showsResponse.ok) {
                 const showsData = await showsResponse.json();
                 if (showsData.success) {
-                    const now = new Date();
-                    activeShows = showsData.shows.filter(
-                        (show) => new Date(show.showDateTime) >= now
-                    );
+                    const startOfToday = new Date();
+                    startOfToday.setHours(0, 0, 0, 0);
+
+                    activeShows = showsData.shows
+                        .filter(
+                            (show) =>
+                                new Date(show.showDateTime) >= startOfToday
+                        )
+                        .sort(
+                            (a, b) =>
+                                new Date(a.showDateTime) -
+                                new Date(b.showDateTime)
+                        );
+
+                    // Attach resolved theater to each show (available in state,
+                    // even though we don't render it)
+                    activeShows = activeShows.map((show) => ({
+                        ...show,
+                        _theater: resolveTheater(show),
+                    }));
                 }
             }
 
@@ -102,24 +201,24 @@ const Dashboard = () => {
             const rawAdmins = adminsData.admins || adminsData.data || adminsData.users || [];
 
             // Correct table mapping lists
-            setUsersList(rawUsers); 
-            setAdminsList(rawAdmins); 
+            setUsersList(rawUsers);
+            setAdminsList(rawAdmins);
 
             if (dashboardResult.success) {
                 const data = dashboardResult.dashboardData || dashboardResult.data || dashboardResult;
                 setDashboardData({
                     totalBookings: Number(data.totalBookings ?? data.bookings ?? 0),
                     totalRevenue: Number(data.totalRevenue ?? data.revenue ?? 0),
-                    totalUser: rawUsers.length,    // Corrected to use rawUsers length
-                    totalAdmin: rawAdmins.length,  // Corrected to use rawAdmins length
+                    totalUser: rawUsers.length,
+                    totalAdmin: rawAdmins.length,
                     activeShows,
                 });
             } else {
-                setDashboardData((prev) => ({ 
-                    ...prev, 
-                    totalUser: rawUsers.length,    // Corrected to use rawUsers length
-                    totalAdmin: rawAdmins.length,  // Corrected to use rawAdmins length
-                    activeShows 
+                setDashboardData((prev) => ({
+                    ...prev,
+                    totalUser: rawUsers.length,
+                    totalAdmin: rawAdmins.length,
+                    activeShows,
                 }));
             }
         } catch (error) {
@@ -274,7 +373,7 @@ const Dashboard = () => {
                     </div>
                 </Link>
 
-                <div 
+                <div
                     onClick={() => setActiveTab(activeTab === 'users' ? null : 'users')}
                     className="bg-primary/10 border border-primary/20 rounded-lg p-5 hover:bg-primary/20 transition cursor-pointer"
                 >
@@ -287,7 +386,7 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                <div 
+                <div
                     onClick={() => setActiveTab(activeTab === 'admins' ? null : 'admins')}
                     className="bg-primary/10 border border-primary/20 rounded-lg p-5 hover:bg-primary/20 transition cursor-pointer"
                 >
@@ -311,13 +410,13 @@ const Dashboard = () => {
                         <div className="flex gap-2">
                             {activeTab === 'admins' && (
                                 <button
-                                    onClick={() => setShowAddAdminModal(true)} 
+                                    onClick={() => setShowAddAdminModal(true)}
                                     className="flex items-center gap-1 bg-primary text-white text-xs px-3 py-2 rounded hover:bg-primary-dull transition"
                                 >
                                     <UserPlusIcon className="w-4 h-4" /> Add New Admin
                                 </button>
                             )}
-                            <button 
+                            <button
                                 onClick={() => setActiveTab(null)}
                                 className="text-gray-400 text-xs px-3 py-2 bg-gray-800 rounded hover:bg-gray-700"
                             >
@@ -370,7 +469,7 @@ const Dashboard = () => {
                     <div className="bg-gray-900 border border-gray-800 rounded-lg max-w-md w-full p-6 relative">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-semibold text-white">Add New Admin</h3>
-                            <button 
+                            <button
                                 onClick={() => setShowAddAdminModal(false)}
                                 className="text-gray-400 hover:text-white"
                             >
@@ -449,8 +548,13 @@ const Dashboard = () => {
                     {dashboardData.activeShows.length > 0 ? (
                         dashboardData.activeShows.map((show) => {
                             const movie = show.movie;
+                            const meta = formatMovieMeta(movie);
+
+                            // show._theater is still available if needed later
+                            // e.g., show._theater?.name
+
                             return (
-                                <Link 
+                                <Link
                                     to="/admin/list-shows"
                                     key={show._id}
                                     className="relative overflow-hidden rounded-lg bg-gray-900 border border-gray-800 block hover:border-primary/50 transition"
@@ -466,10 +570,19 @@ const Dashboard = () => {
                                         alt={movie?.title || "Movie"}
                                         className="w-full h-64 object-cover"
                                     />
+
                                     <div className="p-4">
                                         <h3 className="font-semibold text-lg truncate">
                                             {movie?.title || "Unknown Movie"}
                                         </h3>
+
+                                        {/* ── Meta line: 2024 • Animation | Family • 1h 36m ── */}
+                                        {meta && (
+                                            <p className="text-gray-400 text-sm mt-1 truncate">
+                                                {meta}
+                                            </p>
+                                        )}
+
                                         <div className="flex items-center justify-between mt-2">
                                             <p className="text-primary font-medium">
                                                 {currency} {show.showPrice}

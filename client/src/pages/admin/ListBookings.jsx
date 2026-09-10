@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Title from "../../components/admin/Title";
 import Loading from "../../components/Loading";
+import { MapPin } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
 const ListBookings = () => {
@@ -30,7 +31,55 @@ const ListBookings = () => {
     };
 
     // =====================================================
-    // GET ALL BOOKINGS (paid + unpaid, expired removed)
+    // RESOLVE THEATER INFO FROM A BOOKING
+    // Priority: show.theaterId (populated) -> show flat fields
+    //           -> booking flat fields -> booking.theater (populated)
+    // Same helper shape used in ListShows – reuse for the email too
+    // =====================================================
+    const resolveTheater = (booking) => {
+        const show = booking.show;
+
+        // 1. Populated theater object on the show
+        if (show?.theaterId && typeof show.theaterId === "object") {
+            return {
+                name: show.theaterId.name || "",
+                city: show.theaterId.city || "",
+                address: show.theaterId.address || "",
+            };
+        }
+
+        // 2. Flat denormalized fields on the show
+        if (show?.theaterName) {
+            return {
+                name: show.theaterName,
+                city: show.theaterCity || "",
+                address: show.theaterAddress || "",
+            };
+        }
+
+        // 3. Flat fields directly on the booking
+        if (booking.theaterName) {
+            return {
+                name: booking.theaterName,
+                city: booking.theaterCity || "",
+                address: booking.theaterAddress || "",
+            };
+        }
+
+        // 4. Populated theater object on booking
+        if (booking.theater && typeof booking.theater === "object") {
+            return {
+                name: booking.theater.name || "",
+                city: booking.theater.city || "",
+                address: booking.theater.address || "",
+            };
+        }
+
+        return null;
+    };
+
+    // =====================================================
+    // GET ALL BOOKINGS
     // =====================================================
     const getAllBookings = async () => {
         try {
@@ -57,8 +106,6 @@ const ListBookings = () => {
             }
 
             const rawBookings = Array.isArray(data.bookings) ? data.bookings : [];
-
-            // ✅ Show ALL bookings – both paid and unpaid
             setBookings(rawBookings);
 
             if (rawBookings.length === 0) {
@@ -83,16 +130,10 @@ const ListBookings = () => {
         // eslint-disable-next-line
     }, [adminToken]);
 
-    // =====================================================
-    // LOADING
-    // =====================================================
     if (isLoading) {
         return <Loading />;
     }
 
-    // =====================================================
-    // PAGE
-    // =====================================================
     return (
         <>
             <Title text1="List" text2="Bookings (All)" />
@@ -109,6 +150,7 @@ const ListBookings = () => {
                         <tr className="bg-primary/20 text-left text-white">
                             <th className="p-3 font-medium pl-5">User Name</th>
                             <th className="p-3 font-medium">Movie Name</th>
+                            <th className="p-3 font-medium">Theater</th>
                             <th className="p-3 font-medium">Show Time</th>
                             <th className="p-3 font-medium">Seats</th>
                             <th className="p-3 font-medium">Amount</th>
@@ -139,14 +181,22 @@ const ListBookings = () => {
                                     item.showDateTime ||
                                     item.dateTime;
 
+                                const theater = resolveTheater(item);
+
                                 let seats = [];
                                 if (Array.isArray(item.bookedSeats)) {
                                     seats = item.bookedSeats;
-                                } else if (item.bookedSeats && typeof item.bookedSeats === "object") {
+                                } else if (
+                                    item.bookedSeats &&
+                                    typeof item.bookedSeats === "object"
+                                ) {
                                     seats = Object.keys(item.bookedSeats);
                                 } else if (Array.isArray(item.seats)) {
                                     seats = item.seats;
-                                } else if (item.seats && typeof item.seats === "object") {
+                                } else if (
+                                    item.seats &&
+                                    typeof item.seats === "object"
+                                ) {
                                     seats = Object.keys(item.seats);
                                 }
 
@@ -165,6 +215,31 @@ const ListBookings = () => {
                                     >
                                         <td className="p-4 pl-5">{userName}</td>
                                         <td className="p-4">{movieName}</td>
+
+                                        {/* ===== THEATER CELL ===== */}
+                                        <td className="p-4">
+                                            {theater?.name ? (
+                                                <div>
+                                                    <p className="text-white text-sm font-medium">
+                                                        {theater.name}
+                                                    </p>
+                                                    {(theater.city ||
+                                                        theater.address) && (
+                                                        <p className="text-[11px] text-gray-400 flex items-center gap-1">
+                                                            <MapPin size={10} />
+                                                            {theater.city &&
+                                                                `${theater.city}, `}
+                                                            {theater.address}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-500 text-xs">
+                                                    N/A
+                                                </span>
+                                            )}
+                                        </td>
+
                                         <td className="p-4">{dateFormat(showTime)}</td>
                                         <td className="p-4">
                                             {seats.length > 0 ? seats.join(", ") : "-"}
@@ -189,7 +264,7 @@ const ListBookings = () => {
                             })
                         ) : (
                             <tr>
-                                <td colSpan="6" className="text-center py-8 text-gray-400">
+                                <td colSpan="7" className="text-center py-8 text-gray-400">
                                     No bookings found.
                                 </td>
                             </tr>

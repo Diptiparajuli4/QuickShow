@@ -81,7 +81,7 @@ export const addMovie = async (req, res) => {
 };
 
 // =====================================================
-// ADD SHOW (UPDATED: handles theater creation)
+// ADD SHOW (UPDATED: also updates Theater.movies)
 // =====================================================
 export const addShow = async (req, res) => {
     try {
@@ -177,7 +177,7 @@ export const addShow = async (req, res) => {
         const savedMovieId = String(movieDocument._id);
 
         // =====================================================
-        // -------- NEW: ENSURE THEATER EXISTS --------
+        // -------- ENSURE THEATER EXISTS --------
         // =====================================================
         let theaterDoc = null;
         if (theaterId) {
@@ -257,6 +257,20 @@ export const addShow = async (req, res) => {
         // -------- Insert all shows --------
         const createdShows = await Show.insertMany(showsToCreate);
 
+        // =====================================================
+        // -------- UPDATE THEATER'S MOVIES ARRAY --------
+        // =====================================================
+        if (theaterDoc) {
+            // Add the movie ID to the theater's movies array if not already present
+            const updateResult = await Theater.findByIdAndUpdate(
+                theaterDoc._id,
+                { $addToSet: { movies: savedMovieId } },
+                { new: true }
+            );
+            console.log(`Updated theater ${theaterDoc._id} with movie ${savedMovieId}`);
+            console.log("Theater after update:", updateResult);
+        }
+
         console.log("======================================");
         console.log("SHOWS INSERTED SUCCESSFULLY");
         console.log(createdShows);
@@ -278,12 +292,13 @@ export const addShow = async (req, res) => {
 };
 
 // =====================================================
-// GET ALL SHOWS
+// GET ALL SHOWS (populates theaterId)
 // =====================================================
 export const getAllShows = async (req, res) => {
     try {
         const shows = await Show.find()
             .populate("movie")
+            .populate("theaterId")   // ✅ Now works because schema has ref
             .sort({ showDateTime: 1 });
         return res.status(200).json({
             success: true,
