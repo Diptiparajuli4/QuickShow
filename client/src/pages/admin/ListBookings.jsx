@@ -32,15 +32,37 @@ const ListBookings = () => {
 
     // =====================================================
     // RESOLVE THEATER INFO FROM A BOOKING
-    // Priority: show.theaterId (populated) -> show flat fields
-    //           -> booking flat fields -> booking.theater (populated)
-    // Same helper shape used in ListShows – reuse for the email too
+    //
+    // Priority (updated):
+    //   1. booking.theaterId (populated object)   ← NEW primary
+    //   2. booking.show.theaterId (populated)     ← fallback
+    //   3. booking.show.theaterName (flat)
+    //   4. booking.theaterName (flat on booking)
+    //   5. booking.theater (populated)
     // =====================================================
     const resolveTheater = (booking) => {
-        const show = booking.show;
+        if (!booking) return null;
 
-        // 1. Populated theater object on the show
-        if (show?.theaterId && typeof show.theaterId === "object") {
+        // 1. booking.theaterId populated object (new primary path)
+        if (
+            booking.theaterId &&
+            typeof booking.theaterId === "object"
+        ) {
+            return {
+                name: booking.theaterId.name || "",
+                city: booking.theaterId.city || "",
+                address: booking.theaterId.address || "",
+            };
+        }
+
+        // 2. show.theaterId populated object (only if show is an object)
+        const show = booking.show;
+        if (
+            show &&
+            typeof show === "object" &&
+            show.theaterId &&
+            typeof show.theaterId === "object"
+        ) {
             return {
                 name: show.theaterId.name || "",
                 city: show.theaterId.city || "",
@@ -48,8 +70,8 @@ const ListBookings = () => {
             };
         }
 
-        // 2. Flat denormalized fields on the show
-        if (show?.theaterName) {
+        // 3. Flat denormalized fields on show
+        if (show && typeof show === "object" && show.theaterName) {
             return {
                 name: show.theaterName,
                 city: show.theaterCity || "",
@@ -57,7 +79,7 @@ const ListBookings = () => {
             };
         }
 
-        // 3. Flat fields directly on the booking
+        // 4. Flat fields directly on booking
         if (booking.theaterName) {
             return {
                 name: booking.theaterName,
@@ -66,7 +88,7 @@ const ListBookings = () => {
             };
         }
 
-        // 4. Populated theater object on booking
+        // 5. Populated theater object on booking (legacy)
         if (booking.theater && typeof booking.theater === "object") {
             return {
                 name: booking.theater.name || "",
@@ -106,6 +128,16 @@ const ListBookings = () => {
             }
 
             const rawBookings = Array.isArray(data.bookings) ? data.bookings : [];
+
+            // Debug: log first booking to see the structure
+            if (rawBookings.length > 0) {
+                console.log("Sample booking structure:", rawBookings[0]);
+                console.log(
+                    "Sample booking.theaterId:",
+                    rawBookings[0]?.theaterId
+                );
+            }
+
             setBookings(rawBookings);
 
             if (rawBookings.length === 0) {

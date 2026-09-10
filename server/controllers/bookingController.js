@@ -1,11 +1,12 @@
 import Booking from "../models/Booking.js";
 import Show from "../models/Show.js";
 import User from "../models/User.js";
+import Theater from "../models/Theater.js";
 import { sendEmail } from "../utils/sendEmail.js";
 import stripe from "../services/stripeService.js";
 
 // =====================================================
-// NEW: REAL-TIME ANALYTICS EVENT
+// REAL-TIME ANALYTICS EVENT
 // =====================================================
 
 const emitAnalyticsUpdated = (req, reason) => {
@@ -88,6 +89,13 @@ const checkSeatsAvailability = async (
 
 // =====================================================
 // DELETE BOOKING HELPER
+//
+// Removes booking from EVERY place:
+//   1. show.occupiedSeats (frees the seats)
+//   2. user.bookings array (pulls the ID)
+//   3. bookings collection (deletes the document)
+//
+// Use this EVERY time you delete a booking.
 // =====================================================
 
 const deleteBookingAndCleanup = async (
@@ -130,15 +138,17 @@ const deleteBookingAndCleanup = async (
     // 2. Remove booking reference
     // from user
 
-    await User.findByIdAndUpdate(
-        userId,
-        {
-            $pull: {
-                bookings:
-                    booking._id,
-            },
-        }
-    );
+    if (userId) {
+        await User.findByIdAndUpdate(
+            userId,
+            {
+                $pull: {
+                    bookings:
+                        booking._id,
+                },
+            }
+        );
+    }
 
     // 3. Delete booking
 
@@ -188,6 +198,7 @@ export const createBooking = async (
         const {
             showId,
             selectedSeats,
+            theaterId,
         } = req.body;
 
         if (!showId) {
@@ -302,6 +313,48 @@ export const createBooking = async (
             showPrice *
             uniqueSeats.length;
 
+        const resolvedTheaterId =
+            theaterId ||
+            showData.theaterId ||
+            null;
+
+        if (!resolvedTheaterId) {
+            console.log(
+                "❌ Booking rejected: theaterId missing"
+            );
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Theater is required to book tickets. Please select a theater first.",
+            });
+        }
+
+        const theaterDoc =
+            await Theater.findById(
+                resolvedTheaterId
+            );
+
+        if (!theaterDoc) {
+            console.log(
+                "❌ Booking rejected: theater not found —",
+                resolvedTheaterId
+            );
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Selected theater was not found. Please select a valid theater.",
+            });
+        }
+
+        console.log(
+            "✅ Resolved theaterId for booking:",
+            resolvedTheaterId,
+            "→",
+            theaterDoc.name
+        );
+
         const booking =
             await Booking.create({
                 user: userId,
@@ -309,6 +362,8 @@ export const createBooking = async (
                 show: String(
                     showData._id
                 ),
+
+                theaterId: resolvedTheaterId,
 
                 movieId: String(
                     movie._id
@@ -344,7 +399,6 @@ export const createBooking = async (
 
                 transactionId: "",
 
-                // Stripe fields (optional, will be set later)
                 paymentMethod: null,
                 paymentId: null,
             });
@@ -387,10 +441,6 @@ export const createBooking = async (
         );
 
         await showData.save();
-
-        // =================================================
-        // NEW: REAL-TIME ANALYTICS
-        // =================================================
 
         emitAnalyticsUpdated(
             req,
@@ -508,7 +558,12 @@ export const getMyBookings =
             const allBookings =
                 await Booking.find({
                     user: userId,
-                });
+                })
+                    .populate(
+                        "theaterId",
+                        "name city address latitude longitude"
+                    )
+                    .sort({ createdAt: -1 });
 
             const now =
                 new Date();
@@ -582,17 +637,20 @@ export const getMyBookings =
     };
 
 // =====================================================
-// GET ALL BOOKINGS (UPDATED: cleans expired before return)
+// GET ALL BOOKINGS (admin)
 // GET /booking/all
 // =====================================================
 
 export const getAllBookings = async (req, res) => {
     try {
-        // ✅ Clean up expired unpaid bookings before returning the list
         await cleanupExpiredBookings();
 
         const bookings = await Booking.find()
             .populate("user", "name email")
+            .populate(
+                "theaterId",
+                "name city address latitude longitude"
+            )
             .sort({ createdAt: -1 });
 
         return res.status(200).json({
@@ -631,10 +689,15 @@ export const getBookingById =
             const booking =
                 await Booking.findById(
                     bookingId
-                ).populate(
-                    "user",
-                    "name email"
-                );
+                )
+                    .populate(
+                        "user",
+                        "name email"
+                    )
+                    .populate(
+                        "theaterId",
+                        "name city address latitude longitude"
+                    );
 
             if (!booking) {
                 return res.status(404).json({
@@ -664,7 +727,7 @@ export const getBookingById =
     };
 
 // =====================================================
-// PAY BOOKING (Manual payment – keep as is)
+// PAY BOOKING (Manual payment)
 // PUT /booking/pay/:bookingId
 // =====================================================
 
@@ -742,16 +805,10 @@ export const payBooking = async (
 
         await booking.save();
 
-        // =================================================
-        // NEW: REAL-TIME ANALYTICS
-        // =================================================
-
         emitAnalyticsUpdated(
             req,
             "booking_paid"
         );
-
-        // Send response
 
         res.status(200).json({
             success: true,
@@ -759,10 +816,6 @@ export const payBooking = async (
                 "Payment successful.",
             booking,
         });
-
-        // =================================================
-        // EMAIL
-        // =================================================
 
         const userEmail =
             booking.user?.email;
@@ -775,6 +828,37 @@ export const payBooking = async (
             const subject =
                 "🎟️ Payment Confirmed - QuickShow Ticket";
 
+            const populatedBooking =
+                await Booking.findById(
+                    booking._id
+                )
+                    .populate(
+                        "theaterId",
+                        "name city address"
+                    )
+                    .lean();
+
+            const theaterDoc =
+                populatedBooking?.theaterId;
+
+            const theaterLine =
+                theaterDoc?.name
+                    ? `
+                        <p><strong>Theater:</strong> ${theaterDoc.name}</p>
+                        ${
+                            theaterDoc.city ||
+                            theaterDoc.address
+                                ? `<p><strong>Location:</strong> ${[
+                                      theaterDoc.city,
+                                      theaterDoc.address,
+                                  ]
+                                      .filter(Boolean)
+                                      .join(", ")}</p>`
+                                : ""
+                        }
+                    `
+                    : "";
+
             const htmlMessage = `
                 <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
                     <h2 style="color: #e50914; text-align: center;">Payment Successful! 🎬</h2>
@@ -782,6 +866,17 @@ export const payBooking = async (
                     <p>Thank you for your payment. Your movie tickets have been fully confirmed and secured.</p>
                     <hr style="border: none; border-top: 1px solid #ddd;" />
                     <p><strong>Movie:</strong> ${booking.movieName}</p>
+                    ${theaterLine}
+                    <p><strong>Show Time:</strong> ${new Date(
+                        booking.showDateTime
+                    ).toLocaleString("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    })}</p>
                     <p><strong>Seats:</strong> ${booking.bookedSeats.join(", ")}</p>
                     <p><strong>Total Amount Paid:</strong> Rs. ${booking.amount}</p>
                     <hr style="border: none; border-top: 1px solid #ddd;" />
@@ -843,7 +938,6 @@ export const createStripeCheckoutSession = async (req, res) => {
             });
         }
 
-        // Check ownership
         if (String(booking.user._id || booking.user) !== String(userId)) {
             return res.status(403).json({
                 success: false,
@@ -920,7 +1014,7 @@ export const createStripeCheckoutSession = async (req, res) => {
 };
 
 // =====================================================
-// STRIPE: VERIFY PAYMENT (for Checkout)
+// STRIPE: VERIFY PAYMENT (for Checkout redirect)
 // POST /booking/stripe/verify
 // =====================================================
 
@@ -1019,6 +1113,29 @@ export const verifyStripePayment = async (req, res) => {
         const user = await User.findById(userId);
         if (user?.email) {
             const subject = "🎟️ Payment Confirmed - QuickShow Ticket";
+
+            const populatedBooking = await Booking.findById(booking._id)
+                .populate("theaterId", "name city address")
+                .lean();
+
+            const theaterDoc = populatedBooking?.theaterId;
+
+            const theaterLine = theaterDoc?.name
+                ? `
+                    <p><strong>Theater:</strong> ${theaterDoc.name}</p>
+                    ${
+                        theaterDoc.city || theaterDoc.address
+                            ? `<p><strong>Location:</strong> ${[
+                                  theaterDoc.city,
+                                  theaterDoc.address,
+                              ]
+                                  .filter(Boolean)
+                                  .join(", ")}</p>`
+                            : ""
+                    }
+                `
+                : "";
+
             const htmlMessage = `
                 <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
                     <h2 style="color: #e50914; text-align: center;">Payment Successful! 🎬</h2>
@@ -1026,12 +1143,24 @@ export const verifyStripePayment = async (req, res) => {
                     <p>Thank you for your payment. Your movie tickets have been fully confirmed and secured.</p>
                     <hr style="border: none; border-top: 1px solid #ddd;" />
                     <p><strong>Movie:</strong> ${booking.movieName}</p>
+                    ${theaterLine}
+                    <p><strong>Show Time:</strong> ${new Date(
+                        booking.showDateTime
+                    ).toLocaleString("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    })}</p>
                     <p><strong>Seats:</strong> ${booking.bookedSeats.join(", ")}</p>
                     <p><strong>Total Amount Paid:</strong> Rs. ${booking.amount}</p>
                     <hr style="border: none; border-top: 1px solid #ddd;" />
                     <p style="text-align: center; color: #666; font-size: 14px;">Enjoy your movie experience with QuickShow! 🍿</p>
                 </div>
             `;
+
             sendEmail(user.email, subject, htmlMessage);
         }
 
@@ -1053,7 +1182,7 @@ export const verifyStripePayment = async (req, res) => {
 };
 
 // =====================================================
-// STRIPE: CREATE PAYMENT INTENT (for embedded Elements)
+// STRIPE: CREATE PAYMENT INTENT (embedded Elements)
 // POST /booking/stripe/create-payment-intent/:bookingId
 // =====================================================
 
@@ -1141,7 +1270,7 @@ export const createStripePaymentIntent = async (req, res) => {
 };
 
 // =====================================================
-// STRIPE: VERIFY PAYMENT INTENT (for embedded Elements)
+// STRIPE: VERIFY PAYMENT INTENT (embedded Elements)
 // POST /booking/stripe/verify-payment-intent
 // =====================================================
 
@@ -1225,6 +1354,29 @@ export const verifyStripePaymentIntent = async (req, res) => {
         const user = await User.findById(userId);
         if (user?.email) {
             const subject = "🎟️ Payment Confirmed - QuickShow Ticket";
+
+            const populatedBooking = await Booking.findById(booking._id)
+                .populate("theaterId", "name city address")
+                .lean();
+
+            const theaterDoc = populatedBooking?.theaterId;
+
+            const theaterLine = theaterDoc?.name
+                ? `
+                    <p><strong>Theater:</strong> ${theaterDoc.name}</p>
+                    ${
+                        theaterDoc.city || theaterDoc.address
+                            ? `<p><strong>Location:</strong> ${[
+                                  theaterDoc.city,
+                                  theaterDoc.address,
+                              ]
+                                  .filter(Boolean)
+                                  .join(", ")}</p>`
+                            : ""
+                    }
+                `
+                : "";
+
             const htmlMessage = `
                 <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
                     <h2 style="color: #e50914; text-align: center;">Payment Successful! 🎬</h2>
@@ -1232,12 +1384,24 @@ export const verifyStripePaymentIntent = async (req, res) => {
                     <p>Thank you for your payment. Your movie tickets have been fully confirmed and secured.</p>
                     <hr style="border: none; border-top: 1px solid #ddd;" />
                     <p><strong>Movie:</strong> ${booking.movieName}</p>
+                    ${theaterLine}
+                    <p><strong>Show Time:</strong> ${new Date(
+                        booking.showDateTime
+                    ).toLocaleString("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    })}</p>
                     <p><strong>Seats:</strong> ${booking.bookedSeats.join(", ")}</p>
                     <p><strong>Total Amount Paid:</strong> Rs. ${booking.amount}</p>
                     <hr style="border: none; border-top: 1px solid #ddd;" />
                     <p style="text-align: center; color: #666; font-size: 14px;">Enjoy your movie experience with QuickShow! 🍿</p>
                 </div>
             `;
+
             sendEmail(user.email, subject, htmlMessage);
         }
 
@@ -1269,7 +1433,7 @@ export const cleanupExpiredBookings =
             const tenMinutesAgo =
                 new Date(
                     now.getTime() -
-                        15 * 60 * 1000  // 15 minutes
+                        15 * 60 * 1000
                 );
 
             const expiredBookings =
@@ -1311,3 +1475,158 @@ export const cleanupExpiredBookings =
             );
         }
     };
+
+// =====================================================
+// NEW: CLEANUP ORPHANED BOOKINGS
+//
+// Finds bookings in `bookings` collection where:
+//   - user does not exist, OR
+//   - user's `bookings` array does not include the booking ID
+//
+// Then removes each one via deleteBookingAndCleanup()
+// (which also frees seats and pulls from user array).
+//
+// Call this:
+//   - Once now (to fix existing orphans)
+//   - Periodically via a cron / endpoint
+// =====================================================
+
+export const cleanupOrphanedBookings = async () => {
+    try {
+        console.log(
+            "🧹 Starting orphaned booking cleanup..."
+        );
+
+        // 1. Fetch all bookings
+        const allBookings = await Booking.find().lean();
+
+        console.log(
+            `   Total bookings in DB: ${allBookings.length}`
+        );
+
+        // 2. Fetch all users (with only their bookings array + email)
+        const allUsers = await User.find(
+            {},
+            "bookings email name"
+        ).lean();
+
+        // 3. Build a Set of booking IDs referenced by ANY user
+        const referencedBookingIds = new Set();
+        allUsers.forEach((user) => {
+            (user.bookings || []).forEach((id) => {
+                referencedBookingIds.add(String(id));
+            });
+        });
+
+        // 4. Build a Set of existing user IDs
+        const userIds = new Set(
+            allUsers.map((u) => String(u._id))
+        );
+
+        // 5. Find orphans
+        const orphans = allBookings.filter((booking) => {
+            const bookingIdStr = String(booking._id);
+            const userIdStr = String(booking.user);
+
+            // Orphan if the user no longer exists
+            if (!userIds.has(userIdStr)) {
+                return true;
+            }
+
+            // Orphan if no user references this booking
+            if (!referencedBookingIds.has(bookingIdStr)) {
+                return true;
+            }
+
+            return false;
+        });
+
+        console.log(
+            `   Found ${orphans.length} orphaned booking(s)`
+        );
+
+        if (orphans.length === 0) {
+            console.log("   ✅ No orphans. Done.");
+            return { deleted: 0 };
+        }
+
+        // 6. Delete each orphan with full cleanup
+        let deleted = 0;
+        for (const booking of orphans) {
+            try {
+                await deleteBookingAndCleanup(
+                    booking,
+                    booking.user
+                );
+                deleted++;
+            } catch (err) {
+                console.error(
+                    `   ❌ Failed to delete orphan ${booking._id}:`,
+                    err.message
+                );
+            }
+        }
+
+        console.log(
+            `✅ Orphan cleanup complete. Deleted ${deleted} booking(s).`
+        );
+
+        return { deleted };
+    } catch (error) {
+        console.error(
+            "❌ Orphan cleanup error:",
+            error
+        );
+
+        return { deleted: 0, error: error.message };
+    }
+};
+
+// =====================================================
+// DELETE ONE BOOKING (with full cascade)
+// DELETE /booking/:bookingId
+//
+// Admin / owner can delete a booking. It will be
+// removed from:
+//   - show.occupiedSeats
+//   - user.bookings array
+//   - bookings collection
+// =====================================================
+
+export const deleteBookingById = async (req, res) => {
+    try {
+        const { bookingId } = req.params;
+
+        if (!bookingId) {
+            return res.status(400).json({
+                success: false,
+                message: "Booking ID is required.",
+            });
+        }
+
+        const booking = await Booking.findById(bookingId);
+
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found.",
+            });
+        }
+
+        await deleteBookingAndCleanup(booking, booking.user);
+
+        emitAnalyticsUpdated(req, "booking_deleted");
+
+        return res.status(200).json({
+            success: true,
+            message: "Booking deleted and references cleaned up.",
+            deletedBookingId: bookingId,
+        });
+    } catch (error) {
+        console.error("DELETE BOOKING ERROR:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Failed to delete booking.",
+        });
+    }
+};

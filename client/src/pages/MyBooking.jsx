@@ -11,6 +11,8 @@ import Footer from "../components/Footer";
 import Loading from "../components/Loading";
 import { useAuth } from "../context/AuthContext";
 
+import { MapPin } from "lucide-react";
+
 // =====================================================
 // STRIPE PUBLISHABLE KEY (from .env)
 // =====================================================
@@ -25,7 +27,6 @@ const StripePaymentForm = ({ bookingId, onSuccess, onCancel }) => {
     const [loading, setLoading] = useState(false);
     const [stripeReady, setStripeReady] = useState(false);
 
-    // Check if Stripe is ready
     useEffect(() => {
         if (stripe && elements) {
             setStripeReady(true);
@@ -41,7 +42,6 @@ const StripePaymentForm = ({ bookingId, onSuccess, onCancel }) => {
         setLoading(true);
 
         try {
-            // 1. Get client secret from backend
             let rawToken = localStorage.getItem("userToken") || localStorage.getItem("token");
             if (!rawToken) {
                 toast.error("Please log in to proceed.");
@@ -69,7 +69,6 @@ const StripePaymentForm = ({ bookingId, onSuccess, onCancel }) => {
 
             const { clientSecret } = response.data;
 
-            // 2. Confirm the card payment
             const cardElement = elements.getElement(CardElement);
             if (!cardElement) {
                 toast.error("Card element not found. Please refresh and try again.");
@@ -80,9 +79,7 @@ const StripePaymentForm = ({ bookingId, onSuccess, onCancel }) => {
             const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
                 payment_method: {
                     card: cardElement,
-                    billing_details: {
-                        // optionally prefill name/email from user context
-                    },
+                    billing_details: {},
                 },
             });
 
@@ -93,7 +90,6 @@ const StripePaymentForm = ({ bookingId, onSuccess, onCancel }) => {
             }
 
             if (paymentIntent.status === "succeeded") {
-                // 3. Verify on backend and mark as paid
                 const verifyResponse = await axios.post(
                     "http://localhost:5000/booking/stripe/verify-payment-intent",
                     {
@@ -198,6 +194,52 @@ const formatDuration = (minutes) => {
 };
 
 // =====================================================
+// RESOLVE THEATER INFO from a booking
+// =====================================================
+const resolveTheaterFromBooking = (booking) => {
+    if (!booking) return null;
+
+    // 1. Booking has a populated show with theaterId (object)
+    const show = booking.show;
+    if (show?.theaterId && typeof show.theaterId === "object") {
+        return {
+            name: show.theaterId.name || "",
+            city: show.theaterId.city || "",
+            address: show.theaterId.address || "",
+        };
+    }
+
+    // 2. Show has flat denormalized theater fields
+    if (show?.theaterName) {
+        return {
+            name: show.theaterName,
+            city: show.theaterCity || "",
+            address: show.theaterAddress || "",
+        };
+    }
+
+    // 3. Booking has flat theater fields
+    if (booking.theaterName) {
+        return {
+            name: booking.theaterName,
+            city: booking.theaterCity || "",
+            address: booking.theaterAddress || "",
+        };
+    }
+
+    // 4. Booking has populated theater object
+    if (booking.theater && typeof booking.theater === "object") {
+        return {
+            name: booking.theater.name || "",
+            city: booking.theater.city || "",
+            address: booking.theater.address || "",
+        };
+    }
+
+    return null;
+};
+
+// =====================================================
 // MAIN COMPONENT
 // =====================================================
 const MyBooking = () => {
@@ -208,7 +250,6 @@ const MyBooking = () => {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Sidebar state
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [selectedBookingId, setSelectedBookingId] = useState(null);
 
@@ -237,6 +278,7 @@ const MyBooking = () => {
             );
 
             if (response.data?.success) {
+                console.log("My bookings from API:", response.data.bookings);
                 setBookings(response.data.bookings || []);
             } else {
                 toast.error(response.data?.message || "Failed to load bookings.");
@@ -267,11 +309,11 @@ const MyBooking = () => {
     const handlePaymentSuccess = () => {
         toast.success("Payment successful! Your booking is confirmed.");
         handleCloseSidebar();
-        fetchBookings(); // Refresh list
+        fetchBookings();
     };
 
     // =====================================================
-    // VERIFY STRIPE PAYMENT AFTER REDIRECT (keep for backward compatibility)
+    // VERIFY STRIPE PAYMENT AFTER REDIRECT
     // =====================================================
     useEffect(() => {
         const payment = searchParams.get("payment");
@@ -363,78 +405,120 @@ const MyBooking = () => {
                     </div>
                 ) : (
                     <div className="space-y-6 max-w-4xl">
-                        {bookings.map((booking) => (
-                            <div
-                                key={booking._id}
-                                className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 flex flex-col md:flex-row gap-6 hover:border-primary/30 transition"
-                            >
-                                {/* Poster */}
-                                <div className="flex-shrink-0">
-                                    {booking.poster ? (
-                                        <img
-                                            src={booking.poster}
-                                            alt={booking.movieName || "Movie"}
-                                            className="w-28 h-40 object-cover rounded-lg"
-                                        />
-                                    ) : (
-                                        <div className="w-28 h-40 bg-gray-800 rounded-lg flex items-center justify-center text-gray-500 text-sm">
-                                            No Poster
-                                        </div>
-                                    )}
-                                </div>
+                        {bookings.map((booking) => {
+                            const theater = resolveTheaterFromBooking(booking);
 
-                                {/* Details */}
-                                <div className="flex-1 flex flex-col justify-between">
-                                    <div>
-                                        <h2 className="text-xl font-semibold">
-                                            {booking.movieName || "Unknown Movie"}
-                                        </h2>
-                                        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-400 mt-1">
-                                            <span>{formatDuration(booking.runtime)}</span>
-                                            <span>•</span>
-                                            <span>{formatDate(booking.showDateTime)}</span>
-                                        </div>
-                                        <div className="mt-3 text-sm text-gray-400">
-                                            <span>Total Seats: {booking.bookedSeats?.length || 0}</span>
-                                            <span className="ml-4">Seats: {booking.bookedSeats?.join(", ") || "None"}</span>
-                                        </div>
+                            return (
+                                <div
+                                    key={booking._id}
+                                    className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 flex flex-col md:flex-row gap-6 hover:border-primary/30 transition"
+                                >
+                                    {/* Poster */}
+                                    <div className="flex-shrink-0">
+                                        {booking.poster ? (
+                                            <img
+                                                src={booking.poster}
+                                                alt={booking.movieName || "Movie"}
+                                                className="w-28 h-40 object-cover rounded-lg"
+                                            />
+                                        ) : (
+                                            <div className="w-28 h-40 bg-gray-800 rounded-lg flex items-center justify-center text-gray-500 text-sm">
+                                                No Poster
+                                            </div>
+                                        )}
                                     </div>
 
-                                    {/* Price & Action */}
-                                    <div className="flex flex-wrap items-center justify-between mt-4 pt-4 border-t border-gray-700">
+                                    {/* Details */}
+                                    <div className="flex-1 flex flex-col justify-between">
                                         <div>
-                                            <p className="text-xs text-gray-400">Total Amount</p>
-                                            <p className="text-2xl font-bold text-primary">
-                                                Rs. {booking.amount || 0}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            {booking.isPaid ? (
-                                                <span className="px-4 py-2 bg-green-600/20 text-green-400 border border-green-600/30 rounded-lg text-sm font-medium">
-                                                    Paid ✓
-                                                </span>
-                                            ) : (
-                                                <button
-                                                    onClick={() => handleOpenSidebar(booking._id)}
-                                                    className="px-6 py-2 bg-primary hover:bg-primary/80 rounded-lg text-white font-semibold transition flex items-center gap-2"
-                                                >
-                                                    Pay Now
-                                                    <span className="text-xs">→</span>
-                                                </button>
+                                            <h2 className="text-xl font-semibold">
+                                                {booking.movieName || "Unknown Movie"}
+                                            </h2>
+
+                                            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-400 mt-1">
+                                                <span>{formatDuration(booking.runtime)}</span>
+                                                <span>•</span>
+                                                <span>{formatDate(booking.showDateTime)}</span>
+                                            </div>
+
+                                            {/* ============================= */}
+                                            {/* THEATER INFO (NEW) */}
+                                            {/* ============================= */}
+                                            {theater?.name && (
+                                                <div className="flex items-start gap-1.5 mt-2 text-sm text-gray-300">
+                                                    <MapPin
+                                                        size={14}
+                                                        className="text-primary flex-shrink-0 mt-0.5"
+                                                    />
+                                                    <div className="min-w-0">
+                                                        <p className="text-white font-medium truncate">
+                                                            {theater.name}
+                                                        </p>
+                                                        {(theater.city ||
+                                                            theater.address) && (
+                                                            <p className="text-xs text-gray-400 truncate">
+                                                                {theater.city &&
+                                                                    `${theater.city}, `}
+                                                                {theater.address}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             )}
+
+                                            <div className="mt-3 text-sm text-gray-400">
+                                                <span>
+                                                    Total Seats:{" "}
+                                                    {booking.bookedSeats?.length || 0}
+                                                </span>
+                                                <span className="ml-4">
+                                                    Seats:{" "}
+                                                    {booking.bookedSeats?.join(", ") ||
+                                                        "None"}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Price & Action */}
+                                        <div className="flex flex-wrap items-center justify-between mt-4 pt-4 border-t border-gray-700">
+                                            <div>
+                                                <p className="text-xs text-gray-400">
+                                                    Total Amount
+                                                </p>
+                                                <p className="text-2xl font-bold text-primary">
+                                                    Rs. {booking.amount || 0}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                {booking.isPaid ? (
+                                                    <span className="px-4 py-2 bg-green-600/20 text-green-400 border border-green-600/30 rounded-lg text-sm font-medium">
+                                                        Paid ✓
+                                                    </span>
+                                                ) : (
+                                                    <button
+                                                        onClick={() =>
+                                                            handleOpenSidebar(
+                                                                booking._id
+                                                            )
+                                                        }
+                                                        className="px-6 py-2 bg-primary hover:bg-primary/80 rounded-lg text-white font-semibold transition flex items-center gap-2"
+                                                    >
+                                                        Pay Now
+                                                        <span className="text-xs">→</span>
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </main>
             <Footer />
 
-            {/* =====================================================
-                SIDEBAR OVERLAY – Stripe Payment Form
-            ===================================================== */}
+            {/* SIDEBAR OVERLAY */}
             {sidebarOpen && selectedBookingId && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-end">
                     <div className="bg-gray-900 w-full max-w-md p-6 overflow-y-auto h-full border-l border-gray-700 shadow-2xl">

@@ -60,6 +60,8 @@ const castPhotoLookup = {
     "namrata shrestha": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQbFWe-zuDm0w-nmL6vp46WifrOINkW-TqHO-e5Rry99Q&s=10",
     "rekha thapa": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTTlNQ1h00UhfBx3-MqPYGP_7lDX7OYZxAKPUu3A16yDw&s=10",
     "keki adhikari": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQMxY5hfzG_X2WGPBxrmQFRhZaXNIr8qQ8yJWwkaqXnrQ&s=10",
+    "Bijay Baral": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSE3oJCsz0axoU9GQ_V-HpwLYLz3Boh2gdTMw7YYvq2AJwliFkEZXWvHOic6ICcCkDzso_eM2K7y-8_G1ZELcn-mvNylDlOJslVt2OTcApV&s=10",
+    "Anjana Baraili": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjdQNpjms6-ZxtvYQQM1CxAmeKgvH79qXzQeiPSg8hqw&s=10"
 };
 
 // Helper: looks up the real photo by name; falls back to an avatar
@@ -98,6 +100,8 @@ export const dummyCastsData = [
     "Namrata Shrestha",
     "Rekha Thapa",
     "Keki Adhikari",
+    "Bijay Baral",
+    "Anjana Baraili"
 ].map(createCastMember);
 
 

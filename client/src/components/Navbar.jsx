@@ -7,6 +7,7 @@ import React, {
 import {
     Link,
     useNavigate,
+    useLocation,
 } from "react-router-dom";
 
 import {
@@ -24,6 +25,7 @@ import { useAppContext } from "../context/AppContext";
 
 const Navbar = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { user, logout } = useAuth();
     const { axios } = useAppContext();
 
@@ -63,7 +65,6 @@ const Navbar = () => {
                     return;
                 }
 
-                // Extract movies from shows, de-duplicate by ID
                 const movieMap = new Map();
                 data.shows.forEach((show) => {
                     if (show.movie) {
@@ -77,7 +78,6 @@ const Navbar = () => {
 
                 const uniqueMovies = Array.from(movieMap.values());
                 console.log("Unique movies for search:", uniqueMovies);
-                console.log("Movie titles:", uniqueMovies.map(m => m.title || m.name || m.original_title));
                 setAllMovies(uniqueMovies);
             } catch (error) {
                 console.error("Error fetching shows:", error);
@@ -91,7 +91,7 @@ const Navbar = () => {
     }, []);
 
     // =====================================================
-    // SEARCH – case-insensitive includes
+    // SEARCH
     // =====================================================
     useEffect(() => {
         if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
@@ -118,7 +118,6 @@ const Navbar = () => {
                     return title.includes(query);
                 });
 
-                console.log(`Search for "${query}" found ${filtered.length} movies:`, filtered);
                 setSearchResults(filtered);
                 setSearchLoading(false);
             }, 150);
@@ -136,7 +135,10 @@ const Navbar = () => {
     // =====================================================
     const fetchFavorites = async () => {
         try {
-            const token = localStorage.getItem("userToken") || localStorage.getItem("token");
+            const token =
+                localStorage.getItem("userToken") ||
+                localStorage.getItem("token");
+
             if (!token) {
                 setHasFavorites(false);
                 return;
@@ -154,6 +156,9 @@ const Navbar = () => {
 
             const data = await response.json();
             const favorites = data.user?.favourites || data.favourites || [];
+
+            console.log("Navbar favorites check:", favorites.length);
+
             setHasFavorites(favorites.length > 0);
         } catch (error) {
             console.error("Error fetching favorites:", error);
@@ -162,7 +167,47 @@ const Navbar = () => {
     };
 
     // =====================================================
-    // MOVIE CLICK – navigate to detail page
+    // LOAD FAVORITES
+    // 1. On mount / user change
+    // 2. When "favoritesUpdated" event fires (custom)
+    // 3. When window regains focus
+    // 4. When route changes
+    // =====================================================
+    useEffect(() => {
+        fetchFavorites();
+
+        // Custom event — dispatched from MovieDetail / Favorite page
+        const handleFavoritesUpdated = () => {
+            console.log("🔄 favoritesUpdated event received");
+            fetchFavorites();
+        };
+
+        // Storage event — fires if token changes across tabs
+        const handleStorage = () => fetchFavorites();
+
+        // Window focus — re-check when user returns to tab
+        const handleFocus = () => fetchFavorites();
+
+        window.addEventListener("favoritesUpdated", handleFavoritesUpdated);
+        window.addEventListener("storage", handleStorage);
+        window.addEventListener("focus", handleFocus);
+
+        return () => {
+            window.removeEventListener("favoritesUpdated", handleFavoritesUpdated);
+            window.removeEventListener("storage", handleStorage);
+            window.removeEventListener("focus", handleFocus);
+        };
+    }, [user]);
+
+    // Re-check on every route change (main fix)
+    useEffect(() => {
+        if (user) {
+            fetchFavorites();
+        }
+    }, [location.pathname]);
+
+    // =====================================================
+    // MOVIE CLICK
     // =====================================================
     const handleMovieClick = (movie) => {
         const movieId = movie._id || movie.id;
@@ -202,17 +247,6 @@ const Navbar = () => {
     };
 
     // =====================================================
-    // LOAD FAVORITES
-    // =====================================================
-    useEffect(() => {
-        fetchFavorites();
-
-        const handleStorage = () => fetchFavorites();
-        window.addEventListener("favoritesUpdated", handleStorage);
-        return () => window.removeEventListener("favoritesUpdated", handleStorage);
-    }, [user]);
-
-    // =====================================================
     // CLOSE DROPDOWNS ON OUTSIDE CLICK
     // =====================================================
     useEffect(() => {
@@ -228,13 +262,12 @@ const Navbar = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // -------- USER INFO (DEFAULTS REMOVED) --------
     const userName = user?.name || user?.username || "";
     const userEmail = user?.email || "";
     const userInitial = userName ? userName.charAt(0).toUpperCase() : "?";
 
     // =====================================================
-    // MOBILE NAV LINKS HELPER
+    // MOBILE LINKS — Favorites conditional
     // =====================================================
     const mobileLinks = [
         { name: "Home", path: "/" },
@@ -250,9 +283,6 @@ const Navbar = () => {
         window.scrollTo(0, 0);
     };
 
-    // =====================================================
-    // RENDER
-    // =====================================================
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
             <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
@@ -268,6 +298,8 @@ const Navbar = () => {
                     <Link to="/movies" className="hover:text-primary transition">Movies</Link>
                     <Link to="/theaters" className="hover:text-primary transition">Theaters</Link>
                     <Link to="/releases" className="hover:text-primary transition">Releases</Link>
+
+                    {/* Favorites — only if user has favorites */}
                     {hasFavorites && (
                         <Link to="/favorite" className="hover:text-primary transition">
                             Favorites
@@ -361,7 +393,6 @@ const Navbar = () => {
 
                         {showMenu && (
                             <div className="absolute right-0 top-12 w-72 bg-white rounded-xl shadow-2xl overflow-hidden text-gray-800">
-                                {/* Header */}
                                 <div className="px-5 py-4 border-b border-gray-200">
                                     <div className="flex items-center gap-3">
                                         <div className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -427,9 +458,7 @@ const Navbar = () => {
                 </div>
             </div>
 
-            {/* ================================================= */}
             {/* MOBILE MENU DROPDOWN */}
-            {/* ================================================= */}
             {showMobileMenu && (
                 <div className="md:hidden border-t border-white/10 bg-black/95 backdrop-blur-md">
                     <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-1">
@@ -450,4 +479,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-

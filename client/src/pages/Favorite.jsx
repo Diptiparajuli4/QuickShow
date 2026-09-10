@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import BlurCircle from "../components/BlurCircle";
 import MovieCard from "../components/MovieCard";
 import Navbar from "../components/Navbar";
@@ -42,6 +42,10 @@ const Favorite = () => {
                 setFavoriteMovies([]);
                 setError("No favourites yet.");
                 setLoading(false);
+
+                // ✅ NEW: Notify Navbar to hide Favorites link
+                window.dispatchEvent(new Event("favoritesUpdated"));
+
                 return;
             }
 
@@ -79,6 +83,9 @@ const Favorite = () => {
             } else {
                 setError("");
             }
+
+            // ✅ NEW: Notify Navbar after fetch
+            window.dispatchEvent(new Event("favoritesUpdated"));
         } catch (err) {
             console.error("Error:", err);
             setError(err.message || "Something went wrong.");
@@ -89,6 +96,17 @@ const Favorite = () => {
 
     // ✅ Auto‑refresh – re‑runs fetch when refresh() is called globally
     useAutoRefresh(fetchFavoriteMovies, [userToken, user]);
+
+    // ✅ NEW: Listen for external favorites updates
+    useEffect(() => {
+        const handleUpdate = () => {
+            console.log("🔄 Favorite page received favoritesUpdated event");
+            fetchFavoriteMovies();
+        };
+
+        window.addEventListener("favoritesUpdated", handleUpdate);
+        return () => window.removeEventListener("favoritesUpdated", handleUpdate);
+    }, [fetchFavoriteMovies]);
 
     // -------- Render --------
     if (loading) {

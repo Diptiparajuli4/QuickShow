@@ -15,6 +15,16 @@ const bookingSchema = new mongoose.Schema(
             required: true,
         },
 
+        // =====================================================
+        // THEATER ID (NEW) — reference to Theater collection
+        // Populated in getMyBookings to fetch fresh theater data
+        // =====================================================
+        theaterId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Theater",
+            default: null,
+        },
+
         // MOVIE INFORMATION
         movieId: {
             type: String,

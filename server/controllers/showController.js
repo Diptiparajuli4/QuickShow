@@ -84,6 +84,9 @@ export const addMovie = async (req, res) => {
 // ADD SHOW
 // UPDATED: no longer creates a movie — only validates that it exists
 // UPDATED: now saves theaterCity and theaterAddress
+// UPDATED: duplicate check now includes theaterId — so the same
+//          movie + same time is allowed in DIFFERENT theaters,
+//          but NOT in the same theater.
 // =====================================================
 export const addShow = async (req, res) => {
     try {
@@ -171,35 +174,44 @@ export const addShow = async (req, res) => {
         const savedMovieId = String(movieDocument._id);
 
         // =====================================================
+        // -------- VALIDATE THEATER ID PROVIDED --------
+        // =====================================================
+        if (!theaterId) {
+            return res.status(400).json({
+                success: false,
+                message: "Theater is required. Please select a theater first.",
+            });
+        }
+
+        // =====================================================
         // -------- ENSURE THEATER EXISTS --------
         // =====================================================
         let theaterDoc = null;
-        if (theaterId) {
-            theaterDoc = await Theater.findById(theaterId);
-            if (!theaterDoc) {
-                console.log("Theater not found. Creating theater from show data...");
-                try {
-                    theaterDoc = await Theater.create({
-                        _id: theaterId,
-                        name: theaterName || "Unknown Theater",
-                        city: theaterCity || "",
-                        address: theaterAddress || "",
-                        latitude: theaterLat || 0,
-                        longitude: theaterLng || 0,
-                        location: {
-                            type: "Point",
-                            coordinates: [theaterLng || 0, theaterLat || 0],
-                        },
-                        isActive: true,
-                    });
-                    console.log("Theater created:", theaterDoc);
-                } catch (createError) {
-                    console.error("Failed to create theater:", createError);
-                    // Continue anyway, but log the error
-                }
-            } else {
-                console.log("Theater already exists:", theaterDoc._id);
+        theaterDoc = await Theater.findById(theaterId);
+
+        if (!theaterDoc) {
+            console.log("Theater not found. Creating theater from show data...");
+            try {
+                theaterDoc = await Theater.create({
+                    _id: theaterId,
+                    name: theaterName || "Unknown Theater",
+                    city: theaterCity || "",
+                    address: theaterAddress || "",
+                    latitude: theaterLat || 0,
+                    longitude: theaterLng || 0,
+                    location: {
+                        type: "Point",
+                        coordinates: [theaterLng || 0, theaterLat || 0],
+                    },
+                    isActive: true,
+                });
+                console.log("Theater created:", theaterDoc);
+            } catch (createError) {
+                console.error("Failed to create theater:", createError);
+                // Continue anyway, but log the error
             }
+        } else {
+            console.log("Theater already exists:", theaterDoc._id);
         }
 
         // -------- Build show documents (one per date/time) --------
@@ -216,14 +228,23 @@ export const addShow = async (req, res) => {
                     });
                 }
 
+                // =================================================
+                // Duplicate check:
+                //   Same movie + Same time + SAME THEATER → reject
+                //   Same movie + Same time + DIFFERENT theater → allow
+                // =================================================
                 const existingShow = await Show.findOne({
                     movie: savedMovieId,
                     showDateTime: showDateTime,
+                    theaterId: theaterId,   // ← यही line fix हो
                 });
+
                 if (existingShow) {
                     return res.status(400).json({
                         success: false,
-                        message: `Show already exists for ${date} at ${time}`,
+                        message: `This show already exists at ${
+                            theaterName || "this theater"
+                        } for ${date} at ${time}. Try a different time or a different theater.`,
                     });
                 }
 
@@ -257,7 +278,6 @@ export const addShow = async (req, res) => {
         // -------- UPDATE THEATER'S MOVIES ARRAY --------
         // =====================================================
         if (theaterDoc) {
-            // Add the movie ID to the theater's movies array if not already present
             const updateResult = await Theater.findByIdAndUpdate(
                 theaterDoc._id,
                 { $addToSet: { movies: savedMovieId } },
@@ -294,7 +314,7 @@ export const getAllShows = async (req, res) => {
     try {
         const shows = await Show.find()
             .populate("movie")
-            .populate("theaterId")   // ✅ Now works because schema has ref
+            .populate("theaterId")
             .sort({ showDateTime: 1 });
         return res.status(200).json({
             success: true,
@@ -331,7 +351,6 @@ export const getShow = async (req, res) => {
             .sort({ showDateTime: 1 });
 
         console.log("Shows found:", shows.length);
-        console.log("Shows:", shows);
 
         return res.status(200).json({
             success: true,
@@ -408,14 +427,9 @@ export const getUniqueShows = async (req, res) => {
 // =====================================================
 export const getNowShowingMovies = async (req, res) => {
     try {
-        console.log("======================================");
-        console.log("GET NOW SHOWING MOVIES");
-
         const shows = await Show.find()
             .sort({ showDateTime: -1 })
             .lean();
-
-        console.log("Total shows:", shows.length);
 
         if (shows.length === 0) {
             return res.status(200).json({
@@ -425,10 +439,8 @@ export const getNowShowingMovies = async (req, res) => {
         }
 
         const movieIds = [...new Set(shows.map((show) => String(show.movie)))];
-        console.log("Movie IDs from Show collection:", movieIds);
 
         const movies = await Movie.find({ _id: { $in: movieIds } }).lean();
-        console.log("Movies found in Movie collection:", movies.length);
 
         const movieMap = new Map();
         movies.forEach((movie) => {
@@ -446,9 +458,6 @@ export const getNowShowingMovies = async (req, res) => {
                 orderedMovies.push(movie);
             }
         }
-
-        console.log("Movies returned:", orderedMovies.length);
-        console.log("======================================");
 
         return res.status(200).json({
             success: true,

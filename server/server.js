@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import http from "http";
 import { Server } from "socket.io";
 import movieRoutes from "./routes/movieRoutes.js";
-
+import { startReminderScheduler } from "./services/reminderService.js";
 import connectDB from "./configs/db.js";
 
 import userRouter from "./routes/userRoutes.js";
@@ -87,6 +87,9 @@ connectDB()
 
         // -------- NEW: seed sample theaters if the collection is empty --------
         seedTheaters();
+
+        // -------- NEW: start the daily reminder scheduler --------
+        startReminderScheduler();
     })
     .catch((error) => {
         console.error(
