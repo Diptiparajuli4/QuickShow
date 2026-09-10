@@ -179,9 +179,9 @@ const MovieCard = ({
             )}
 
             {/* ================================================= */}
-            {/* POSTER — fixed height, object-cover for uniform    */}
+            {/* POSTER — FULLY VISIBLE (no cropping)               */}
             {/* ================================================= */}
-            <div className="w-full h-80 bg-gray-900 relative overflow-hidden">
+            <div className="w-full h-80 bg-gray-950 relative overflow-hidden flex items-center justify-center">
                 <img
                     src={
                         movie?.poster_path
@@ -192,11 +192,11 @@ const MovieCard = ({
                     }
                     alt={movie?.title || "Movie"}
                     className="
-                        absolute
-                        inset-0
-                        w-full
-                        h-full
-                        object-cover
+                        max-w-full
+                        max-h-full
+                        w-auto
+                        h-auto
+                        object-contain
                         object-center
                     "
                     loading="lazy"

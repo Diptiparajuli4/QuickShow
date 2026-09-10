@@ -6,6 +6,29 @@ import Footer from "../components/Footer";
 import Loading from "../components/Loading";
 import { useAuth } from "../context/AuthContext";
 import { useAutoRefresh } from "../context/RefreshContext";
+import { Star, Trophy } from "lucide-react";
+
+// =====================================================
+// HELPER: get HIGHEST user rating for a movie
+//
+// Returns { highest, count } — both 0 if there are no
+// real user ratings. NEVER falls back to TMDB.
+// =====================================================
+const getUserRatingInfo = (movie) => {
+    if (Array.isArray(movie?.ratings) && movie.ratings.length > 0) {
+        const valid = movie.ratings
+            .map((r) => Number(r?.rating))
+            .filter((n) => Number.isFinite(n) && n >= 1 && n <= 5);
+
+        if (valid.length > 0) {
+            return {
+                highest: Math.max(...valid),
+                count: valid.length,
+            };
+        }
+    }
+    return { highest: 0, count: 0 };
+};
 
 const Favorite = () => {
     const { user, userToken } = useAuth();
@@ -14,7 +37,9 @@ const Favorite = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    // -------- fetch function (stable with useCallback) --------
+    // =====================================================
+    // FETCH FAVORITE MOVIES
+    // =====================================================
     const fetchFavoriteMovies = useCallback(async () => {
         try {
             setLoading(true);
@@ -26,7 +51,7 @@ const Favorite = () => {
                 return;
             }
 
-            // 1. Get user's favourites
+            // 1. Get user's favourite IDs
             const userRes = await fetch("http://localhost:5000/user/me", {
                 headers: { Authorization: `Bearer ${userToken}` },
             });
@@ -36,55 +61,56 @@ const Favorite = () => {
             }
 
             const userData = await userRes.json();
-            const favouriteIds = userData.user?.favourites || [];
+            const favouriteIds = Array.isArray(userData.user?.favourites)
+                ? userData.user.favourites.map(String)
+                : [];
+
+            console.log("Favourite IDs:", favouriteIds);
 
             if (favouriteIds.length === 0) {
                 setFavoriteMovies([]);
                 setError("No favourites yet.");
                 setLoading(false);
 
-                // ✅ NEW: Notify Navbar to hide Favorites link
                 window.dispatchEvent(new Event("favoritesUpdated"));
-
                 return;
             }
 
-            // 2. Get all shows to map movie details
-            const moviesRes = await fetch("http://localhost:5000/show/all", {
-                headers: { Authorization: `Bearer ${userToken}` },
-            });
+            // 2. Fetch each movie directly by ID
+            const moviePromises = favouriteIds.map(async (movieId) => {
+                try {
+                    const res = await fetch(
+                        `http://localhost:5000/movie/${movieId}`
+                    );
 
-            if (!moviesRes.ok) {
-                throw new Error(`/show/all failed: ${moviesRes.status}`);
-            }
-
-            const moviesData = await moviesRes.json();
-            const shows = moviesData.shows || [];
-
-            const movieMap = new Map();
-            shows.forEach((show) => {
-                if (show.movie && show.movie._id) {
-                    const id = String(show.movie._id);
-                    if (!movieMap.has(id)) {
-                        movieMap.set(id, show.movie);
+                    if (!res.ok) {
+                        console.warn(
+                            `Movie ${movieId} fetch failed: ${res.status}`
+                        );
+                        return null;
                     }
+
+                    const data = await res.json();
+                    return data.movie || data.data || null;
+                } catch (err) {
+                    console.warn(`Error fetching movie ${movieId}:`, err);
+                    return null;
                 }
             });
 
-            const matched = [];
-            favouriteIds.forEach((id) => {
-                const movie = movieMap.get(String(id));
-                if (movie) matched.push(movie);
-            });
+            const results = await Promise.all(moviePromises);
+            const matched = results.filter(Boolean);
+
+            console.log("Matched favourite movies:", matched);
 
             setFavoriteMovies(matched);
+
             if (matched.length === 0) {
                 setError("Favourite movies not found in database.");
             } else {
                 setError("");
             }
 
-            // ✅ NEW: Notify Navbar after fetch
             window.dispatchEvent(new Event("favoritesUpdated"));
         } catch (err) {
             console.error("Error:", err);
@@ -94,10 +120,10 @@ const Favorite = () => {
         }
     }, [userToken, user]);
 
-    // ✅ Auto‑refresh – re‑runs fetch when refresh() is called globally
+    // Auto-refresh on global refresh() call
     useAutoRefresh(fetchFavoriteMovies, [userToken, user]);
 
-    // ✅ NEW: Listen for external favorites updates
+    // Listen for external favorites updates
     useEffect(() => {
         const handleUpdate = () => {
             console.log("🔄 Favorite page received favoritesUpdated event");
@@ -105,7 +131,8 @@ const Favorite = () => {
         };
 
         window.addEventListener("favoritesUpdated", handleUpdate);
-        return () => window.removeEventListener("favoritesUpdated", handleUpdate);
+        return () =>
+            window.removeEventListener("favoritesUpdated", handleUpdate);
     }, [fetchFavoriteMovies]);
 
     // -------- Render --------
@@ -115,7 +142,6 @@ const Favorite = () => {
                 <Navbar />
                 <main className="flex-1 flex items-center justify-center">
                     <Loading />
-                    <p className="text-gray-400 mt-2">Loading favourites...</p>
                 </main>
                 <Footer />
             </div>
@@ -127,7 +153,9 @@ const Favorite = () => {
             <div className="min-h-screen bg-black text-white flex flex-col">
                 <Navbar />
                 <main className="flex-1 flex flex-col items-center justify-center px-6">
-                    <h1 className="text-3xl font-bold text-center">Please login</h1>
+                    <h1 className="text-3xl font-bold text-center">
+                        Please login
+                    </h1>
                     <button
                         onClick={() => (window.location.href = "/login")}
                         className="mt-6 px-6 py-2 bg-primary rounded-lg"
@@ -140,14 +168,22 @@ const Favorite = () => {
         );
     }
 
-    if (error && error !== "No favourites yet." && error !== "Favourite movies not found in database.") {
+    if (
+        error &&
+        error !== "No favourites yet." &&
+        error !== "Favourite movies not found in database."
+    ) {
         return (
             <div className="min-h-screen bg-black text-white flex flex-col">
                 <Navbar />
                 <main className="flex-1 flex flex-col items-center justify-center px-6">
                     <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-6 max-w-md w-full">
-                        <h1 className="text-2xl font-bold text-red-400 text-center">Error</h1>
-                        <p className="text-gray-300 mt-3 text-center">{error}</p>
+                        <h1 className="text-2xl font-bold text-red-400 text-center">
+                            Error
+                        </h1>
+                        <p className="text-gray-300 mt-3 text-center">
+                            {error}
+                        </p>
                         <button
                             onClick={fetchFavoriteMovies}
                             className="mt-6 w-full px-6 py-2 bg-primary rounded-lg"
@@ -169,7 +205,9 @@ const Favorite = () => {
                     <BlurCircle top="150px" left="0px" />
                     <BlurCircle bottom="50px" right="50px" />
                     <div className="flex flex-col items-center justify-center h-[50vh]">
-                        <h1 className="text-3xl font-bold text-center">No favourite movies</h1>
+                        <h1 className="text-3xl font-bold text-center">
+                            No favourite movies
+                        </h1>
                         <p className="text-gray-400 mt-3 text-center">
                             Movies you add to favourites will appear here.
                         </p>
@@ -180,6 +218,19 @@ const Favorite = () => {
         );
     }
 
+    // Find highest rating among all favourite movies
+    const ratedMovies = favoriteMovies.filter(
+        (m) => getUserRatingInfo(m).highest > 0
+    );
+    const topRating =
+        ratedMovies.length > 0
+            ? Math.max(
+                  ...ratedMovies.map(
+                      (m) => getUserRatingInfo(m).highest
+                  )
+              )
+            : 0;
+
     return (
         <div className="min-h-screen bg-black text-white flex flex-col">
             <Navbar />
@@ -187,12 +238,70 @@ const Favorite = () => {
                 <BlurCircle top="150px" left="0px" />
                 <BlurCircle bottom="50px" right="50px" />
 
-                <h1 className="text-2xl font-medium my-8">My Favourite Movies</h1>
+                <div className="flex items-end justify-between mb-8">
+                    <div>
+                        <h1 className="text-2xl font-medium">
+                            My Favourite Movies
+                        </h1>
+                        <p className="text-gray-500 text-sm mt-1">
+                            {favoriteMovies.length}{" "}
+                            {favoriteMovies.length === 1
+                                ? "movie"
+                                : "movies"}{" "}
+                            saved
+                        </p>
+                    </div>
+                </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                    {favoriteMovies.map((movie) => (
-                        <MovieCard key={String(movie._id)} movie={movie} />
-                    ))}
+                {/* ================================================= */}
+                {/* GRID — Same layout as other pages                */}
+                {/* ================================================= */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                    {favoriteMovies.map((movie) => {
+                        const { highest, count } =
+                            getUserRatingInfo(movie);
+                        const hasRating = highest > 0 && count > 0;
+                        const isTopRated =
+                            hasRating && highest === topRating;
+
+                        return (
+                            <div
+                                key={String(movie._id)}
+                                className="relative"
+                            >
+                                {/* TOP RATED BADGE */}
+                                {isTopRated && (
+                                    <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-yellow-500 text-black text-xs font-bold px-2.5 py-1 rounded-full shadow-lg">
+                                        <Trophy size={12} />
+                                        Top Rated
+                                    </div>
+                                )}
+
+                                {/* SAME MovieCard component — same button style */}
+                                <MovieCard movie={movie} />
+
+                                {/* HIGHEST RATING LINE — only if rated */}
+                                {hasRating && (
+                                    <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-gray-400">
+                                        <Star
+                                            size={12}
+                                            className="text-yellow-400 fill-yellow-400"
+                                        />
+                                        <span className="text-white font-medium">
+                                            {highest}/5
+                                        </span>
+                                        <span className="text-gray-500">
+                                            ({count}{" "}
+                                            {count === 1
+                                                ? "vote"
+                                                : "votes"}
+                                            )
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             </main>
             <Footer />

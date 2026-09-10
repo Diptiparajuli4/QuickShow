@@ -1,4 +1,4 @@
-import { ArrowRight, Clock } from "lucide-react";
+import { ArrowRight, Clock, Star, Trophy } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BlurCircle from "./BlurCircle";
@@ -8,258 +8,463 @@ import MovieCard from "./MovieCard";
 // HELPER: resolve theater info from a show
 // =====================================================
 const resolveTheater = (show) => {
-  if (show.theaterId && typeof show.theaterId === "object") {
-    return {
-      name: show.theaterId.name || "",
-      city: show.theaterId.city || "",
-      address: show.theaterId.address || "",
-    };
-  }
-  if (show.theaterName) {
-    return {
-      name: show.theaterName,
-      city: show.theaterCity || "",
-      address: show.theaterAddress || "",
-    };
-  }
-  if (show.theater && typeof show.theater === "object") {
-    return {
-      name: show.theater.name || "",
-      city: show.theater.city || "",
-      address: show.theater.address || "",
-    };
-  }
-  return null;
+    if (show.theaterId && typeof show.theaterId === "object") {
+        return {
+            name: show.theaterId.name || "",
+            city: show.theaterId.city || "",
+            address: show.theaterId.address || "",
+        };
+    }
+    if (show.theaterName) {
+        return {
+            name: show.theaterName,
+            city: show.theaterCity || "",
+            address: show.theaterAddress || "",
+        };
+    }
+    if (show.theater && typeof show.theater === "object") {
+        return {
+            name: show.theater.name || "",
+            city: show.theater.city || "",
+            address: show.theater.address || "",
+        };
+    }
+    return null;
 };
 
+// =====================================================
+// HELPER: get HIGHEST user rating for a movie
+//
+// Returns { highest, count } — both 0 if there are no
+// real user ratings. NEVER falls back to TMDB.
+// =====================================================
+const getUserRatingInfo = (movie) => {
+    // 1. Use the ratings array (source of truth)
+    if (Array.isArray(movie?.ratings) && movie.ratings.length > 0) {
+        const valid = movie.ratings
+            .map((r) => Number(r?.rating))
+            .filter((n) => Number.isFinite(n) && n >= 1 && n <= 5);
+
+        if (valid.length > 0) {
+            return {
+                highest: Math.max(...valid),
+                count: valid.length,
+            };
+        }
+    }
+
+    // 2. No real user rating → return 0/0
+    return { highest: 0, count: 0 };
+};
+
+// =====================================================
+// LIMITS — both tabs show exactly 4
+// =====================================================
 const NOW_SHOWING_LIMIT = 4;
-const UPCOMING_LIMIT = 10;
+const UPCOMING_LIMIT = 4;
 
 const FeaturedSection = () => {
-  const navigate = useNavigate();
+    const navigate = useNavigate();
 
-  const [featuredMovies, setFeaturedMovies] = useState([]);
-  const [upcomingMovies, setUpcomingMovies] = useState([]);
-  const [activeTab, setActiveTab] = useState("nowShowing");
+    const [featuredMovies, setFeaturedMovies] = useState([]);
+    const [upcomingMovies, setUpcomingMovies] = useState([]);
+    const [activeTab, setActiveTab] = useState("nowShowing");
 
-  // ============================================
-  // LOAD SHOWS FROM DATABASE
-  // ============================================
-  useEffect(() => {
-    const fetchFeaturedMovies = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/show/all");
-        const data = await response.json();
+    // ============================================
+    // LOAD SHOWS FROM DATABASE
+    // ============================================
+    useEffect(() => {
+        const fetchFeaturedMovies = async () => {
+            try {
+                const response = await fetch(
+                    "http://localhost:5000/show/all"
+                );
+                const data = await response.json();
 
-        if (!response.ok || !data.success) {
-          throw new Error(data.message || "Failed to fetch shows");
-        }
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.message || "Failed to fetch shows"
+                    );
+                }
 
-        const currentTime = new Date();
-        const startOfToday = new Date();
-        startOfToday.setHours(0, 0, 0, 0);
+                // Fetch all movies (for rating data)
+                let allMoviesFromDb = [];
+                try {
+                    const moviesRes = await fetch(
+                        "http://localhost:5000/movie/all"
+                    );
+                    if (moviesRes.ok) {
+                        const moviesJson = await moviesRes.json();
+                        allMoviesFromDb = Array.isArray(
+                            moviesJson.movies
+                        )
+                            ? moviesJson.movies
+                            : [];
+                    }
+                } catch (err) {
+                    console.warn(
+                        "Could not fetch /movie/all:",
+                        err.message
+                    );
+                }
 
-        const shows = Array.isArray(data.shows) ? data.shows : [];
-
-        // ============================================
-        // 1. NOW SHOWING — active shows only
-        // ============================================
-        const activeShows = shows.filter((show) => {
-          const t = new Date(show.showDateTime || show.date);
-          if (isNaN(t.getTime())) return false;
-          return t >= startOfToday;
-        });
-
-        const nowShowingMap = new Map();
-
-        activeShows.forEach((show) => {
-          const movie = show.movie;
-          if (!movie) return;
-
-          if (typeof movie === "object" && movie._id) {
-            const id = String(movie._id);
-            const theater = resolveTheater(show);
-            const t = new Date(show.showDateTime || show.date);
-
-            if (!nowShowingMap.has(id)) {
-              nowShowingMap.set(id, {
-                ...movie,
-                _theater: theater,
-                _showDateTime: t.getTime(),
-              });
-            } else {
-              const existing = nowShowingMap.get(id);
-              if (t.getTime() < existing._showDateTime) {
-                nowShowingMap.set(id, {
-                  ...existing,
-                  _theater: theater,
-                  _showDateTime: t.getTime(),
+                const movieDocMap = new Map();
+                allMoviesFromDb.forEach((m) => {
+                    if (m && (m._id || m.id)) {
+                        movieDocMap.set(String(m._id || m.id), m);
+                    }
                 });
-              }
+
+                const currentTime = new Date();
+                const startOfToday = new Date();
+                startOfToday.setHours(0, 0, 0, 0);
+
+                const shows = Array.isArray(data.shows) ? data.shows : [];
+
+                // ============================================
+                // NOW SHOWING
+                // ============================================
+                const activeShows = shows.filter((show) => {
+                    const t = new Date(show.showDateTime || show.date);
+                    if (isNaN(t.getTime())) return false;
+                    return t >= startOfToday;
+                });
+
+                const nowShowingMap = new Map();
+
+                activeShows.forEach((show) => {
+                    const movie = show.movie;
+                    if (!movie) return;
+
+                    const movieId =
+                        typeof movie === "object"
+                            ? String(movie._id || movie.id)
+                            : String(movie);
+
+                    if (!movieId) return;
+
+                    const fullMovie =
+                        movieDocMap.get(movieId) ||
+                        (typeof movie === "object"
+                            ? movie
+                            : { _id: movieId, title: "Movie" });
+
+                    const theater = resolveTheater(show);
+                    const t = new Date(show.showDateTime || show.date);
+
+                    if (!nowShowingMap.has(movieId)) {
+                        nowShowingMap.set(movieId, {
+                            ...fullMovie,
+                            _id: movieId,
+                            _theaters: theater ? [theater] : [],
+                            _theaterKeys: new Set(
+                                theater
+                                    ? [`${theater.name}|${theater.city}`]
+                                    : []
+                            ),
+                            _showDateTimes: [t.getTime()],
+                            _earliest: t.getTime(),
+                        });
+                    } else {
+                        const existing = nowShowingMap.get(movieId);
+
+                        if (theater && theater.name) {
+                            const key = `${theater.name}|${
+                                theater.city || ""
+                            }`;
+                            if (!existing._theaterKeys.has(key)) {
+                                existing._theaterKeys.add(key);
+                                existing._theaters.push(theater);
+                            }
+                        }
+
+                        existing._showDateTimes.push(t.getTime());
+
+                        if (t.getTime() < existing._earliest) {
+                            existing._earliest = t.getTime();
+                        }
+                    }
+                });
+
+                const nowShowingList = Array.from(
+                    nowShowingMap.values()
+                )
+                    .map((m) => {
+                        const { highest, count } =
+                            getUserRatingInfo(m);
+                        return {
+                            ...m,
+                            _highestRating: highest,
+                            _ratingCount: count,
+                            _theaters: m._theaters.sort((a, b) =>
+                                a.name.localeCompare(b.name)
+                            ),
+                            _showDateTimes: m._showDateTimes.sort(
+                                (a, b) => a - b
+                            ),
+                        };
+                    })
+                    .sort((a, b) => {
+                        // Highest rating first
+                        if (b._highestRating !== a._highestRating) {
+                            return b._highestRating - a._highestRating;
+                        }
+                        // More votes first
+                        if (b._ratingCount !== a._ratingCount) {
+                            return b._ratingCount - a._ratingCount;
+                        }
+                        // Earliest show time
+                        return a._earliest - b._earliest;
+                    });
+
+                setFeaturedMovies(
+                    nowShowingList.slice(0, NOW_SHOWING_LIMIT)
+                );
+
+                // ============================================
+                // UPCOMING
+                // ============================================
+                const upcomingShows = shows.filter((show) => {
+                    const t = new Date(
+                        show.showDateTime || show.date || currentTime
+                    );
+                    return t > currentTime;
+                });
+
+                const upcomingMap = new Map();
+
+                upcomingShows.forEach((show) => {
+                    const movie = show.movie;
+                    if (!movie) return;
+
+                    const movieId =
+                        typeof movie === "object"
+                            ? String(movie._id || movie.id)
+                            : String(movie);
+
+                    if (!movieId) return;
+
+                    const fullMovie =
+                        movieDocMap.get(movieId) ||
+                        (typeof movie === "object"
+                            ? movie
+                            : {
+                                  _id: movieId,
+                                  title: show.movieTitle || "Movie",
+                              });
+
+                    const theater = resolveTheater(show);
+                    const t = new Date(show.showDateTime || show.date);
+                    const ts = t.getTime();
+
+                    if (!upcomingMap.has(movieId)) {
+                        upcomingMap.set(movieId, {
+                            ...fullMovie,
+                            _id: movieId,
+                            _theaters: theater ? [theater] : [],
+                            _theaterKeys: new Set(
+                                theater
+                                    ? [`${theater.name}|${theater.city}`]
+                                    : []
+                            ),
+                            _showDateTimes: [ts],
+                            _earliest: ts,
+                        });
+                    } else {
+                        const existing = upcomingMap.get(movieId);
+
+                        if (theater && theater.name) {
+                            const key = `${theater.name}|${
+                                theater.city || ""
+                            }`;
+                            if (!existing._theaterKeys.has(key)) {
+                                existing._theaterKeys.add(key);
+                                existing._theaters.push(theater);
+                            }
+                        }
+
+                        existing._showDateTimes.push(ts);
+
+                        if (ts < existing._earliest) {
+                            existing._earliest = ts;
+                        }
+                    }
+                });
+
+                const upcomingList = Array.from(upcomingMap.values())
+                    .map((m) => {
+                        const { highest, count } =
+                            getUserRatingInfo(m);
+                        const daysLeft = Math.ceil(
+                            (m._earliest - Date.now()) /
+                                (1000 * 60 * 60 * 24)
+                        );
+                        return {
+                            ...m,
+                            _daysLeft: daysLeft > 0 ? daysLeft : 1,
+                            _highestRating: highest,
+                            _ratingCount: count,
+                            _theaters: m._theaters.sort((a, b) =>
+                                a.name.localeCompare(b.name)
+                            ),
+                            _showDateTimes: m._showDateTimes.sort(
+                                (a, b) => a - b
+                            ),
+                        };
+                    })
+                    .sort((a, b) => {
+                        if (b._highestRating !== a._highestRating) {
+                            return b._highestRating - a._highestRating;
+                        }
+                        if (b._ratingCount !== a._ratingCount) {
+                            return b._ratingCount - a._ratingCount;
+                        }
+                        return a._earliest - b._earliest;
+                    });
+
+                setUpcomingMovies(
+                    upcomingList.slice(0, UPCOMING_LIMIT)
+                );
+            } catch (error) {
+                console.error(
+                    "Error loading featured movies:",
+                    error
+                );
+                setFeaturedMovies([]);
+                setUpcomingMovies([]);
             }
-          }
-        });
+        };
 
-        const nowShowingList = Array.from(nowShowingMap.values());
-        nowShowingList.reverse();
-        setFeaturedMovies(nowShowingList.slice(0, NOW_SHOWING_LIMIT));
+        fetchFeaturedMovies();
+    }, []);
 
-        // ============================================
-        // 2. UPCOMING — future shows only
-        // ============================================
-        const upcomingShows = shows.filter((show) => {
-          const t = new Date(show.showDateTime || show.date || currentTime);
-          return t > currentTime;
-        });
+    const displayedMovies =
+        activeTab === "nowShowing"
+            ? featuredMovies
+            : upcomingMovies;
 
-        const upcomingMapped = upcomingShows
-          .map((show) => {
-            const showTime = new Date(
-              show.showDateTime || show.date || currentTime
-            );
-            const diffTime = showTime - currentTime;
-            const daysLeft = Math.ceil(
-              diffTime / (1000 * 60 * 60 * 24)
-            );
-            const theater = resolveTheater(show);
+    // Highest rating among movies that have at least one vote
+    const ratedMovies = displayedMovies.filter(
+        (m) => m._highestRating > 0 && m._ratingCount > 0
+    );
+    const topRating =
+        ratedMovies.length > 0
+            ? Math.max(...ratedMovies.map((m) => m._highestRating))
+            : 0;
 
-            const movieObj =
-              typeof show.movie === "object" && show.movie
-                ? show.movie
-                : {
-                    _id: show.movie,
-                    title: show.movieTitle || "Movie",
-                  };
+    return (
+        <div className="px-6 md:px-16 lg:px-24 xl:px-44 pt-0 pb-12 overflow-hidden">
+            {/* HEADER WITH TABS */}
+            <div className="relative flex items-center justify-between pt-16 pb-6">
+                <BlurCircle top="0" right="-80px" />
 
-            return {
-              ...movieObj,
-              showTime: showTime.getTime(),
-              daysLeft: daysLeft > 0 ? daysLeft : 1,
-              _theater: theater,
-            };
-          })
-          .filter((movie) => movie && movie._id);
+                <div className="flex items-center gap-8">
+                    <button
+                        onClick={() => setActiveTab("nowShowing")}
+                        className={`flex items-center gap-2 text-xl font-bold cursor-pointer transition ${
+                            activeTab === "nowShowing"
+                                ? "text-white opacity-100"
+                                : "text-gray-400 opacity-60 hover:opacity-100"
+                        }`}
+                    >
+                        🎬 Now Showing
+                    </button>
 
-        upcomingMapped.sort((a, b) => a.showTime - b.showTime);
+                    <button
+                        onClick={() => setActiveTab("upcoming")}
+                        className={`flex items-center gap-2 text-xl font-bold cursor-pointer transition ${
+                            activeTab === "upcoming"
+                                ? "text-white opacity-100"
+                                : "text-gray-400 opacity-60 hover:opacity-100"
+                        }`}
+                    >
+                        <Clock className="w-5 h-5" /> Upcoming Movies
+                    </button>
+                </div>
 
-        const uniqueUpcoming = [];
-        const seenIds = new Set();
-        for (const movie of upcomingMapped) {
-          if (!seenIds.has(String(movie._id))) {
-            seenIds.add(String(movie._id));
-            uniqueUpcoming.push(movie);
-          }
-        }
+                <button
+                    onClick={() => {
+                        navigate("/releases");
+                        window.scrollTo(0, 0);
+                    }}
+                    className="group flex items-center gap-2 text-sm text-gray-300 hover:text-primary cursor-pointer transition"
+                >
+                    View More
+                    <ArrowRight className="group-hover:translate-x-0.5 transition w-4.5 h-4.5" />
+                </button>
+            </div>
 
-        setUpcomingMovies(uniqueUpcoming.slice(0, UPCOMING_LIMIT));
-      } catch (error) {
-        console.error("Error loading featured movies:", error);
-        setFeaturedMovies([]);
-        setUpcomingMovies([]);
-      }
-    };
+            {/* MOVIES */}
+            {displayedMovies.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-8">
+                    {displayedMovies.map((movie) => {
+                        const hasRating =
+                            movie._highestRating > 0 &&
+                            movie._ratingCount > 0;
 
-    fetchFeaturedMovies();
-  }, []);
+                        const isTopRated =
+                            hasRating &&
+                            movie._highestRating === topRating;
 
-  const displayedMovies =
-    activeTab === "nowShowing" ? featuredMovies : upcomingMovies;
+                        return (
+                            <div
+                                key={movie._id}
+                                className="relative"
+                            >
+                                {/* TOP RATED BADGE */}
+                                {isTopRated && (
+                                    <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-yellow-500 text-black text-xs font-bold px-2.5 py-1 rounded-full shadow-lg">
+                                        <Trophy size={12} />
+                                        Top Rated
+                                    </div>
+                                )}
 
-  return (
-    <div className="px-6 md:px-16 lg:px-24 xl:px-44 pt-0 pb-12 overflow-hidden">
+                                <MovieCard
+                                    movie={movie}
+                                    theaters={movie._theaters}
+                                    showDateTimes={movie._showDateTimes}
+                                    badge={
+                                        activeTab === "upcoming" &&
+                                        movie._daysLeft
+                                            ? `${movie._daysLeft} days left`
+                                            : null
+                                    }
+                                />
 
-      {/* SECTION HEADER */}
-      <div className="relative flex items-center justify-between pt-16 pb-6">
-        <BlurCircle top="0" right="-80px" />
-
-        <div className="flex items-center gap-8">
-          <button
-            onClick={() => setActiveTab("nowShowing")}
-            className={`flex items-center gap-2 text-xl font-bold cursor-pointer transition ${
-              activeTab === "nowShowing"
-                ? "text-white opacity-100"
-                : "text-gray-400 opacity-60 hover:opacity-100"
-            }`}
-          >
-            🎬 Now Showing
-          </button>
-
-          <button
-            onClick={() => setActiveTab("upcoming")}
-            className={`flex items-center gap-2 text-xl font-bold cursor-pointer transition ${
-              activeTab === "upcoming"
-                ? "text-white opacity-100"
-                : "text-gray-400 opacity-60 hover:opacity-100"
-            }`}
-          >
-            <Clock className="w-5 h-5" /> Upcoming Movies
-          </button>
+                                {/* HIGHEST RATING LINE — only if rated */}
+                                {hasRating && (
+                                    <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-gray-400">
+                                        <Star
+                                            size={12}
+                                            className="text-yellow-400 fill-yellow-400"
+                                        />
+                                        <span className="text-white font-medium">
+                                            {movie._highestRating}/5
+                                        </span>
+                                        <span className="text-gray-500">
+                                            ({movie._ratingCount}{" "}
+                                            {movie._ratingCount === 1
+                                                ? "vote"
+                                                : "votes"}
+                                            )
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            ) : (
+                <div className="flex justify-center items-center py-20">
+                    <p className="text-gray-500">
+                        {activeTab === "nowShowing"
+                            ? "No shows available"
+                            : "No upcoming movies available"}
+                    </p>
+                </div>
+            )}
         </div>
-
-        {activeTab === "nowShowing" && (
-          <button
-            onClick={() => navigate("/movies")}
-            className="group flex items-center gap-2 text-sm text-gray-300 cursor-pointer"
-          >
-            View All
-            <ArrowRight className="group-hover:translate-x-0.5 transition w-4.5 h-4.5" />
-          </button>
-        )}
-      </div>
-
-      {/* MOVIES */}
-      {displayedMovies.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-8">
-          {displayedMovies.map((movie) => (
-            <MovieCard
-              key={movie._id}
-              movie={movie}
-              theater={movie._theater}
-              showDateTime={
-                activeTab === "nowShowing"
-                  ? movie._showDateTime
-                  : movie.showTime
-              }
-              badge={
-                activeTab === "upcoming" && movie.daysLeft
-                  ? `${movie.daysLeft} days left`
-                  : null
-              }
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="flex justify-center items-center py-20">
-          <p className="text-gray-500">
-            {activeTab === "nowShowing"
-              ? "No shows available"
-              : "No upcoming movies available"}
-          </p>
-        </div>
-      )}
-
-      {/* SHOW MORE */}
-      {displayedMovies.length > 0 && (
-        <div className="flex justify-center mt-8 mb-0">
-          <button
-            onClick={() => {
-              navigate(
-                activeTab === "nowShowing"
-                  ? "/movies"
-                  : "/movies"
-              );
-              window.scrollTo(0, 0);
-            }}
-            className="px-10 py-3 text-sm bg-primary 
-            hover:bg-primary-dull transition rounded-md 
-            font-medium cursor-pointer"
-          >
-            Show more
-          </button>
-        </div>
-      )}
-    </div>
-  );
+    );
 };
 
 export default FeaturedSection;

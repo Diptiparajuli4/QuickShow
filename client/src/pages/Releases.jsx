@@ -5,7 +5,7 @@ import BlurCircle from "../components/BlurCircle";
 import Loading from "../components/Loading";
 import MovieCard from "../components/MovieCard";
 
-import { Calendar, Clock } from "lucide-react";
+import { Calendar, Clock, Star, Trophy } from "lucide-react";
 
 // =====================================================
 // CONFIG
@@ -44,6 +44,29 @@ const resolveTheaterFromShow = (show) => {
 };
 
 // =====================================================
+// HELPER: get HIGHEST user rating for a movie
+//
+// Returns { highest, count } — both 0 if there are no
+// real user ratings. NEVER falls back to TMDB.
+// =====================================================
+const getUserRatingInfo = (movie) => {
+    if (Array.isArray(movie?.ratings) && movie.ratings.length > 0) {
+        const valid = movie.ratings
+            .map((r) => Number(r?.rating))
+            .filter((n) => Number.isFinite(n) && n >= 1 && n <= 5);
+
+        if (valid.length > 0) {
+            return {
+                highest: Math.max(...valid),
+                count: valid.length,
+            };
+        }
+    }
+
+    return { highest: 0, count: 0 };
+};
+
+// =====================================================
 // PAGE
 // =====================================================
 const Releases = () => {
@@ -54,8 +77,7 @@ const Releases = () => {
     const [error, setError] = useState("");
 
     // =====================================================
-    // FETCH SHOWS → GROUP BY MOVIE → SPLIT BY SHOW DATE
-    // (Same logic as FeaturedSection)
+    // FETCH SHOWS + MOVIES → GROUP → SPLIT BY SHOW DATE
     // =====================================================
     useEffect(() => {
         const fetchData = async () => {
@@ -63,10 +85,33 @@ const Releases = () => {
                 setLoading(true);
                 setError("");
 
+                // 1. Fetch all shows
                 const res = await axios.get(`${BACKEND_URL}/show/all`);
                 const shows = Array.isArray(res.data?.shows)
                     ? res.data.shows
                     : [];
+
+                // 2. Fetch all movies (for ratings)
+                let moviesFromDb = [];
+                try {
+                    const mRes = await axios.get(`${BACKEND_URL}/movie/all`);
+                    moviesFromDb = Array.isArray(mRes.data?.movies)
+                        ? mRes.data.movies
+                        : [];
+                } catch (mErr) {
+                    console.warn(
+                        "Could not fetch /movie/all:",
+                        mErr?.message
+                    );
+                }
+
+                // Map: movieId → full movie doc (with ratings)
+                const movieDocMap = new Map();
+                moviesFromDb.forEach((m) => {
+                    if (m && (m._id || m.id)) {
+                        movieDocMap.set(String(m._id || m.id), m);
+                    }
+                });
 
                 const now = new Date();
                 const startOfToday = new Date();
@@ -89,13 +134,15 @@ const Releases = () => {
                             : null;
                     if (!movieId) return;
 
+                    // Prefer full movie doc from /movie/all
                     const movieObj =
-                        typeof m === "object"
+                        movieDocMap.get(movieId) ||
+                        (typeof m === "object"
                             ? m
                             : {
                                   _id: movieId,
                                   title: show.movieTitle || "Movie",
-                              };
+                              });
 
                     const theater = resolveTheaterFromShow(show);
                     const showTs = new Date(show.showDateTime).getTime();
@@ -115,7 +162,9 @@ const Releases = () => {
                     const entry = movieMap.get(movieId);
 
                     if (theater?.name) {
-                        const key = `${theater.name}|${theater.city || ""}`;
+                        const key = `${theater.name}|${
+                            theater.city || ""
+                        }`;
                         if (!entry._theaterKeys.has(key)) {
                             entry._theaterKeys.add(key);
                             entry._theaters.push(theater);
@@ -126,18 +175,27 @@ const Releases = () => {
                     if (showTs < entry._earliest) entry._earliest = showTs;
                 });
 
-                const allMovies = Array.from(movieMap.values()).map((m) => ({
-                    ...m,
-                    _theaters: m._theaters.sort((a, b) =>
-                        a.name.localeCompare(b.name)
-                    ),
-                    _showDateTimes: m._showDateTimes.sort((a, b) => a - b),
-                }));
+                // Compute highest rating for each movie
+                const allMovies = Array.from(movieMap.values()).map(
+                    (m) => {
+                        const { highest, count } =
+                            getUserRatingInfo(m);
+                        return {
+                            ...m,
+                            _highestRating: highest,
+                            _ratingCount: count,
+                            _theaters: m._theaters.sort((a, b) =>
+                                a.name.localeCompare(b.name)
+                            ),
+                            _showDateTimes: m._showDateTimes.sort(
+                                (a, b) => a - b
+                            ),
+                        };
+                    }
+                );
 
                 // =========================================
                 // NEW RELEASES
-                //   = movies with at least one show today onwards
-                //   = sorted by soonest show
                 // =========================================
                 const newList = allMovies
                     .filter((movie) => {
@@ -150,21 +208,15 @@ const Releases = () => {
 
                 // =========================================
                 // COMING SOON
-                //   = movies whose earliest upcoming show is at least 1 day away
-                //   = OR movies with strictly future shows (not yet started today)
-                //   = with days-left badge
                 // =========================================
                 const soonList = allMovies
                     .filter((movie) => {
-                        // Only consider movies with upcoming shows
                         const futureShows = movie._showDateTimes.filter(
                             (ts) => ts > now.getTime()
                         );
                         if (futureShows.length === 0) return false;
 
-                        // Earliest future show
                         const earliestFuture = futureShows[0];
-                        // Days left = ceil of difference
                         const daysLeft = Math.ceil(
                             (earliestFuture - now.getTime()) /
                                 (1000 * 60 * 60 * 24)
@@ -217,6 +269,15 @@ const Releases = () => {
     const displayedMovies =
         activeTab === "new" ? newReleases : comingSoon;
 
+    // Highest rating among movies that have at least one vote
+    const ratedMovies = displayedMovies.filter(
+        (m) => m._highestRating > 0 && m._ratingCount > 0
+    );
+    const topRating =
+        ratedMovies.length > 0
+            ? Math.max(...ratedMovies.map((m) => m._highestRating))
+            : 0;
+
     // =====================================================
     // RENDER
     // =====================================================
@@ -230,7 +291,8 @@ const Releases = () => {
                     {/* TITLE */}
                     <div className="mb-10">
                         <h1 className="text-3xl md:text-4xl font-bold text-white">
-                            Movie <span className="text-primary">Releases</span>
+                            Movie{" "}
+                            <span className="text-primary">Releases</span>
                         </h1>
                         <p className="text-gray-400 text-sm mt-2">
                             Currently playing and coming soon to cinemas
@@ -295,24 +357,70 @@ const Releases = () => {
                     {/* MOVIES GRID */}
                     {displayedMovies.length > 0 && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                            {displayedMovies.map((movie) => (
-                                <MovieCard
-                                    key={movie._id}
-                                    movie={movie}
-                                    theaters={movie._theaters}
-                                    showDateTimes={movie._showDateTimes}
-                                    badge={
-                                        activeTab === "soon" &&
-                                        movie._daysLeft
-                                            ? `${movie._daysLeft} ${
-                                                  movie._daysLeft === 1
-                                                      ? "day"
-                                                      : "days"
-                                              } left`
-                                            : null
-                                    }
-                                />
-                            ))}
+                            {displayedMovies.map((movie) => {
+                                const hasRating =
+                                    movie._highestRating > 0 &&
+                                    movie._ratingCount > 0;
+
+                                const isTopRated =
+                                    hasRating &&
+                                    movie._highestRating === topRating;
+
+                                return (
+                                    <div
+                                        key={movie._id}
+                                        className="relative"
+                                    >
+                                        {/* TOP RATED BADGE */}
+                                        {isTopRated && (
+                                            <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-yellow-500 text-black text-xs font-bold px-2.5 py-1 rounded-full shadow-lg">
+                                                <Trophy size={12} />
+                                                Top Rated
+                                            </div>
+                                        )}
+
+                                        <MovieCard
+                                            movie={movie}
+                                            theaters={movie._theaters}
+                                            showDateTimes={
+                                                movie._showDateTimes
+                                            }
+                                            badge={
+                                                activeTab === "soon" &&
+                                                movie._daysLeft
+                                                    ? `${
+                                                          movie._daysLeft
+                                                      } ${
+                                                          movie._daysLeft === 1
+                                                              ? "day"
+                                                              : "days"
+                                                      } left`
+                                                    : null
+                                            }
+                                        />
+
+                                        {/* HIGHEST RATING LINE — only if rated */}
+                                        {hasRating && (
+                                            <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-gray-400">
+                                                <Star
+                                                    size={12}
+                                                    className="text-yellow-400 fill-yellow-400"
+                                                />
+                                                <span className="text-white font-medium">
+                                                    {movie._highestRating}/5
+                                                </span>
+                                                <span className="text-gray-500">
+                                                    ({movie._ratingCount}{" "}
+                                                    {movie._ratingCount === 1
+                                                        ? "vote"
+                                                        : "votes"}
+                                                    )
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>

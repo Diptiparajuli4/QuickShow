@@ -45,6 +45,13 @@ export const protect = async (req, res, next) => {
         req.user = user; // attach the full user document (without password)
         req.user.role = user.role || "user"; // ensure role is set
 
+        // =====================================================
+        // NEW: Attach userId shortcut
+        // Controllers like rateMovie use req.userId directly,
+        // so we set it here for convenience.
+        // =====================================================
+        req.userId = user._id;
+
         console.log("Authenticated user:", req.user);
 
         next();

@@ -82,11 +82,6 @@ export const addMovie = async (req, res) => {
 
 // =====================================================
 // ADD SHOW
-// UPDATED: no longer creates a movie — only validates that it exists
-// UPDATED: now saves theaterCity and theaterAddress
-// UPDATED: duplicate check now includes theaterId — so the same
-//          movie + same time is allowed in DIFFERENT theaters,
-//          but NOT in the same theater.
 // =====================================================
 export const addShow = async (req, res) => {
     try {
@@ -155,9 +150,6 @@ export const addShow = async (req, res) => {
             });
         }
 
-        // =====================================================
-        // -------- VALIDATE MOVIE EXISTS (do NOT create it) --------
-        // =====================================================
         const movieDocument = await Movie.findById(movieId);
 
         if (!movieDocument) {
@@ -173,9 +165,6 @@ export const addShow = async (req, res) => {
 
         const savedMovieId = String(movieDocument._id);
 
-        // =====================================================
-        // -------- VALIDATE THEATER ID PROVIDED --------
-        // =====================================================
         if (!theaterId) {
             return res.status(400).json({
                 success: false,
@@ -183,9 +172,6 @@ export const addShow = async (req, res) => {
             });
         }
 
-        // =====================================================
-        // -------- ENSURE THEATER EXISTS --------
-        // =====================================================
         let theaterDoc = null;
         theaterDoc = await Theater.findById(theaterId);
 
@@ -208,13 +194,11 @@ export const addShow = async (req, res) => {
                 console.log("Theater created:", theaterDoc);
             } catch (createError) {
                 console.error("Failed to create theater:", createError);
-                // Continue anyway, but log the error
             }
         } else {
             console.log("Theater already exists:", theaterDoc._id);
         }
 
-        // -------- Build show documents (one per date/time) --------
         const showsToCreate = [];
 
         for (const [date, times] of Object.entries(dateTimes)) {
@@ -228,15 +212,10 @@ export const addShow = async (req, res) => {
                     });
                 }
 
-                // =================================================
-                // Duplicate check:
-                //   Same movie + Same time + SAME THEATER → reject
-                //   Same movie + Same time + DIFFERENT theater → allow
-                // =================================================
                 const existingShow = await Show.findOne({
                     movie: savedMovieId,
                     showDateTime: showDateTime,
-                    theaterId: theaterId,   // ← यही line fix हो
+                    theaterId: theaterId,
                 });
 
                 if (existingShow) {
@@ -248,7 +227,6 @@ export const addShow = async (req, res) => {
                     });
                 }
 
-                // -------- Include theater fields --------
                 showsToCreate.push({
                     movie: savedMovieId,
                     showDateTime: showDateTime,
@@ -271,12 +249,8 @@ export const addShow = async (req, res) => {
             });
         }
 
-        // -------- Insert all shows --------
         const createdShows = await Show.insertMany(showsToCreate);
 
-        // =====================================================
-        // -------- UPDATE THEATER'S MOVIES ARRAY --------
-        // =====================================================
         if (theaterDoc) {
             const updateResult = await Theater.findByIdAndUpdate(
                 theaterDoc._id,
@@ -529,6 +503,144 @@ export const searchMovies = async (req, res) => {
         });
     } catch (error) {
         console.error("Search error:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+// =====================================================
+// RATE A MOVIE
+// POST /movie/:id/rate
+// Body: { rating: 1..5 }
+// =====================================================
+export const rateMovie = async (req, res) => {
+    try {
+        const userId = req.userId || req.user?._id;
+        const { id } = req.params;
+        const { rating } = req.body;
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Please login to rate this movie.",
+            });
+        }
+
+        const numericRating = Number(rating);
+        if (
+            !Number.isFinite(numericRating) ||
+            numericRating < 1 ||
+            numericRating > 5
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Rating must be between 1 and 5.",
+            });
+        }
+
+        const movie = await Movie.findById(String(id));
+        if (!movie) {
+            return res.status(404).json({
+                success: false,
+                message: "Movie not found.",
+            });
+        }
+
+        if (!Array.isArray(movie.ratings)) {
+            movie.ratings = [];
+        }
+
+        const index = movie.ratings.findIndex(
+            (r) => String(r.userId) === String(userId)
+        );
+
+        if (index >= 0) {
+            movie.ratings[index].rating = numericRating;
+        } else {
+            movie.ratings.push({
+                userId,
+                rating: numericRating,
+            });
+        }
+
+        const total = movie.ratings.length;
+        const sum = movie.ratings.reduce(
+            (s, r) => s + Number(r.rating || 0),
+            0
+        );
+        const avg = total > 0 ? sum / total : 0;
+
+        movie.userRatingAvg = Number(avg.toFixed(1));
+        movie.userRatingCount = total;
+
+        await movie.save();
+
+        return res.json({
+            success: true,
+            message: "Rating saved.",
+            averageRating: movie.userRatingAvg,
+            totalRatings: movie.userRatingCount,
+            userRating: numericRating,
+        });
+    } catch (error) {
+        console.error("Rate Movie Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+// =====================================================
+// GET MOVIE RATINGS
+// GET /movie/:id/ratings
+// Returns: average, total, and user's own rating (if logged in)
+// =====================================================
+export const getMovieRatings = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.userId || req.user?._id || null;
+
+        const movie = await Movie.findById(String(id)).lean();
+        if (!movie) {
+            return res.status(404).json({
+                success: false,
+                message: "Movie not found.",
+            });
+        }
+
+        const ratings = Array.isArray(movie.ratings)
+            ? movie.ratings
+            : [];
+
+        const total = ratings.length;
+        const sum = ratings.reduce(
+            (s, r) => s + Number(r.rating || 0),
+            0
+        );
+        const avg =
+            total > 0
+                ? sum / total
+                : Number(movie.vote_average) || 0;
+
+        let userRating = 0;
+        if (userId) {
+            const mine = ratings.find(
+                (r) => String(r.userId) === String(userId)
+            );
+            if (mine) userRating = Number(mine.rating) || 0;
+        }
+
+        return res.json({
+            success: true,
+            averageRating: Number(avg.toFixed(1)),
+            totalRatings: total,
+            userRating,
+        });
+    } catch (error) {
+        console.error("Get Movie Ratings Error:", error);
         return res.status(500).json({
             success: false,
             message: error.message,

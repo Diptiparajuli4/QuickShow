@@ -403,14 +403,16 @@ const DateSelect = ({ id }) => {
             onClick={onBookHandler}
             disabled={!selected || !selectedTheater}
             className={`
-              px-8
-              py-2
-              rounded
-              transition-all
+              px-10
+              py-3
+              text-sm
+              rounded-md
+              font-medium
+              transition
               ${
                 selected && selectedTheater
-                  ? "bg-primary text-white hover:bg-primary/90 cursor-pointer"
-                  : "bg-gray-600 text-gray-300 cursor-not-allowed"
+                  ? "bg-primary hover:bg-primary-dull cursor-pointer active:scale-95"
+                  : "bg-primary/30 text-white/60 cursor-not-allowed"
               }
             `}
           >

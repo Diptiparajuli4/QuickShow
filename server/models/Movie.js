@@ -61,12 +61,45 @@ const movieSchema = new mongoose.Schema(
             type: Number,
             default: 0,
         },
+
+        // =====================================================
+        // RATING SYSTEM (NEW)
+        // One entry per user — user can update their rating anytime
+        // =====================================================
+        ratings: [
+            {
+                userId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "User",
+                },
+                rating: {
+                    type: Number,
+                    min: 1,
+                    max: 5,
+                },
+                createdAt: {
+                    type: Date,
+                    default: Date.now,
+                },
+            },
+        ],
+
+        // Cached average + count for fast reads
+        userRatingAvg: {
+            type: Number,
+            default: 0,
+        },
+        userRatingCount: {
+            type: Number,
+            default: 0,
+        },
     },
     {
         timestamps: true,
     }
 );
 
-const Movie = mongoose.model("Movie", movieSchema);
+const Movie =
+    mongoose.models.Movie || mongoose.model("Movie", movieSchema);
 
 export default Movie;

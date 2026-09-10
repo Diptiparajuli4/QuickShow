@@ -6,7 +6,7 @@ import BlurCircle from "../components/BlurCircle";
 import Loading from "../components/Loading";
 import MovieCard from "../components/MovieCard";
 
-import { MapPin } from "lucide-react";
+import { MapPin, Star, Trophy } from "lucide-react";
 
 // =====================================================
 // CONFIG
@@ -27,6 +27,29 @@ const resolveTheaterFromShow = (show) => {
     return "";
 };
 
+// =====================================================
+// HELPER: get HIGHEST user rating for a movie
+//
+// Returns { highest, count } — both 0 if there are no
+// real user ratings. NEVER falls back to TMDB.
+// =====================================================
+const getUserRatingInfo = (movie) => {
+    if (Array.isArray(movie?.ratings) && movie.ratings.length > 0) {
+        const valid = movie.ratings
+            .map((r) => Number(r?.rating))
+            .filter((n) => Number.isFinite(n) && n >= 1 && n <= 5);
+
+        if (valid.length > 0) {
+            return {
+                highest: Math.max(...valid),
+                count: valid.length,
+            };
+        }
+    }
+
+    return { highest: 0, count: 0 };
+};
+
 const Theaters = () => {
     const navigate = useNavigate();
 
@@ -35,7 +58,7 @@ const Theaters = () => {
     const [error, setError] = useState("");
 
     // =====================================================
-    // FETCH THEATERS + SHOWS
+    // FETCH THEATERS + SHOWS + MOVIES (for ratings)
     // =====================================================
     useEffect(() => {
         const fetchData = async () => {
@@ -74,7 +97,29 @@ const Theaters = () => {
                     );
                 }
 
-                // 3. Keep only active shows (today onwards)
+                // 3. Get all movies (for rating data)
+                let moviesFromDb = [];
+                try {
+                    const mRes = await axios.get(`${BACKEND_URL}/movie/all`);
+                    moviesFromDb = Array.isArray(mRes.data?.movies)
+                        ? mRes.data.movies
+                        : [];
+                } catch (mErr) {
+                    console.warn(
+                        "Could not fetch /movie/all:",
+                        mErr?.message
+                    );
+                }
+
+                // Map: movieId → full movie doc (with ratings)
+                const movieDocMap = new Map();
+                moviesFromDb.forEach((m) => {
+                    if (m && (m._id || m.id)) {
+                        movieDocMap.set(String(m._id || m.id), m);
+                    }
+                });
+
+                // 4. Keep only active shows (today onwards)
                 const startOfToday = new Date();
                 startOfToday.setHours(0, 0, 0, 0);
 
@@ -83,7 +128,7 @@ const Theaters = () => {
                     return !isNaN(t.getTime()) && t >= startOfToday;
                 });
 
-                // 4. Group active shows by theaterId
+                // 5. Group active shows by theaterId
                 const showsByTheater = new Map();
 
                 activeShows.forEach((show) => {
@@ -96,7 +141,7 @@ const Theaters = () => {
                     showsByTheater.get(tid).push(show);
                 });
 
-                // 5. Build final list — one object per theater
+                // 6. Build final list — one object per theater
                 const finalList = [];
 
                 for (const theater of theatersList) {
@@ -133,8 +178,12 @@ const Theaters = () => {
 
                     const movies = [];
                     for (const [movieId, entry] of movieMap.entries()) {
-                        let movie = entry.movie;
+                        // Prefer the full movie doc from /movie/all
+                        // (it contains the ratings array)
+                        let movie =
+                            movieDocMap.get(movieId) || entry.movie;
 
+                        // Fallback: fetch individually if not in map
                         if (!movie?.title || movie.title === "Movie") {
                             try {
                                 const mRes = await axios.get(
@@ -155,16 +204,19 @@ const Theaters = () => {
                             .filter((d) => !isNaN(d.getTime()))
                             .sort((a, b) => a - b);
 
+                        // Get highest rating info
+                        const { highest, count } =
+                            getUserRatingInfo(movie);
+
                         movies.push({
                             ...movie,
                             _id: movieId,
                             _earliest: showTimes[0]?.getTime() || 0,
-                            // Passed to MovieCard so it can show "Next Show"
                             _showDateTimes: showTimes.map((d) =>
                                 d.getTime()
                             ),
-                            // Theater info for this movie (for the card's
-                            // internal theater resolver — hidden by design)
+                            _highestRating: highest,
+                            _ratingCount: count,
                             _theaters: [
                                 {
                                     _id: theater._id,
@@ -262,71 +314,147 @@ const Theaters = () => {
 
                     {/* THEATER LIST */}
                     <div className="space-y-12">
-                        {theaters.map((theater) => (
-                            <div
-                                key={theater._id}
-                                className="border border-gray-800 rounded-2xl bg-gray-900/40 overflow-hidden"
-                            >
-                                {/* THEATER HEADER */}
-                                <div className="p-6 border-b border-gray-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                    <div className="min-w-0">
-                                        <h2 className="text-xl sm:text-2xl font-bold text-white truncate">
-                                            {theater.name}
-                                        </h2>
+                        {theaters.map((theater) => {
+                            // Highest rating across all movies at this theater
+                            const theaterTopRating = (() => {
+                                const rated = theater._movies.filter(
+                                    (m) =>
+                                        m._highestRating > 0 &&
+                                        m._ratingCount > 0
+                                );
+                                return rated.length > 0
+                                    ? Math.max(
+                                          ...rated.map(
+                                              (m) => m._highestRating
+                                          )
+                                      )
+                                    : 0;
+                            })();
 
-                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-sm text-gray-400">
-                                            <span className="flex items-center gap-1.5">
-                                                <MapPin
-                                                    size={14}
-                                                    className="text-primary"
-                                                />
-                                                {theater.city}
-                                                {theater.address &&
-                                                    `, ${theater.address}`}
+                            return (
+                                <div
+                                    key={theater._id}
+                                    className="border border-gray-800 rounded-2xl bg-gray-900/40 overflow-hidden"
+                                >
+                                    {/* THEATER HEADER */}
+                                    <div className="p-6 border-b border-gray-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <h2 className="text-xl sm:text-2xl font-bold text-white truncate">
+                                                {theater.name}
+                                            </h2>
+
+                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-sm text-gray-400">
+                                                <span className="flex items-center gap-1.5">
+                                                    <MapPin
+                                                        size={14}
+                                                        className="text-primary"
+                                                    />
+                                                    {theater.city}
+                                                    {theater.address &&
+                                                        `, ${theater.address}`}
+                                                </span>
+
+                                                {theater.phone && (
+                                                    <>
+                                                        <span className="text-gray-600">
+                                                            •
+                                                        </span>
+                                                        <span>
+                                                            {theater.phone}
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 shrink-0">
+                                            <span className="text-xs text-gray-400 bg-gray-800 px-3 py-1 rounded-full border border-gray-700">
+                                                {theater._movies.length}{" "}
+                                                {theater._movies.length === 1
+                                                    ? "movie"
+                                                    : "movies"}
                                             </span>
-
-                                            {theater.phone && (
-                                                <>
-                                                    <span className="text-gray-600">
-                                                        •
-                                                    </span>
-                                                    <span>{theater.phone}</span>
-                                                </>
-                                            )}
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-3 shrink-0">
-                                        <span className="text-xs text-gray-400 bg-gray-800 px-3 py-1 rounded-full border border-gray-700">
-                                            {theater._movies.length}{" "}
-                                            {theater._movies.length === 1
-                                                ? "movie"
-                                                : "movies"}
-                                        </span>
-                                    </div>
-                                </div>
+                                    {/* MOVIES ROW (using shared MovieCard) */}
+                                    <div className="overflow-x-auto no-scrollbar">
+                                        <div className="flex gap-6 p-6">
+                                            {theater._movies.map((movie) => {
+                                                const hasRating =
+                                                    movie._highestRating >
+                                                        0 &&
+                                                    movie._ratingCount >
+                                                        0;
 
-                                {/* MOVIES ROW (using shared MovieCard) */}
-                                <div className="overflow-x-auto no-scrollbar">
-                                    <div className="flex gap-6 p-6">
-                                        {theater._movies.map((movie) => (
-                                            <div
-                                                key={movie._id}
-                                                className="w-64 flex-shrink-0"
-                                            >
-                                                <MovieCard
-                                                    movie={movie}
-                                                    theaters={movie._theaters}
-                                                    showDateTimes={
-                                                        movie._showDateTimes
-                                                    }
-                                                />
-                                            </div>
-                                        ))}
+                                                const isTopRated =
+                                                    hasRating &&
+                                                    movie._highestRating ===
+                                                        theaterTopRating;
+
+                                                return (
+                                                    <div
+                                                        key={movie._id}
+                                                        className="w-64 flex-shrink-0 relative"
+                                                    >
+                                                        {/* TOP RATED BADGE */}
+                                                        {isTopRated && (
+                                                            <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-yellow-500 text-black text-xs font-bold px-2.5 py-1 rounded-full shadow-lg">
+                                                                <Trophy
+                                                                    size={
+                                                                        12
+                                                                    }
+                                                                />
+                                                                Top Rated
+                                                            </div>
+                                                        )}
+
+                                                        <MovieCard
+                                                            movie={movie}
+                                                            theaters={
+                                                                movie._theaters
+                                                            }
+                                                            showDateTimes={
+                                                                movie._showDateTimes
+                                                            }
+                                                        />
+
+                                                        {/* HIGHEST RATING LINE — only if rated */}
+                                                        {hasRating && (
+                                                            <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-gray-400">
+                                                                <Star
+                                                                    size={
+                                                                        12
+                                                                    }
+                                                                    className="text-yellow-400 fill-yellow-400"
+                                                                />
+                                                                <span className="text-white font-medium">
+                                                                    {
+                                                                        movie._highestRating
+                                                                    }
+                                                                    /5
+                                                                </span>
+                                                                <span className="text-gray-500">
+                                                                    (
+                                                                    {
+                                                                        movie._ratingCount
+                                                                    }{" "}
+                                                                    {movie._ratingCount ===
+                                                                    1
+                                                                        ? "vote"
+                                                                        : "votes"}
+                                                                    )
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </div>
